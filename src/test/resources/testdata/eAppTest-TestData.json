@@ -13,7 +13,7 @@
         "ModuleSectionName": "Annuity Owner Module",
         "Order": "6",
         "Page": "Owner(s)",
-        "RulesforWizard": "Default = Blank;If Owner_Type = Individual,Joint then display and enable else Owner_Type = Trust,Custodian,Corporation then disable and hide",
+        "RulesforWizard": "Default = Blank;If Owner_Type = Individual,Joint then display and enable else Owner_Type = Trust,Custodian,Corporation then hide and disable",
         "Section": "Owner Information",
         "Validation": "Blank",
         "ValidationRules": "If Owner_FirstName = blank then Issue Error Message: Owner First Name is required.",
@@ -31,7 +31,7 @@
         "ModuleSectionName": "Annuity Owner Module",
         "Order": "13",
         "Page": "Owner(s)",
-        "RulesforWizard": "Default = Blank;If Owner_Type = Trust,Custodian,Corporation then display,enable, else Owner_Type = Individual,Joint then disable,hide",
+        "RulesforWizard": "Default = Blank;If Owner_Type = Trust,Custodian,Corporation then display and enable else Owner_Type = Individual,Joint then hide and disable",
         "Section": "Owner Information",
         "Validation": "EIN\/TIN",
         "ValidationRules": "If Owner_TIN = blank then Issue Error Message: Owner TIN is required.;If Owner_TIN = Invalid then Issue Error Message: Please enter a valid TIN for Owner.",
@@ -56,7 +56,7 @@
         "WizardControlTypes": "Dropdown"
       },
       "jurisdiction": "Alabama",
-      "newProductName": "AT Variable Annuity 050345447",
+      "newProductName": "AT Variable Annuity 060304261",
       "product": "Variable Annuity"
     },
     "commonTestData": {
