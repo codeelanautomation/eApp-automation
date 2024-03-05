@@ -467,7 +467,7 @@ public class BaseClass {
 
         try{
             if(testContext.getDriver() != null){
-             //    testContext.getDriver().quit();
+                 testContext.getDriver().quit();
             }
             Log.info("Driver Quit Successfully");
             Log.info("<<<===== END OF TEST =====>>>");
