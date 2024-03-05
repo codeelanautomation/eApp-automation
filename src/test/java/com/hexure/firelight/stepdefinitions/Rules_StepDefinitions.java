@@ -94,8 +94,10 @@ public class Rules_StepDefinitions extends FLUtilities {
         String expectedResultElse = "";
         String requiredErrorCondition = "";
         String requiredErrorMessage = "";
-        String requiredAttributes = "";
-        String requiredAttributesElse = "";
+        String requiredFirstAttribute = "";
+        String requiredSecondAttribute = "";
+        String requiredFirstAttributeElse = "";
+        String requiredSecondAttributeElse = "";
         String requiredAttributeValue = "";
         Pattern pattern;
         Matcher matcher;
@@ -147,21 +149,29 @@ public class Rules_StepDefinitions extends FLUtilities {
                             break;
                         case "RulesforWizard":
                             for (String distinctRule : JsonPath.read(valueJson, "$." + rule).toString().trim().split((";"))) {
-                                if (Pattern.compile("If (.*?) = (.*?) then (.*?) else (.*?) = (.*?) then (.*)").matcher(distinctRule).find()) {
-                                    pattern = Pattern.compile("If (.*?) = (.*?) then (.*?) else (.*?) = (.*?) then (.*)");
+                                if (Pattern.compile("If (.*?) = (.*?) then (.*?) and (.*?) else (.*?) = (.*?) then (.*?) and (.*)").matcher(distinctRule).find()) {
+                                    pattern = Pattern.compile("If (.*?) = (.*?) then (.*?) and (.*?) else (.*?) = (.*?) then (.*?) and (.*)");
                                     matcher = pattern.matcher(distinctRule);
                                     while (matcher.find()) {
                                         condition = matcher.group(1);
                                         expectedResult = matcher.group(2);
-                                        requiredAttributes = matcher.group(3);
-                                        conditionElse = matcher.group(4);
-                                        expectedResultElse = matcher.group(5);
-                                        requiredAttributesElse = matcher.group(6);
+                                        requiredFirstAttribute = matcher.group(3);
+                                        requiredSecondAttribute = matcher.group(4);
+                                        conditionElse = matcher.group(5);
+                                        expectedResultElse = matcher.group(6);
+                                        requiredFirstAttributeElse = matcher.group(7);
+                                        requiredSecondAttributeElse = matcher.group(8);
                                     }
                                     for (String result : expectedResult.split(",")) {
                                         setDependentCondition(condition, valueJson, result);
-                                        expectedFlag = !findElements(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).isEmpty();
-                                        onSoftAssertionHandlerPage.assertTrue(field, "Display Rule when " + condition + " is " + result, expectedFlag, expectedFlag, expectedFlag, testContext);
+                                        if (requiredFirstAttribute.equalsIgnoreCase("display")) {
+                                            expectedFlag = !findElements(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).isEmpty();
+                                            onSoftAssertionHandlerPage.assertTrue(field, "Field is displayed when " + condition + " is " + result, expectedFlag, expectedFlag, expectedFlag, testContext);
+                                        }
+                                        if (requiredSecondAttribute.equalsIgnoreCase("enable")) {
+                                            expectedFlag = findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).isEnabled();
+                                            onSoftAssertionHandlerPage.assertTrue(field, "Field is enabled when " + condition + " is " + result, expectedFlag, expectedFlag, expectedFlag, testContext);
+                                        }
                                     }
                                     for (String result : expectedResultElse.split(",")) {
                                         setDependentCondition(conditionElse, valueJson, result);
@@ -172,7 +182,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                     pattern = Pattern.compile("(.*?) = (.*)");
                                     matcher = pattern.matcher(distinctRule);
                                     while (matcher.find()) {
-                                        requiredAttributes = matcher.group(1);
+                                        requiredFirstAttribute = matcher.group(1);
                                         requiredAttributeValue = matcher.group(2);
                                     }
                                     pattern = Pattern.compile("If (.*?) = (.*)");
