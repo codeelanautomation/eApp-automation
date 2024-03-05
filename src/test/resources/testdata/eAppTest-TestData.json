@@ -1,1 +1,66 @@
-{"testData":{"commonTestData":{"InvalidTin":"123456789"},"SGB":{"Owner_FirstName":{"Order":"6","Validation":"Blank","DisplayonPDF":"Y","RulesforWizard":"If Owner_Type = Individual,Joint then Default = Blank;If Owner_Type = Individual,Joint then display,enable else Owner_Type = Trust,Custodian,Corporation then disable,hide","WizardControlTypes":"Single Line Textbox","Mask":"Blank","Page":"Owner(s)","Section":"Owner Information","CommonTag":"Owner_FirstName","ValidationRules":"If Owner_Type = Individual,Joint and Owner_FirstName = blank then Issue Error Message: Owner First Name is required.","Format":"Blank","ModuleSectionName":"Annuity Owner Module","Length":"Blank","DataType":"String","Add\/Delete\/Change":"T"},"Owner_Type":{"Order":"2","Validation":"Blank","Options":"Blank;Individual;Joint;Trust;Custodian;Corporation","DisplayonPDF":"Y","RulesforWizard":"Default = Blank","WizardControlTypes":"Dropdown","Mask":"Blank","Page":"Client Data","Section":"Case Details","CommonTag":"Owner_Type","Format":"Blank","ModuleSectionName":"Annuity Owner Module","Length":"Blank","DataType":"List","Add\/Delete\/Change":"T"},"Owner_TIN":{"Order":"13","Validation":"EIN\/TIN","DisplayonPDF":"Y","RulesforWizard":"If Owner_Type = Trust,Custodian,Corporation then Default = Blank;If Owner_Type = Trust,Custodian,Corporation then display,enable, else Owner_Type = Individual,Joint then disable,hide","WizardControlTypes":"TIN","Mask":"__-_______","Page":"Owner(s)","Section":"Owner Information","CommonTag":"Owner_TIN","ValidationRules":"If Owner_Type = Trust,Custodian,Corporation and Owner_TIN = blank then Issue Error Message: Owner TIN is required.;If Owner_Type = Trust,Custodian,Corporation and Owner_TIN = Invalid then Issue Error Message: Please enter a valid TIN for Owner.","Format":"##-#######","ModuleSectionName":"Annuity Owner Module","Length":"9","DataType":"String","Add\/Delete\/Change":"T"}}}}
+{
+  "testData": {
+    "SGB": {
+      "Owner_FirstName": {
+        "Add\/Delete\/Change": "T",
+        "CommonTag": "Owner_FirstName",
+        "DataType": "String",
+        "DisplayRule": "If Owner_Type = Individual,Joint",
+        "DisplayonPDF": "Y",
+        "Format": "Blank",
+        "Length": "Blank",
+        "Mask": "Blank",
+        "ModuleSectionName": "Annuity Owner Module",
+        "Order": "6",
+        "Page": "Owner(s)",
+        "RulesforWizard": "Default = Blank;If Owner_Type = Individual,Joint then display and enable else Owner_Type = Trust,Custodian,Corporation then disable and hide",
+        "Section": "Owner Information",
+        "Validation": "Blank",
+        "ValidationRules": "If Owner_FirstName = blank then Issue Error Message: Owner First Name is required.",
+        "WizardControlTypes": "Single Line Textbox"
+      },
+      "Owner_TIN": {
+        "Add\/Delete\/Change": "T",
+        "CommonTag": "Owner_TIN",
+        "DataType": "String",
+        "DisplayRule": "If Owner_Type = Trust,Custodian,Corporation",
+        "DisplayonPDF": "Y",
+        "Format": "##-#######",
+        "Length": "9",
+        "Mask": "__-_______",
+        "ModuleSectionName": "Annuity Owner Module",
+        "Order": "13",
+        "Page": "Owner(s)",
+        "RulesforWizard": "Default = Blank;If Owner_Type = Trust,Custodian,Corporation then display,enable, else Owner_Type = Individual,Joint then disable,hide",
+        "Section": "Owner Information",
+        "Validation": "EIN\/TIN",
+        "ValidationRules": "If Owner_TIN = blank then Issue Error Message: Owner TIN is required.;If Owner_TIN = Invalid then Issue Error Message: Please enter a valid TIN for Owner.",
+        "WizardControlTypes": "TIN"
+      },
+      "Owner_Type": {
+        "Add\/Delete\/Change": "T",
+        "CommonTag": "Owner_Type",
+        "DataType": "List",
+        "DisplayRule": "Blank",
+        "DisplayonPDF": "Y",
+        "Format": "Blank",
+        "Length": "Blank",
+        "Mask": "Blank",
+        "ModuleSectionName": "Annuity Owner Module",
+        "Options": "Blank;Individual;Joint;Trust;Custodian;Corporation",
+        "Order": "2",
+        "Page": "Client Data",
+        "RulesforWizard": "Default = Blank",
+        "Section": "Case Details",
+        "Validation": "Blank",
+        "WizardControlTypes": "Dropdown"
+      },
+      "jurisdiction": "Alabama",
+      "newProductName": "AT Variable Annuity 050345447",
+      "product": "Variable Annuity"
+    },
+    "commonTestData": {
+      "InvalidTin": "123456789"
+    }
+  }
+}

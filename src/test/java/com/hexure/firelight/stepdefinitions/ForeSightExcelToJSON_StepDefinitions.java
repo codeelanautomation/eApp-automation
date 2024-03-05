@@ -1,5 +1,6 @@
 package com.hexure.firelight.stepdefinitions;
 
+import com.hexure.firelight.libraies.Enums.EnumsExcelColumns;
 import com.hexure.firelight.libraies.Enums.EnumsJSONProp;
 import com.hexure.firelight.libraies.EnumsCommon;
 import com.hexure.firelight.libraies.FLException;
@@ -19,7 +20,7 @@ import java.util.List;
 public class ForeSightExcelToJSON_StepDefinitions {
 
     JSONObject jsonObject = new JSONObject();
-    List<String> requiredColumns = Arrays.asList(EnumsJSONProp.ENUMSEXCELCOLUMNS.getText().split(", "));
+    List<String> requiredColumns = Arrays.asList(EnumsExcelColumns.ENUMSEXCELCOLUMNS.getText().split(", "));
     @Given("Create {string} file for eApp flow")
     public void createForesightTestData(String jsonFile) {
         String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + "Template.xlsx";
@@ -34,7 +35,6 @@ public class ForeSightExcelToJSON_StepDefinitions {
                      // Assuming the first row contains headers
                      Row headerRow = iterator.next().getSheet().getRow(0);
                      JSONObject jsonRows = new JSONObject();
-                     //            System.out.println(headerRow);
                      while (iterator.hasNext()) {
                          Row currentRow = iterator.next();
                          JSONObject tempJson = new JSONObject();
