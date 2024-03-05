@@ -106,7 +106,11 @@ public class Flow_StepDefinitions extends FLUtilities {
             String valueJson = testContext.getMapTestData().get(wizardName + "|" + dataItemID).trim();
 
             moveToPage(JsonPath.read(valueJson, "$.WizardName").toString().trim(), JsonPath.read(valueJson, "$.FormName").toString().trim());
-
+            switch (JsonPath.read(valueJson, "$.ControlType").toString().trim().toLowerCase()) {
+                case "dropdown":
+                    new Select(findElement(driver, String.format(onCommonMethodsPage.getSelectField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim()))).selectByVisibleText(JsonPath.read(valueJson, "$.TestData").toString().trim());
+                    break;
+            }
 
         }
         onSoftAssertionHandlerPage.afterScenario(testContext);
@@ -123,7 +127,7 @@ public class Flow_StepDefinitions extends FLUtilities {
 
 
     public void moveToPage(String pageHeader, String formHeader) {
-//        if (!(onCommonMethodsPage.getPageHeader().getText().equalsIgnoreCase(pageHeader) & onCommonMethodsPage.getFormHeader().getText().equalsIgnoreCase(formHeader))) {
+        if (!(onCommonMethodsPage.getPageHeader().getText().equalsIgnoreCase(pageHeader) & onCommonMethodsPage.getFormHeader().getText().equalsIgnoreCase(formHeader))) {
             clickElementByJSE(driver, onCommonMethodsPage.getWizardPageNameExpand());
             List<WebElement> mandetoryFormList = findElements(driver, String.format(onCommonMethodsPage.getMandetoryFormElement(), formHeader));
             int i = 0;
@@ -134,7 +138,7 @@ public class Flow_StepDefinitions extends FLUtilities {
                     break;
                 }
             }
-//        }
+        }
     }
 
 }

@@ -105,19 +105,20 @@ public class Rules_StepDefinitions extends FLUtilities {
         String expectedText = "";
         boolean expectedFlag;
         String inputValue = "";
-        
+
         // Assuming the fifth row contains headers
         Row headerRow = iterator.next();
 
         int fieldColumnIndex = findColumnIndex(headerRow, EnumsCommon.FIELD.getText());
         int sectionColumnIndex = findColumnIndex(headerRow, EnumsCommon.SECTION.getText());
-        List<String> rulesList = Arrays.asList("Options", "ValidationRules", "RulesforWizard");
-//        , "Length", "Format", "Mask", "Validation")
+        List<String> rulesList = Arrays.asList("Options", "ValidationRules", "RulesforWizard", "Length", "Format");
+//         "Mask", "Validation")
         int count = 0;
         for (int rowIndex = 0; rowIndex < sheet.getLastRowNum(); rowIndex++) {
             field = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, fieldColumnIndex);
             section = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, sectionColumnIndex);
             String valueJson = testContext.getMapTestData().get(field).trim();
+            expectedResult= "";
 
             moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
 
@@ -167,22 +168,6 @@ public class Rules_StepDefinitions extends FLUtilities {
                                         expectedFlag = findElements(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).isEmpty();
                                         onSoftAssertionHandlerPage.assertTrue(field, "Hidden Rule when " + conditionElse + " is " + result, expectedFlag, expectedFlag, expectedFlag, testContext);
                                     }
-                                } else if (Pattern.compile("If (.*?) = (.*?) then (.*?) = (.*)").matcher(distinctRule).find()) {
-                                    pattern = Pattern.compile("If (.*?) = (.*?) then (.*?) = (.*)");
-                                    matcher = pattern.matcher(distinctRule);
-                                    while (matcher.find()) {
-                                        condition = matcher.group(1);
-                                        expectedResult = matcher.group(2);
-                                        requiredAttributes = matcher.group(3);
-                                        requiredAttributeValue = matcher.group(4);
-                                    }
-                                    for (String result : expectedResult.split(",")) {
-                                        setDependentCondition(condition, valueJson, result);
-                                        expectedText = findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).getAttribute("value");
-                                        if (expectedText.equalsIgnoreCase(""))
-                                            expectedText = "blank";
-                                        onSoftAssertionHandlerPage.assertTrue(field, "Default Value when " + condition + " is " + result, requiredAttributeValue.toLowerCase(), expectedText.toLowerCase(), requiredAttributeValue.equalsIgnoreCase(expectedText), testContext);
-                                    }
                                 } else if (Pattern.compile("(.*?) = (.*)").matcher(distinctRule).find()) {
                                     pattern = Pattern.compile("(.*?) = (.*)");
                                     matcher = pattern.matcher(distinctRule);
@@ -190,27 +175,41 @@ public class Rules_StepDefinitions extends FLUtilities {
                                         requiredAttributes = matcher.group(1);
                                         requiredAttributeValue = matcher.group(2);
                                     }
-                                    if (JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim().equalsIgnoreCase("dropdown"))
-                                        expectedText = new Select(findElement(driver, String.format(onCommonMethodsPage.getSelectField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim()))).getFirstSelectedOption().getText().trim();
-                                    else if (JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim().equalsIgnoreCase("single line textbox"))
-                                        expectedText = findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).getAttribute("value");
-                                    if (expectedText.equalsIgnoreCase(""))
-                                        expectedText = "blank";
-                                    onSoftAssertionHandlerPage.assertTrue(field, "Default Value", requiredAttributeValue.toLowerCase(), expectedText.toLowerCase(), requiredAttributeValue.equalsIgnoreCase(expectedText), testContext);
+                                    pattern = Pattern.compile("If (.*?) = (.*)");
+                                    matcher = pattern.matcher(JsonPath.read(valueJson, "$.DisplayRule").toString().trim());
+                                    while (matcher.find()) {
+                                        condition = matcher.group(1);
+                                        expectedResult = matcher.group(2);
+                                    }
+                                    if(expectedResult.isEmpty())
+                                        verifyData(valueJson, field, "", "", requiredAttributeValue);
+                                    else {
+                                        for (String result : expectedResult.split(",")) {
+                                            setDependentCondition(condition, valueJson, result);
+                                            expectedText = findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).getAttribute("value");
+                                            if (expectedText.equalsIgnoreCase(""))
+                                                expectedText = "blank";
+                                            verifyData(valueJson, field, condition, result, requiredAttributeValue);
+                                        }
+                                    }
                                 }
                             }
                             break;
                         case "ValidationRules":
                             for (String distinctRule : JsonPath.read(valueJson, "$." + rule).toString().trim().split((";"))) {
-                                pattern = Pattern.compile("If (.*?) = (.*?) and (.*?) = (.*?) then (.*?): (.*)");
+                                pattern = Pattern.compile("If (.*?) = (.*?) then (.*?): (.*)");
                                 matcher = pattern.matcher(distinctRule);
+                                while (matcher.find()) {
+                                    condition = matcher.group(1);
+                                    expectedResult = matcher.group(2);
+                                    requiredErrorCondition = matcher.group(3);
+                                    requiredErrorMessage = matcher.group(4);
+                                }
+                                pattern = Pattern.compile("If (.*?) = (.*)");
+                                matcher = pattern.matcher(JsonPath.read(valueJson, "$.DisplayRule").toString().trim());
                                 while (matcher.find()) {
                                     dependentCondition = matcher.group(1);
                                     dependentResult = matcher.group(2);
-                                    condition = matcher.group(3);
-                                    expectedResult = matcher.group(4);
-                                    requiredErrorCondition = matcher.group(5);
-                                    requiredErrorMessage = matcher.group(6);
                                 }
                                 for (String result : dependentResult.split(",")) {
                                     setDependentCondition(dependentCondition, valueJson, result);
@@ -239,9 +238,39 @@ public class Rules_StepDefinitions extends FLUtilities {
                                 }
                             }
                             break;
+                        case "Length":
+                                pattern = Pattern.compile("If (.*?) = (.*)");
+                                matcher = pattern.matcher(JsonPath.read(valueJson, "$.DisplayRule").toString().trim());
+                                while (matcher.find()) {
+                                    dependentCondition = matcher.group(1);
+                                    dependentResult = matcher.group(2);
+                                }
+                                if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank")) {
+                                    for (String result : dependentResult.split(",")) {
+                                        setDependentCondition(dependentCondition, valueJson, result);
+                                        expectedText = findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).getAttribute("maxlength");
+                                        onSoftAssertionHandlerPage.assertTrue(field, "Length when " + dependentCondition + " is " + dependentResult, expectedText, JsonPath.read(valueJson, "$." + rule).toString().trim(), expectedText.equalsIgnoreCase(JsonPath.read(valueJson, "$." + rule).toString().trim()), testContext);
+                                    }
+                                }
+                            break;
+                        case "Format":
+                            pattern = Pattern.compile("If (.*?) = (.*)");
+                            matcher = pattern.matcher(JsonPath.read(valueJson, "$.DisplayRule").toString().trim());
+                            while (matcher.find()) {
+                                dependentCondition = matcher.group(1);
+                                dependentResult = matcher.group(2);
+                            }
+                            if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank")) {
+                                for (String result : dependentResult.split(",")) {
+                                    setDependentCondition(dependentCondition, valueJson, result);
+                                    expectedText = findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).getAttribute("mask").replaceAll("9", "#");
+                                    onSoftAssertionHandlerPage.assertTrue(field, "Format when " + dependentCondition + " is " + dependentResult, expectedText, JsonPath.read(valueJson, "$." + rule).toString().trim(), expectedText.equalsIgnoreCase(JsonPath.read(valueJson, "$." + rule).toString().trim()), testContext);
+                                }
+                            }
+                            break;
                     }
                 } catch (PathNotFoundException e) {
-                    System.out.println("Field " + field + " does not have rule" + rule);
+                    System.out.println("Field " + field + " does not have rule \"" + rule + "\"");
                 }
             }
         }
@@ -271,6 +300,20 @@ public class Rules_StepDefinitions extends FLUtilities {
                 }
             }
         }
+    }
+
+    public void verifyData(String valueJson, String field, String condition, String result, String requiredAttributeValue) {
+        String expectedText = "";
+        if (JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim().equalsIgnoreCase("dropdown"))
+            expectedText = new Select(findElement(driver, String.format(onCommonMethodsPage.getSelectField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim()))).getFirstSelectedOption().getText().trim();
+        else if (JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim().equalsIgnoreCase("single line textbox"))
+            expectedText = findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).getAttribute("value");
+        if (expectedText.equalsIgnoreCase(""))
+            expectedText = "blank";
+        if(condition.isEmpty())
+            onSoftAssertionHandlerPage.assertTrue(field, "Default Value ", requiredAttributeValue.toLowerCase(), expectedText.toLowerCase(), requiredAttributeValue.equalsIgnoreCase(expectedText), testContext);
+        else
+            onSoftAssertionHandlerPage.assertTrue(field, "Default Value when " + condition + " is " + result, requiredAttributeValue.toLowerCase(), expectedText.toLowerCase(), requiredAttributeValue.equalsIgnoreCase(expectedText), testContext);
     }
 
 }
