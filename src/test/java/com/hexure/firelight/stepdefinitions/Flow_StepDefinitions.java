@@ -6,24 +6,23 @@ import com.hexure.firelight.libraies.TestContext;
 import com.hexure.firelight.pages.CommonMethodsPage;
 import com.hexure.firelight.pages.SoftAssertionHandlerPage;
 import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.PathNotFoundException;
+
 import cucumber.api.java.en.Given;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.Select;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
+
 import java.util.Iterator;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
 
 public class Flow_StepDefinitions extends FLUtilities {
     private final TestContext testContext;
@@ -100,9 +99,9 @@ public class Flow_StepDefinitions extends FLUtilities {
         int dataItemIDColumnIndex = findColumnIndex(headerRow, EnumsCommon.E2EDATAITEMID.getText());
 
         int count = 0;
-        for (int rowIndex = 0; rowIndex < sheet.getLastRowNum(); rowIndex++) {
-            wizardName = getExcelColumnValue(excelFilePath, clientName, rowIndex + 3, wizardColumnIndex);
-            dataItemID = getExcelColumnValue(excelFilePath, clientName, rowIndex + 3, dataItemIDColumnIndex);
+        for (int rowIndex = 3; rowIndex < sheet.getLastRowNum(); rowIndex++) {
+            wizardName = getExcelColumnValue(excelFilePath, clientName, rowIndex, wizardColumnIndex);
+            dataItemID = getExcelColumnValue(excelFilePath, clientName, rowIndex, dataItemIDColumnIndex);
             if(!dataItemID.toLowerCase().contains("lookup")) {
                 String valueJson = testContext.getMapTestData().get(wizardName + "|" + dataItemID).trim();
                 System.out.println(dataItemID);
@@ -115,10 +114,23 @@ public class Flow_StepDefinitions extends FLUtilities {
                         clickElement(driver, findElement(driver, String.format(onCommonMethodsPage.getRadioField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim(), JsonPath.read(valueJson, "$.TestData").toString().trim())));
                         break;
                     case "textbox":
-                        sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())), JsonPath.read(valueJson, "$.TestData").toString().trim());
+//                        if(!JsonPath.read(valueJson, "$.TextID").toString().trim().toLowerCase().contains(""))
+//                        {
+//                            sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.txtField, JsonPath.read(valueJson, "$.TextID").toString().trim())), JsonPath.read(valueJson, "$.TestData").toString().trim());
+//                        }
+//                        else
+//                        {
+//                         }
+                            sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())), JsonPath.read(valueJson, "$.TestData").toString().trim());
+                            if(JsonPath.read(valueJson, "$.DataItemID").toString().trim().toLowerCase().contains("date")){
+                                new Actions(driver).moveToElement(onCommonMethodsPage.getFormHeader()).click().perform();
+                        }
                         break;
                     case "checkbox":
                         checkBoxSelectYesNO(JsonPath.read(valueJson, "$.TestData").toString().trim(), findElement(driver, String.format(onCommonMethodsPage.getChkBoxField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())));
+                        break;
+                    case "phone":
+                        sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())), JsonPath.read(valueJson, "$.TestData").toString().trim());
                         break;
                 }
             }
