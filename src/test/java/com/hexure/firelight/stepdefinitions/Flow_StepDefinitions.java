@@ -103,16 +103,24 @@ public class Flow_StepDefinitions extends FLUtilities {
         for (int rowIndex = 0; rowIndex < sheet.getLastRowNum(); rowIndex++) {
             wizardName = getExcelColumnValue(excelFilePath, clientName, rowIndex + 3, wizardColumnIndex);
             dataItemID = getExcelColumnValue(excelFilePath, clientName, rowIndex + 3, dataItemIDColumnIndex);
-            String valueJson = testContext.getMapTestData().get(wizardName + "|" + dataItemID).trim();
-
-            moveToPage(JsonPath.read(valueJson, "$.WizardName").toString().trim(), JsonPath.read(valueJson, "$.FormName").toString().trim());
-            switch(JsonPath.read(valueJson, "$.ControlType").toString().trim().toLowerCase()) {
-                case "dropdown":
-                    new Select(findElement(driver, String.format(onCommonMethodsPage.getSelectField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim()))).selectByVisibleText(JsonPath.read(valueJson, "$.TestData").toString().trim());
-                    break;
-                case "Radio":
-                    clickElement(driver,findElement(driver, String.format(onCommonMethodsPage.getRadioField(), JsonPath.read(valueJson,"$.DataItemID").toString().trim(),JsonPath.read(valueJson,"$.TestData").toString().trim())));
-                    break;
+            if(!dataItemID.toLowerCase().contains("lookup")) {
+                String valueJson = testContext.getMapTestData().get(wizardName + "|" + dataItemID).trim();
+                System.out.println(dataItemID);
+                moveToPage(JsonPath.read(valueJson, "$.FormName").toString().trim(), JsonPath.read(valueJson, "$.WizardName").toString().trim());
+                switch (JsonPath.read(valueJson, "$.ControlType").toString().trim().toLowerCase()) {
+                    case "dropdown":
+                        new Select(findElement(driver, String.format(onCommonMethodsPage.getSelectField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim()))).selectByVisibleText(JsonPath.read(valueJson, "$.TestData").toString().trim());
+                        break;
+                    case "radio":
+                        clickElement(driver, findElement(driver, String.format(onCommonMethodsPage.getRadioField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim(), JsonPath.read(valueJson, "$.TestData").toString().trim())));
+                        break;
+                    case "textbox":
+                        sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())), JsonPath.read(valueJson, "$.TestData").toString().trim());
+                        break;
+                    case "checkbox":
+                        checkBoxSelectYesNO(JsonPath.read(valueJson, "$.TestData").toString().trim(), findElement(driver, String.format(onCommonMethodsPage.getChkBoxField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())));
+                        break;
+                }
             }
         }
         onSoftAssertionHandlerPage.afterScenario(testContext);
@@ -127,8 +135,20 @@ public class Flow_StepDefinitions extends FLUtilities {
         moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
     }
 
+    protected void checkBoxSelectYesNO(String userAction, WebElement element) {
+        if (getCheckBoxAction(userAction)) {
+            if (element.getAttribute("aria-checked").equals("false"))
+                element.click();
+        } else {
+            if (element.getAttribute("aria-checked").equals("true"))
+                element.click();
+        }
+    }
+    private boolean getCheckBoxAction(String action) {
+        return action.equalsIgnoreCase("check");
+    }
 
-    public void moveToPage(String pageHeader, String formHeader) {
+    public void moveToPage(String formHeader, String pageHeader) {
         if (!(onCommonMethodsPage.getPageHeader().getText().equalsIgnoreCase(pageHeader) & onCommonMethodsPage.getFormHeader().getText().equalsIgnoreCase(formHeader))) {
             clickElementByJSE(driver, onCommonMethodsPage.getWizardPageNameExpand());
             List<WebElement> mandetoryFormList = findElements(driver, String.format(onCommonMethodsPage.getMandetoryFormElement(), formHeader));

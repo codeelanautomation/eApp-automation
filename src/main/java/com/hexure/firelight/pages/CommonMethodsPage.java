@@ -15,6 +15,7 @@ public class CommonMethodsPage extends FLUtilities {
     public String selectField = "//select[@data-dataitemid='%s']";
     public String inputField = "//input[@data-dataitemid='%s']";
     public String radioField = "//div[@data-dataitemid='%s']//div[@title='%s']";
+    private String chkBoxField = "//div[@data-dataitemid='%s']//div[@role]";
     public String inputErrorField = "//input[@data-dataitemid='%s']//ancestor::div[@class='ITComponent']//span[@class='validationText']";
     public String fieldWithTitleAttribute = "//*[@title=\"%s\"]|//*[@aria-label=\"%s\"]";
     public String mandetoryFormElement="//*[@class=\"navDrawer__bundleName\" and text()=\"%s\"]/..//*[@class=\"far fa-exclamation-triangle navDrawer__pageGraphic validation-summary-errors\"]/../..";
@@ -26,10 +27,10 @@ public class CommonMethodsPage extends FLUtilities {
     private List<WebElement> listErrors;
 
     @FindBy(id = "root__wizardName")
-    private WebElement PageHeader;
+    private WebElement formHeader;
 
     @FindBy(xpath="//*[@class='ITWizardPageName']")
-    private WebElement formHeader;
+    private WebElement pageHeader;
 
     @FindBy(id = "imgExpand")
     private WebElement WizardPageNameExpand;

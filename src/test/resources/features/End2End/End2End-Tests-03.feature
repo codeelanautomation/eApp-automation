@@ -4,7 +4,7 @@ Feature: FireLight_End2End_Tests
 
   @End2EndTest3
   Scenario: TC_01_Complete the REACT application with Pre Signature Review with Signature Then Submit
-    Given User is on FireLight login page for TestCase "End2End_SGB"
+    Given User is on FireLight login page for TestCase "End2End_VA"
     Then User on Login Page enters valid username as "Ashwani_FBW" and password and clicks Login button
     Then User clicks "Application" Tab
     Then User selects Jurisdiction "Alabama"

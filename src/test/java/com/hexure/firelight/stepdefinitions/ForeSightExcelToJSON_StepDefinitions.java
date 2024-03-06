@@ -52,7 +52,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
                          jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim(), tempJson);
                      }
                      JSONObject masterJson = new JSONObject();
-                     masterJson.put("SGB", jsonRows);
+                     masterJson.put("VA", jsonRows);
 
                      JSONObject defaultEntry = getJsonObject();
 
