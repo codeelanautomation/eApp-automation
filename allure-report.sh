@@ -1,4 +1,4 @@
-chmod +x open-report.sh
+chmod +x allure-report.sh
 cd \target
 allure generate --single-file --clean allure-results
 
