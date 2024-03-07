@@ -105,8 +105,13 @@ public class Rules_StepDefinitions extends FLUtilities {
         String dependentCondition = "";
         String dependentResult = "";
         String expectedText = "";
-        boolean expectedFlag;
+        boolean expectedFlag = false;
         String inputValue = "";
+        List<String> actualOptions = new ArrayList<>();
+        List<String> expectedOptions = new ArrayList<>();
+        List<WebElement> radioOptions = new ArrayList<>();
+        List<String> listConditions = new ArrayList<>();
+        String dataType = "";
 
         // Assuming the fifth row contains headers
         Row headerRow = iterator.next();
@@ -114,9 +119,9 @@ public class Rules_StepDefinitions extends FLUtilities {
         int fieldColumnIndex = findColumnIndex(headerRow, EnumsCommon.FIELD.getText());
         int sectionColumnIndex = findColumnIndex(headerRow, EnumsCommon.SECTION.getText());
         List<String> rulesList = Arrays.asList("Options", "ValidationRules", "RulesforWizard", "Length", "Format");
-//         "Mask", "Validation")
-        int count = 0;
+
         for (int rowIndex = 0; rowIndex < sheet.getLastRowNum(); rowIndex++) {
+
             field = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, fieldColumnIndex);
             section = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, sectionColumnIndex);
             String valueJson = testContext.getMapTestData().get(field).trim();
@@ -128,78 +133,100 @@ public class Rules_StepDefinitions extends FLUtilities {
                 try {
                     switch (rule) {
                         case "Options":
-                            switch (JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim()) {
-                                case "Dropdown":
-                                    List<String> actualOptions = new ArrayList<>();
-                                    List<WebElement> dropdownOptions = new Select(findElement(driver, String.format(onCommonMethodsPage.getSelectField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim()))).getOptions();
-                                    for (WebElement element : dropdownOptions) {
-                                        if (element.getText().equalsIgnoreCase(""))
-                                            actualOptions.add("Blank");
-                                        else
-                                            actualOptions.add(element.getText());
-                                    }
-                                    List<String> expectedOptions = Arrays.asList(JsonPath.read(valueJson, "$.Options").toString().trim().split(";"));
-                                    onSoftAssertionHandlerPage.assertTrue(field, "Dropdown Options", actualOptions, expectedOptions, actualOptions.equals(expectedOptions), testContext);
-//                                    onSoftAssertionHandlerPage.assertTrue("Field " + field + " does not contains expected values: Actual: " + actualOptions + " , Expected: " + expectedOptions, actualOptions.equals(expectedOptions), testContext);
-                                    break;
-                                //                            case "String":
-                                //                                assertTrue(ActualValue.matches("[a-zA-Z]+"), "Expected " + FSEField + " contains alpha numeric values too or is blank, Actual: " + ActualValue);
-                                //                                break;
-                            }
+                            expectedOptions = Arrays.asList(JsonPath.read(valueJson, "$.Options").toString().trim().split(";"));
+                            dataType = JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim();
+                            actualOptions = getOptions(valueJson, dataType);
+                            onSoftAssertionHandlerPage.assertTrue(field, dataType + " Options", actualOptions, expectedOptions, actualOptions.equals(expectedOptions), testContext);
                             break;
                         case "RulesforWizard":
                             for (String distinctRule : JsonPath.read(valueJson, "$." + rule).toString().trim().split((";"))) {
                                 if (Pattern.compile("If (.*?) = (.*?) then (.*?) and (.*?) else (.*?) = (.*?) then (.*?) and (.*)").matcher(distinctRule).find()) {
-                                    pattern = Pattern.compile("If (.*?) = (.*?) then (.*?) and (.*?) else (.*?) = (.*?) then (.*?) and (.*)");
-                                    matcher = pattern.matcher(distinctRule);
-                                    while (matcher.find()) {
-                                        condition = matcher.group(1);
-                                        expectedResult = matcher.group(2);
-                                        requiredFirstAttribute = matcher.group(3);
-                                        requiredSecondAttribute = matcher.group(4);
-                                        conditionElse = matcher.group(5);
-                                        expectedResultElse = matcher.group(6);
-                                        requiredFirstAttributeElse = matcher.group(7);
-                                        requiredSecondAttributeElse = matcher.group(8);
-                                    }
+                                    listConditions = getDisplayRuleConditions(valueJson, "If (.*?) = (.*?) then (.*?) and (.*?) else (.*?) = (.*?) then (.*?) and (.*)", "", distinctRule);
+                                    condition = listConditions.get(0);
+                                    expectedResult = listConditions.get(1);
+                                    requiredFirstAttribute = listConditions.get(2);
+                                    requiredSecondAttribute = listConditions.get(3);
+                                    conditionElse = listConditions.get(4);
+                                    expectedResultElse = listConditions.get(5);
+                                    requiredFirstAttributeElse = listConditions.get(6);
+                                    requiredSecondAttributeElse = listConditions.get(7);
+
                                     for (String result : expectedResult.split(",")) {
                                         setDependentCondition(condition, valueJson, result);
                                         if (requiredFirstAttribute.equalsIgnoreCase("display")) {
-                                            expectedFlag = !findElements(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).isEmpty();
+                                            switch (JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim()) {
+                                                case "Single Line Textbox":
+                                                    expectedFlag = !findElements(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).isEmpty();
+                                                    break;
+                                                case "Radio Button":
+                                                    expectedFlag = !findElements(driver, String.format(onCommonMethodsPage.getRadioField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).isEmpty();
+                                                    break;
+                                            }
                                             onSoftAssertionHandlerPage.assertTrue(field, "Field is displayed when " + condition + " is " + result, expectedFlag, expectedFlag, expectedFlag, testContext);
                                         }
                                         if (requiredSecondAttribute.equalsIgnoreCase("enable")) {
-                                            expectedFlag = findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).isEnabled();
-                                            onSoftAssertionHandlerPage.assertTrue(field, "Field is enabled when " + condition + " is " + result, expectedFlag, expectedFlag, expectedFlag, testContext);
+                                            switch (JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim()) {
+                                                case "Single Line Textbox":
+                                                    expectedFlag = findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).isEnabled();
+                                                    onSoftAssertionHandlerPage.assertTrue(field, "Field is enabled when " + condition + " is " + result, expectedFlag, expectedFlag, expectedFlag, testContext);
+                                                    break;
+                                                case "Radio Button":
+                                                    radioOptions = findElements(driver, String.format(onCommonMethodsPage.getRadioField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim()));
+                                                    for (WebElement element : radioOptions)
+                                                        onSoftAssertionHandlerPage.assertTrue(field, "Radio button " + element.getAttribute("title") + " is enabled when " + condition + " is " + result, element.isEnabled(), "true", element.isEnabled(), testContext);
+                                                    break;
+                                            }
                                         }
                                     }
                                     for (String result : expectedResultElse.split(",")) {
                                         setDependentCondition(conditionElse, valueJson, result);
-                                        expectedFlag = findElements(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).isEmpty();
-                                        onSoftAssertionHandlerPage.assertTrue(field, "Hidden Rule when " + conditionElse + " is " + result, expectedFlag, expectedFlag, expectedFlag, testContext);
+                                        switch (requiredFirstAttributeElse.toLowerCase()) {
+                                            case "hide":
+                                                expectedFlag = findElements(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).isEmpty();
+                                                onSoftAssertionHandlerPage.assertTrue(field, "Hidden Rule when " + conditionElse + " is " + result, expectedFlag, expectedFlag, expectedFlag, testContext);
+                                                break;
+                                            case "set to no":
+                                                WebElement element = findElement(driver, String.format(onCommonMethodsPage.getRadioFieldWithOption(), JsonPath.read(valueJson, "$.CommonTag").toString().trim(), "No"));
+                                                onSoftAssertionHandlerPage.assertTrue(field, "Radio button No is selected when " + conditionElse + " is " + result, element.getAttribute("aria-checked"), "true", element.getAttribute("aria-checked").equalsIgnoreCase("true"), testContext);
+                                                break;
+
+                                        }
+                                        switch (requiredSecondAttributeElse.toLowerCase()) {
+                                            case "disable":
+                                                if(!requiredFirstAttributeElse.equalsIgnoreCase("hide")) {
+                                                    radioOptions = findElements(driver, String.format(onCommonMethodsPage.getRadioField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim()));
+                                                    for (WebElement element : radioOptions)
+                                                        onSoftAssertionHandlerPage.assertTrue(field, "Radio button \"" + element.getAttribute("title") + "\" disabled when " + condition + " is " + result, element.getAttribute("aria-checked"), "false", element.getAttribute("aria-checked").equalsIgnoreCase("false"), testContext);
+                                                }
+                                                break;
+                                        }
                                     }
                                 } else if (Pattern.compile("(.*?) = (.*)").matcher(distinctRule).find()) {
-                                    pattern = Pattern.compile("(.*?) = (.*)");
-                                    matcher = pattern.matcher(distinctRule);
-                                    while (matcher.find()) {
-                                        requiredFirstAttribute = matcher.group(1);
-                                        requiredAttributeValue = matcher.group(2);
-                                    }
-                                    pattern = Pattern.compile("If (.*?) = (.*)");
-                                    matcher = pattern.matcher(JsonPath.read(valueJson, "$.DisplayRule").toString().trim());
-                                    while (matcher.find()) {
-                                        condition = matcher.group(1);
-                                        expectedResult = matcher.group(2);
-                                    }
+                                    listConditions = getDisplayRuleConditions(valueJson, "(.*?) = (.*)", "", distinctRule);
+                                    requiredAttributeValue = listConditions.get(1);
+
+                                    listConditions = getDisplayRuleConditions(valueJson, "If (.*?) = (.*)", "DisplayRule", "");
+                                    condition = listConditions.get(0);
+                                    expectedResult = listConditions.get(1);
+
                                     if(expectedResult.isEmpty())
                                         verifyData(valueJson, field, "", "", requiredAttributeValue);
                                     else {
                                         for (String result : expectedResult.split(",")) {
                                             setDependentCondition(condition, valueJson, result);
-                                            expectedText = findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).getAttribute("value");
-                                            if (expectedText.equalsIgnoreCase(""))
-                                                expectedText = "blank";
-                                            verifyData(valueJson, field, condition, result, requiredAttributeValue);
+                                            switch (requiredAttributeValue.toLowerCase().trim()) {
+                                                case "blank":
+                                                    expectedText = findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).getAttribute("value");
+                                                    if (expectedText.equalsIgnoreCase(""))
+                                                        expectedText = "blank";
+                                                    verifyData(valueJson, field, condition, result, requiredAttributeValue);
+                                                    break;
+                                                case "unselected":
+                                                    radioOptions = findElements(driver, String.format(onCommonMethodsPage.getRadioField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim()));
+                                                    for (WebElement element : radioOptions)
+                                                        onSoftAssertionHandlerPage.assertTrue(field, "Radio button \"" + element.getAttribute("title") + "\" unselected by default when " + condition + " is " + result, element.getAttribute("aria-checked"), "false", element.getAttribute("aria-checked").equalsIgnoreCase("false"), testContext);
+                                                    break;
+                                            }
                                         }
                                     }
                                 }
@@ -207,20 +234,16 @@ public class Rules_StepDefinitions extends FLUtilities {
                             break;
                         case "ValidationRules":
                             for (String distinctRule : JsonPath.read(valueJson, "$." + rule).toString().trim().split((";"))) {
-                                pattern = Pattern.compile("If (.*?) = (.*?) then (.*?): (.*)");
-                                matcher = pattern.matcher(distinctRule);
-                                while (matcher.find()) {
-                                    condition = matcher.group(1);
-                                    expectedResult = matcher.group(2);
-                                    requiredErrorCondition = matcher.group(3);
-                                    requiredErrorMessage = matcher.group(4);
-                                }
-                                pattern = Pattern.compile("If (.*?) = (.*)");
-                                matcher = pattern.matcher(JsonPath.read(valueJson, "$.DisplayRule").toString().trim());
-                                while (matcher.find()) {
-                                    dependentCondition = matcher.group(1);
-                                    dependentResult = matcher.group(2);
-                                }
+                                listConditions = getDisplayRuleConditions(valueJson, "If (.*?) = (.*?) then (.*?): (.*)", "", distinctRule);
+                                condition = listConditions.get(0);
+                                expectedResult = listConditions.get(1);
+                                requiredErrorCondition = listConditions.get(2);
+                                requiredErrorMessage = listConditions.get(3);
+
+                                listConditions = getDisplayRuleConditions(valueJson, "If (.*?) = (.*)", "DisplayRule", "");
+                                dependentCondition = listConditions.get(0);
+                                dependentResult = listConditions.get(1);
+
                                 for (String result : dependentResult.split(",")) {
                                     setDependentCondition(dependentCondition, valueJson, result);
                                     if (expectedResult.toLowerCase().equalsIgnoreCase("Invalid")) {
@@ -233,50 +256,26 @@ public class Rules_StepDefinitions extends FLUtilities {
                                     }
                                     if (onCommonMethodsPage.getListErrors().isEmpty())
                                         clickElement(driver, onCommonMethodsPage.getRedColorErrorValidationBubble());
+                                    error = findElement(driver, String.format(onCommonMethodsPage.getInputErrorField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).getText();
                                     switch (expectedResult.toLowerCase()) {
                                         case "blank":
-                                            error = findElement(driver, String.format(onCommonMethodsPage.getInputErrorField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).getText();
                                             onSoftAssertionHandlerPage.assertTrue(field, "Mandatory Field Validation when " + condition + " is " + result, error, requiredErrorMessage, error.equalsIgnoreCase(requiredErrorMessage), testContext);
                                             break;
                                         case "invalid":
-                                            error = findElement(driver, String.format(onCommonMethodsPage.getInputErrorField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).getText();
                                             onSoftAssertionHandlerPage.assertTrue(field, "Invalid Value Validation when " + field + " is " + inputValue, error, requiredErrorMessage, error.equalsIgnoreCase(requiredErrorMessage), testContext);
                                             sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())), "");
                                             break;
-
                                     }
                                 }
                             }
                             break;
                         case "Length":
-                                pattern = Pattern.compile("If (.*?) = (.*)");
-                                matcher = pattern.matcher(JsonPath.read(valueJson, "$.DisplayRule").toString().trim());
-                                while (matcher.find()) {
-                                    dependentCondition = matcher.group(1);
-                                    dependentResult = matcher.group(2);
-                                }
-                                if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank")) {
-                                    for (String result : dependentResult.split(",")) {
-                                        setDependentCondition(dependentCondition, valueJson, result);
-                                        expectedText = findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).getAttribute("maxlength");
-                                        onSoftAssertionHandlerPage.assertTrue(field, "Length when " + dependentCondition + " is " + dependentResult, expectedText, JsonPath.read(valueJson, "$." + rule).toString().trim(), expectedText.equalsIgnoreCase(JsonPath.read(valueJson, "$." + rule).toString().trim()), testContext);
-                                    }
-                                }
+                            if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank"))
+                                getAttributeValue(field, valueJson, "If (.*?) = (.*)", "DisplayRule", rule, "maxLength");
                             break;
                         case "Format":
-                            pattern = Pattern.compile("If (.*?) = (.*)");
-                            matcher = pattern.matcher(JsonPath.read(valueJson, "$.DisplayRule").toString().trim());
-                            while (matcher.find()) {
-                                dependentCondition = matcher.group(1);
-                                dependentResult = matcher.group(2);
-                            }
-                            if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank")) {
-                                for (String result : dependentResult.split(",")) {
-                                    setDependentCondition(dependentCondition, valueJson, result);
-                                    expectedText = findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).getAttribute("mask").replaceAll("9", "#");
-                                    onSoftAssertionHandlerPage.assertTrue(field, "Format when " + dependentCondition + " is " + dependentResult, expectedText, JsonPath.read(valueJson, "$." + rule).toString().trim(), expectedText.equalsIgnoreCase(JsonPath.read(valueJson, "$." + rule).toString().trim()), testContext);
-                                }
-                            }
+                            if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank"))
+                                getAttributeValue(field, valueJson, "If (.*?) = (.*)", "DisplayRule", rule, "mask");
                             break;
                     }
                 } catch (PathNotFoundException e) {
@@ -312,6 +311,47 @@ public class Rules_StepDefinitions extends FLUtilities {
         }
     }
 
+    public List<String> getOptions(String valueJson, String dataType) {
+        List<String> actualOptions = new ArrayList<>();
+        switch (dataType) {
+            case "Dropdown":
+                List<WebElement> dropdownOptions = new Select(findElement(driver, String.format(onCommonMethodsPage.getSelectField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim()))).getOptions();
+                for (WebElement element : dropdownOptions) {
+                    if (element.getText().equalsIgnoreCase(""))
+                        actualOptions.add("Blank");
+                    else
+                        actualOptions.add(element.getText());
+                }
+                break;
+            case "Radio Button":
+                List<WebElement> radioOptions = findElements(driver, String.format(onCommonMethodsPage.getRadioField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim()));
+                for (WebElement element : radioOptions) {
+                    actualOptions.add(element.getAttribute("title"));
+                }
+                break;
+        }
+        return actualOptions;
+    }
+
+    public List<String> getDisplayRuleConditions(String valueJson, String requiredPattern, String parameter, String distinctRule) {
+        Pattern pattern = Pattern.compile(requiredPattern);
+        Matcher matcher;
+        if(parameter.equalsIgnoreCase(""))
+            matcher = pattern.matcher(distinctRule);
+        else
+            matcher = pattern.matcher(JsonPath.read(valueJson, "$." + parameter).toString().trim());
+
+        int count = 1;
+        List<String> options = new ArrayList<>();
+        while(matcher.find()) {
+            while (count <= matcher.groupCount()) {
+                options.add(matcher.group(count));
+                count++;
+            }
+        }
+        return options;
+    }
+
     public void verifyData(String valueJson, String field, String condition, String result, String requiredAttributeValue) {
         String expectedText = "";
         if (JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim().equalsIgnoreCase("dropdown"))
@@ -324,6 +364,22 @@ public class Rules_StepDefinitions extends FLUtilities {
             onSoftAssertionHandlerPage.assertTrue(field, "Default Value ", requiredAttributeValue.toLowerCase(), expectedText.toLowerCase(), requiredAttributeValue.equalsIgnoreCase(expectedText), testContext);
         else
             onSoftAssertionHandlerPage.assertTrue(field, "Default Value when " + condition + " is " + result, requiredAttributeValue.toLowerCase(), expectedText.toLowerCase(), requiredAttributeValue.equalsIgnoreCase(expectedText), testContext);
+    }
+
+    public void getAttributeValue(String field, String valueJson, String requiredPattern, String parameter, String rule, String attribute) {
+        List<String> listConditions = getDisplayRuleConditions(valueJson, requiredPattern, parameter, "");
+        String dependentCondition = listConditions.get(0);
+        String dependentResult = listConditions.get(1);
+        String expectedText;
+        if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank")) {
+            for (String result : dependentResult.split(",")) {
+                setDependentCondition(dependentCondition, valueJson, result);
+                expectedText = findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).getAttribute(attribute);
+                if(rule.equalsIgnoreCase("format"))
+                    expectedText = expectedText.replaceAll("9", "#");
+                onSoftAssertionHandlerPage.assertTrue(field, rule + " when " + dependentCondition + " is " + dependentResult, expectedText, JsonPath.read(valueJson, "$." + rule).toString().trim(), expectedText.equalsIgnoreCase(JsonPath.read(valueJson, "$." + rule).toString().trim()), testContext);
+            }
+        }
     }
 
 }
