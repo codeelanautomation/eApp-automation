@@ -114,13 +114,6 @@ public class Flow_StepDefinitions extends FLUtilities {
                         clickElement(driver, findElement(driver, String.format(onCommonMethodsPage.getRadioField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim(), JsonPath.read(valueJson, "$.TestData").toString().trim())));
                         break;
                     case "textbox":
-//                        if(!JsonPath.read(valueJson, "$.TextID").toString().trim().toLowerCase().contains(""))
-//                        {
-//                            sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.txtField, JsonPath.read(valueJson, "$.TextID").toString().trim())), JsonPath.read(valueJson, "$.TestData").toString().trim());
-//                        }
-//                        else
-//                        {
-//                         }
                             sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())), JsonPath.read(valueJson, "$.TestData").toString().trim());
                             if(JsonPath.read(valueJson, "$.DataItemID").toString().trim().toLowerCase().contains("date")){
                                 new Actions(driver).moveToElement(onCommonMethodsPage.getFormHeader()).click().perform();
@@ -162,7 +155,10 @@ public class Flow_StepDefinitions extends FLUtilities {
 
     public void moveToPage(String formHeader, String pageHeader) {
         if (!(onCommonMethodsPage.getPageHeader().getText().equalsIgnoreCase(pageHeader) & onCommonMethodsPage.getFormHeader().getText().equalsIgnoreCase(formHeader))) {
-            clickElementByJSE(driver, onCommonMethodsPage.getWizardPageNameExpand());
+                if (onCommonMethodsPage.getList_WizardPageNameExpand().size() > 0) {
+                clickElementByJSE(driver, onCommonMethodsPage.getWizardPageNameExpand());
+            }
+            //clickElementByJSE(driver, onCommonMethodsPage.getWizardPageNameExpand());
             List<WebElement> mandetoryFormList = findElements(driver, String.format(onCommonMethodsPage.getMandetoryFormElement(), formHeader));
             int i = 0;
             for (WebElement element : mandetoryFormList) {
