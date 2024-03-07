@@ -21,9 +21,9 @@ public class ForeSightExcelToJSON_StepDefinitions {
 
     JSONObject jsonObject = new JSONObject();
     List<String> requiredColumns = Arrays.asList(EnumsExcelColumns.ENUMSEXCELCOLUMNS.getText().split(", "));
-    @Given("Create {string} file for eApp flow")
-    public void createForesightTestData(String jsonFile) {
-        String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + "Template.xlsx";
+    @Given("Create {string} file for eApp flow with file {string}")
+    public void createForesightTestData(String jsonFile, String excelFile) {
+        String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + excelFile;
         try (FileInputStream file = new FileInputStream(filePath);
              XSSFWorkbook workbook = new XSSFWorkbook(file)) {
              for(int sheetCount = 0; sheetCount < workbook.getNumberOfSheets(); sheetCount++ ) {
@@ -52,7 +52,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
                          jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim(), tempJson);
                      }
                      JSONObject masterJson = new JSONObject();
-                     masterJson.put("SGB", jsonRows);
+                     masterJson.put(excelFile.replaceAll(".xlsx", ""), jsonRows);
 
                      JSONObject defaultEntry = getJsonObject();
 
