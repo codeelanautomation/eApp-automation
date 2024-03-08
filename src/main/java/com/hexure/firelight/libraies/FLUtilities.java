@@ -143,6 +143,7 @@ public class FLUtilities extends BaseClass
         }
     }
 
+
     protected void sendKeys(WebDriver driver, WebElement element, String stringToInput)
     {
         syncElement(driver, element, EnumsCommon.TOVISIBLE.getText());
@@ -151,7 +152,15 @@ public class FLUtilities extends BaseClass
             clickElement(driver, element);
             element.sendKeys(stringToInput);
             element.sendKeys(Keys.TAB);
-        } catch (Exception e) {
+        } catch (ElementClickInterceptedException e) {
+            // Scroll the element into view
+            ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
+            element.clear();
+            // Move to the element using Actions class
+            new Actions(driver).moveToElement(element).sendKeys(stringToInput).perform();
+            element.sendKeys(Keys.TAB);
+        }
+        catch (Exception e) {
             Log.error("SendKeys Failed ", e);
             throw new FLException(stringToInput + " could not be entered in element" + e.getMessage());
         }

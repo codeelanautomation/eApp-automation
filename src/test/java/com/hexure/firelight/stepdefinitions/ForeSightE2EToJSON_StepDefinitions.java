@@ -41,6 +41,8 @@ public class ForeSightE2EToJSON_StepDefinitions {
                  while (iterator.hasNext()) {
                      Row currentRow = iterator.next();
                      JSONObject tempJson = new JSONObject();
+                     String secondData = "";
+
 
                      // Create input file in json format
                      if(!(currentRow.getCell(2).getStringCellValue().equalsIgnoreCase("jurisdiction") | currentRow.getCell(2).getStringCellValue().equalsIgnoreCase("ProductType"))) {
@@ -51,7 +53,10 @@ public class ForeSightE2EToJSON_StepDefinitions {
                              if (!excelValue.isEmpty())
                                  tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), excelValue);
                          }
-                         jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2EWIZARDNAME.getText())).getStringCellValue().trim() + "|" + currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2EDATAITEMID.getText())).getStringCellValue().trim(), tempJson);
+                         secondData = currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2EDATAITEMID.getText())).getStringCellValue().trim();
+                         if (secondData.isEmpty())
+                             secondData = currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2ETITLE.getText())).getStringCellValue().trim();
+                         jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2EWIZARDNAME.getText())).getStringCellValue().trim() + "|" + secondData, tempJson);
                      }
                      else
                          jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2EDATAITEMID.getText())).getStringCellValue().trim(), currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2ETESTDATA.getText())).getStringCellValue().trim());

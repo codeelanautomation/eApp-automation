@@ -87,6 +87,8 @@ public class Flow_StepDefinitions extends FLUtilities {
         String excelFilePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + excelFileName;
         String wizardName = "";
         String dataItemID = "";
+        String titleName = "";
+
         FileInputStream fileInputStream = new FileInputStream(excelFilePath);
         Workbook workbook = new XSSFWorkbook(fileInputStream);
         Sheet sheet = workbook.getSheet(clientName);
@@ -97,13 +99,20 @@ public class Flow_StepDefinitions extends FLUtilities {
 
         int wizardColumnIndex = findColumnIndex(headerRow, EnumsCommon.E2EWIZARDNAME.getText());
         int dataItemIDColumnIndex = findColumnIndex(headerRow, EnumsCommon.E2EDATAITEMID.getText());
+        int titleColumnIndex = findColumnIndex(headerRow, EnumsCommon.E2ETITLE.getText());
+
 
         int count = 0;
-        for (int rowIndex = 3; rowIndex < sheet.getLastRowNum(); rowIndex++) {
+        for (int rowIndex = 3; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
             wizardName = getExcelColumnValue(excelFilePath, clientName, rowIndex, wizardColumnIndex);
             dataItemID = getExcelColumnValue(excelFilePath, clientName, rowIndex, dataItemIDColumnIndex);
+            titleName = getExcelColumnValue(excelFilePath, clientName, rowIndex, titleColumnIndex);
+            String valueJson = "";
             if(!dataItemID.toLowerCase().contains("lookup")) {
-                String valueJson = testContext.getMapTestData().get(wizardName + "|" + dataItemID).trim();
+                if(!dataItemID.isEmpty())
+                    valueJson = testContext.getMapTestData().get(wizardName + "|" + dataItemID).trim();
+                else
+                    valueJson = testContext.getMapTestData().get(wizardName + "|" + titleName).trim();
                 System.out.println(dataItemID);
                 moveToPage(JsonPath.read(valueJson, "$.FormName").toString().trim(), JsonPath.read(valueJson, "$.WizardName").toString().trim());
                 switch (JsonPath.read(valueJson, "$.ControlType").toString().trim().toLowerCase()) {
@@ -114,9 +123,15 @@ public class Flow_StepDefinitions extends FLUtilities {
                         clickElement(driver, findElement(driver, String.format(onCommonMethodsPage.getRadioField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim(), JsonPath.read(valueJson, "$.TestData").toString().trim())));
                         break;
                     case "textbox":
+                        if(valueJson.contains("DataItemID")) {
                             sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())), JsonPath.read(valueJson, "$.TestData").toString().trim());
-                            if(JsonPath.read(valueJson, "$.DataItemID").toString().trim().toLowerCase().contains("date")){
+                            if (JsonPath.read(valueJson, "$.DataItemID").toString().trim().toLowerCase().contains("date")) {
                                 new Actions(driver).moveToElement(onCommonMethodsPage.getFormHeader()).click().perform();
+                            }
+                        }
+                        else
+                        {
+                            sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getTxtField(), JsonPath.read(valueJson, "$.Title").toString().trim())), JsonPath.read(valueJson, "$.TestData").toString().trim());
                         }
                         break;
                     case "checkbox":

@@ -5,6 +5,7 @@ public enum  EnumsCommon {
     ABSOLUTE_CLIENTFILES_PATH(System.getProperty("user.dir") + "\\src\\test\\resources\\testdata\\Client\\"),
     FIELD("Common Tag"),
     E2EDATAITEMID("Data Item ID"),
+    E2ETITLE("Title"),
     E2ETESTDATA("Test Data"),
     E2EWIZARDNAME("Wizard Name"),
     SECTION("Section"),

@@ -2,7 +2,7 @@ Feature: FireLight_End2End_Tests
 
   This feature will verify UAT Application End2End Tests
 
-  @End2EndTest3
+  @E2EWizardTestFlow
   Scenario: TC_01_Complete the REACT application with Pre Signature Review with Signature Then Submit
     Given User is on FireLight login page for TestCase "End2End_MasterTemplate"
     Then User on Login Page enters valid username as "Ashwani_FBW" and password and clicks Login button
