@@ -1,1 +1,84 @@
-{"testData":{"commonTestData":{"InvalidTin":"123456789"},"MasterTemplate":{"Owner_FirstName":{"Order":"6","Validation":"Blank","DisplayonPDF":"Y","RulesforWizard":"Default = Blank;If Owner_Type = Individual,Joint then display and enable else Owner_Type = Trust,Custodian,Corporation then hide and disable","WizardControlTypes":"Single Line Textbox","Mask":"Blank","DisplayRule":"If Owner_Type = Individual,Joint","Page":"Owner(s)","Section":"Owner Information","CommonTag":"Owner_FirstName","ValidationRules":"If Owner_FirstName = blank then Issue Error Message: Owner First Name is required.","Format":"Blank","ModuleSectionName":"Annuity Owner Module","Length":"Blank","DataType":"String","Add\/Delete\/Change":"T"},"Owner_Type":{"Order":"2","Validation":"Blank","Options":"Blank;Individual;Joint;Trust;Custodian;Corporation","DisplayonPDF":"Y","RulesforWizard":"Default = Blank","WizardControlTypes":"Dropdown","Mask":"Blank","DisplayRule":"Blank","Page":"Client Data","Section":"Case Details","CommonTag":"Owner_Type","Format":"Blank","ModuleSectionName":"Annuity Owner Module","Length":"Blank","DataType":"List","Add\/Delete\/Change":"T"},"Annuitant_SameAsOwner":{"Order":"4","Validation":"Blank","Options":"Yes;No","DisplayonPDF":"Y","RulesforWizard":"Default = Unselected;If Owner_Type = Individual,Joint then display and enable else Owner_Type = Trust,Custodian,Corporation then set to No and disable","WizardControlTypes":"Radio Button","Mask":"Blank","DisplayRule":"If Owner_Type = Individual,Joint","Page":"Client Data","Section":"Case Details","CommonTag":"Annuitant_SameAsOwner","Format":"Blank","ModuleSectionName":"Annuity Owner Module","Length":"Blank","DataType":"Boolean","Add\/Delete\/Change":"T"},"Owner_TIN":{"Order":"13","Validation":"EIN\/TIN","DisplayonPDF":"Y","RulesforWizard":"Default = Blank;If Owner_Type = Trust,Custodian,Corporation then display and enable else Owner_Type = Individual,Joint then hide and disable","WizardControlTypes":"TIN","Mask":"__-_______","DisplayRule":"If Owner_Type = Trust,Custodian,Corporation","Page":"Owner(s)","Section":"Owner Information","CommonTag":"Owner_TIN","ValidationRules":"If Owner_TIN = blank then Issue Error Message: Owner TIN is required.;If Owner_TIN = Invalid then Issue Error Message: Please enter a valid TIN for Owner.","Format":"##-#######","ModuleSectionName":"Annuity Owner Module","Length":"9","DataType":"String","Add\/Delete\/Change":"T"}}}}
+{
+  "testData": {
+    "MasterTemplate": {
+      "Annuity_TaxQualification": {
+        "CommonTag": "Annuity_TaxQualification",
+        "DataType": "List",
+        "DisplayRule": "Blank",
+        "DisplayonPDF": "Y",
+        "Format": "Blank",
+        "Length": "Blank",
+        "ModuleSectionName": "Annuity Owner Module",
+        "Options": "Blank;Non-Qualified;Traditional IRA;Roth IRA;SEP IRA",
+        "Order": "3",
+        "Page": "Case Details",
+        "RulesforWizard": "1. Default = Blank;2. If Owner_Type = Individual then include list options = Blank,Non-Qualified,Traditional IRA,Roth IRA,SEP IRA;3. If Owner_Type = Joint,Trust,Corporation then include list options = Blank,Non-Qualified;4. If Owner_Type = Custodian then include list options = Blank,Traditional IRA,Roth IRA,SEP IRA",
+        "Section": "Case Details",
+        "WizardControlTypes": "Dropdown"
+      },
+      "Owner_FirstName": {
+        "CommonTag": "Owner_FirstName",
+        "DataType": "String",
+        "DisplayRule": "If Owner_Type = Individual,Joint",
+        "DisplayonPDF": "Y",
+        "Format": "Blank",
+        "Length": "Blank",
+        "ModuleSectionName": "Annuity Owner Module",
+        "Order": "6",
+        "Page": "Owner(s)",
+        "RulesforWizard": "Default = Blank;If Owner_Type = Individual,Joint then display and enable else Owner_Type = Trust,Custodian,Corporation then disable and hide",
+        "Section": "Owner Information",
+        "ValidationRules": "If Owner_FirstName = blank then Issue Error Message: Owner First Name is required.",
+        "WizardControlTypes": "Single Line Textbox"
+      },
+      "Owner_Type": {
+        "CommonTag": "Owner_Type",
+        "DataType": "List",
+        "DisplayRule": "Blank",
+        "DisplayonPDF": "Y",
+        "Format": "Blank",
+        "Length": "Blank",
+        "ModuleSectionName": "Annuity Owner Module",
+        "Options": "Blank;Individual;Joint;Trust;Custodian;Corporation",
+        "Order": "2",
+        "Page": "Client Data",
+        "RulesforWizard": "Default = Blank",
+        "Section": "Case Details",
+        "WizardControlTypes": "Dropdown"
+      },
+      "Annuitant_SameAsOwner": {
+        "CommonTag": "Annuitant_SameAsOwner",
+        "DataType": "Boolean",
+        "DisplayRule": "If Owner_Type = Individual,Joint",
+        "DisplayonPDF": "Y",
+        "Format": "Blank",
+        "Length": "Blank",
+        "ModuleSectionName": "Annuity Owner Module",
+        "Options": "Yes;No",
+        "Order": "4",
+        "Page": "Client Data",
+        "RulesforWizard": "Default = Unselected;If Owner_Type = Individual,Joint then display and enable else Owner_Type = Trust,Custodian,Corporation then set to No and disable",
+        "Section": "Case Details",
+        "WizardControlTypes": "Radio Button"
+      },
+      "Owner_TIN": {
+        "CommonTag": "Owner_TIN",
+        "DataType": "String",
+        "DisplayRule": "If Owner_Type = Trust,Custodian,Corporation",
+        "DisplayonPDF": "Y",
+        "Format": "##-#######",
+        "Length": "9",
+        "ModuleSectionName": "Annuity Owner Module",
+        "Order": "13",
+        "Page": "Owner(s)",
+        "RulesforWizard": "Default = Blank;If Owner_Type = Trust,Custodian,Corporation then display and enable else Owner_Type = Individual,Joint then hide and disable",
+        "Section": "Owner Information",
+        "ValidationRules": "If Owner_TIN = blank then Issue Error Message: Owner TIN is required.;If Owner_TIN = Invalid then Issue Error Message: Please enter a valid TIN for Owner.",
+        "WizardControlTypes": "TIN"
+      }
+    },
+    "commonTestData": {
+      "InvalidTin": "123456789"
+    }
+  }
+}

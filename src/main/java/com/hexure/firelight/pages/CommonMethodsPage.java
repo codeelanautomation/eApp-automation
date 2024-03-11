@@ -17,6 +17,7 @@ public class CommonMethodsPage extends FLUtilities {
     public String radioField = "//div[@data-dataitemid='%s']//div[@title='%s']";
     private String chkBoxField = "//div[@data-dataitemid='%s']//div[@role]";
     public String txtField = "//div[@title='%s']//ancestor::div[@class='dataGrid__row']//input";
+    public String radioFieldCheckbox = "//div[@data-dataitemid='%s']//div[@role='checkbox']";
     public String radioFieldWithOption = "//div[@data-dataitemid='%s']//div[@role='checkbox' and @title='%s']";
     public String inputErrorField = "//input[@data-dataitemid='%s']//ancestor::div[@class='ITComponent']//span[@class='validationText']";
     public String fieldWithTitleAttribute = "//*[@title=\"%s\"]|//*[@aria-label=\"%s\"]";
