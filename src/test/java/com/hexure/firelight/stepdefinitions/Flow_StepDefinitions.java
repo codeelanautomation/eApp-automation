@@ -11,6 +11,7 @@ import cucumber.api.java.en.Given;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
@@ -118,6 +119,7 @@ public class Flow_StepDefinitions extends FLUtilities {
                 switch (JsonPath.read(valueJson, "$.ControlType").toString().trim().toLowerCase()) {
                     case "dropdown":
                         new Select(findElement(driver, String.format(onCommonMethodsPage.getSelectField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim()))).selectByVisibleText(JsonPath.read(valueJson, "$.TestData").toString().trim());
+                        findElement(driver, String.format(onCommonMethodsPage.getSelectField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())).sendKeys(Keys.TAB);
                         break;
                     case "radio":
                         clickElement(driver, findElement(driver, String.format(onCommonMethodsPage.getRadioField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim(), JsonPath.read(valueJson, "$.TestData").toString().trim())));
