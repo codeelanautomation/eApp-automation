@@ -14,11 +14,13 @@ import java.util.List;
 public class CommonMethodsPage extends FLUtilities {
     public String selectField = "//select[@data-dataitemid='%s']";
     public String inputField = "//input[@data-dataitemid='%s']";
-    public String radioField = "//div[@data-dataitemid='%s']//div[@role='checkbox']";
+    public String radioField = "//div[@data-dataitemid='%s']//div[@title='%s']";
+    private String chkBoxField = "//div[@data-dataitemid='%s']//div[@role]";
+    public String txtField = "//div[@title='%s']//ancestor::div[@class='dataGrid__row']//input";
     public String radioFieldWithOption = "//div[@data-dataitemid='%s']//div[@role='checkbox' and @title='%s']";
     public String inputErrorField = "//input[@data-dataitemid='%s']//ancestor::div[@class='ITComponent']//span[@class='validationText']";
     public String fieldWithTitleAttribute = "//*[@title=\"%s\"]|//*[@aria-label=\"%s\"]";
-    public String mandetoryFormElement="//*[@class=\"navDrawer__bundleName\" and text()=\"%s\"]/..//*[@class=\"far fa-exclamation-triangle navDrawer__pageGraphic validation-summary-errors\"]/../..";
+    public String mandatoryFormElement = "//*[@class=\"navDrawer__bundleName\" and text()=\"%s\"]/..//*[@class=\"far fa-exclamation-triangle navDrawer__pageGraphic validation-summary-errors\"]/../..";
 
     @FindBy(xpath = "//*[@id='ToggleMessagesLink']")
     private WebElement redColorErrorValidationBubble;
@@ -29,16 +31,20 @@ public class CommonMethodsPage extends FLUtilities {
     @FindBy(id = "root__wizardName")
     private WebElement formHeader;
 
-    @FindBy(xpath="//*[@class='ITWizardPageName']")
-    private WebElement PageHeader;
+    @FindBy(xpath = "//*[@class='ITWizardPageName']")
+    private WebElement pageHeader;
 
     @FindBy(id = "imgExpand")
     private WebElement WizardPageNameExpand;
+
+    @FindBy(id = "imgExpand")
+    private List<WebElement> List_WizardPageNameExpand;
 
 
     public CommonMethodsPage(WebDriver driver) {
         initElements(driver);
     }
+
     private void initElements(WebDriver driver) {
         PageFactory.initElements(driver, this);
     }

@@ -6,24 +6,24 @@ import com.hexure.firelight.libraies.TestContext;
 import com.hexure.firelight.pages.CommonMethodsPage;
 import com.hexure.firelight.pages.SoftAssertionHandlerPage;
 import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.PathNotFoundException;
+
 import cucumber.api.java.en.Given;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.Select;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
+
 import java.util.Iterator;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
 
 public class Flow_StepDefinitions extends FLUtilities {
     private final TestContext testContext;
@@ -88,30 +88,60 @@ public class Flow_StepDefinitions extends FLUtilities {
         String excelFilePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + excelFileName;
         String wizardName = "";
         String dataItemID = "";
+        String titleName = "";
+
         FileInputStream fileInputStream = new FileInputStream(excelFilePath);
         Workbook workbook = new XSSFWorkbook(fileInputStream);
         Sheet sheet = workbook.getSheet(clientName);
         Iterator<Row> iterator = sheet.iterator();
-        
+
         // Assuming the fifth row contains headers
         Row headerRow = iterator.next();
 
         int wizardColumnIndex = findColumnIndex(headerRow, EnumsCommon.E2EWIZARDNAME.getText());
         int dataItemIDColumnIndex = findColumnIndex(headerRow, EnumsCommon.E2EDATAITEMID.getText());
+        int titleColumnIndex = findColumnIndex(headerRow, EnumsCommon.E2ETITLE.getText());
+
 
         int count = 0;
-        for (int rowIndex = 0; rowIndex < sheet.getLastRowNum(); rowIndex++) {
-            wizardName = getExcelColumnValue(excelFilePath, clientName, rowIndex + 3, wizardColumnIndex);
-            dataItemID = getExcelColumnValue(excelFilePath, clientName, rowIndex + 3, dataItemIDColumnIndex);
-            String valueJson = testContext.getMapTestData().get(wizardName + "|" + dataItemID).trim();
-
-            moveToPage(JsonPath.read(valueJson, "$.WizardName").toString().trim(), JsonPath.read(valueJson, "$.FormName").toString().trim());
-            switch (JsonPath.read(valueJson, "$.ControlType").toString().trim().toLowerCase()) {
-                case "dropdown":
-                    new Select(findElement(driver, String.format(onCommonMethodsPage.getSelectField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim()))).selectByVisibleText(JsonPath.read(valueJson, "$.TestData").toString().trim());
-                    break;
+        for (int rowIndex = 3; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+            wizardName = getExcelColumnValue(excelFilePath, clientName, rowIndex, wizardColumnIndex);
+            dataItemID = getExcelColumnValue(excelFilePath, clientName, rowIndex, dataItemIDColumnIndex);
+            titleName = getExcelColumnValue(excelFilePath, clientName, rowIndex, titleColumnIndex);
+            String valueJson = "";
+            if (!dataItemID.toLowerCase().contains("lookup")) {
+                if (!dataItemID.isEmpty())
+                    valueJson = testContext.getMapTestData().get(wizardName + "|" + dataItemID).trim();
+                else
+                    valueJson = testContext.getMapTestData().get(wizardName + "|" + titleName).trim();
+                System.out.println(dataItemID);
+                moveToPage(JsonPath.read(valueJson, "$.FormName").toString().trim(), JsonPath.read(valueJson, "$.WizardName").toString().trim());
+                switch (JsonPath.read(valueJson, "$.ControlType").toString().trim().toLowerCase()) {
+                    case "dropdown":
+                        new Select(findElement(driver, String.format(onCommonMethodsPage.getSelectField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim()))).selectByVisibleText(JsonPath.read(valueJson, "$.TestData").toString().trim());
+                        findElement(driver, String.format(onCommonMethodsPage.getSelectField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())).sendKeys(Keys.TAB);
+                        break;
+                    case "radio":
+                        clickElement(driver, findElement(driver, String.format(onCommonMethodsPage.getRadioField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim(), JsonPath.read(valueJson, "$.TestData").toString().trim())));
+                        break;
+                    case "textbox":
+                        if (valueJson.contains("DataItemID")) {
+                            sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())), JsonPath.read(valueJson, "$.TestData").toString().trim());
+                            if (JsonPath.read(valueJson, "$.DataItemID").toString().trim().toLowerCase().contains("date")) {
+                                new Actions(driver).moveToElement(onCommonMethodsPage.getFormHeader()).click().perform();
+                            }
+                        } else {
+                            sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getTxtField(), JsonPath.read(valueJson, "$.Title").toString().trim())), JsonPath.read(valueJson, "$.TestData").toString().trim());
+                        }
+                        break;
+                    case "checkbox":
+                        checkBoxSelectYesNO(JsonPath.read(valueJson, "$.TestData").toString().trim(), findElement(driver, String.format(onCommonMethodsPage.getChkBoxField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())));
+                        break;
+                    case "phone":
+                        sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())), JsonPath.read(valueJson, "$.TestData").toString().trim());
+                        break;
+                }
             }
-
         }
         onSoftAssertionHandlerPage.afterScenario(testContext);
         workbook.close();
@@ -125,13 +155,25 @@ public class Flow_StepDefinitions extends FLUtilities {
         moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
     }
 
+    protected void checkBoxSelectYesNO(String userAction, WebElement element) {
+        if (getCheckBoxAction(userAction)) {
+            if (element.getAttribute("aria-checked").equals("false"))
+                element.click();
+        } else {
+            if (element.getAttribute("aria-checked").equals("true"))
+                element.click();
+        }
+    }
 
-    public void moveToPage(String pageHeader, String formHeader) {
+    private boolean getCheckBoxAction(String action) {
+        return action.equalsIgnoreCase("check");
+    }
+
+    public void moveToPage(String formHeader, String pageHeader) {
         if (!(onCommonMethodsPage.getPageHeader().getText().equalsIgnoreCase(pageHeader) & onCommonMethodsPage.getFormHeader().getText().equalsIgnoreCase(formHeader))) {
             clickElementByJSE(driver, onCommonMethodsPage.getWizardPageNameExpand());
-            List<WebElement> mandetoryFormList = findElements(driver, String.format(onCommonMethodsPage.getMandetoryFormElement(), formHeader));
-            int i = 0;
-            for (WebElement element : mandetoryFormList) {
+            List<WebElement> mandatoryFormsList = findElements(driver, String.format(onCommonMethodsPage.getMandatoryFormElement(), formHeader));
+            for (WebElement element : mandatoryFormsList) {
                 String form = element.getAttribute("innerText");
                 if (form.equals(pageHeader)) {
                     element.click();
@@ -140,7 +182,6 @@ public class Flow_StepDefinitions extends FLUtilities {
             }
         }
     }
-
 }
 
 

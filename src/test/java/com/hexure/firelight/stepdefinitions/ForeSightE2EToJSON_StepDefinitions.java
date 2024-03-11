@@ -31,47 +31,50 @@ public class ForeSightE2EToJSON_StepDefinitions {
         String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + "E2EFlow.xlsx";
         try (FileInputStream file = new FileInputStream(filePath);
              XSSFWorkbook workbook = new XSSFWorkbook(file)) {
-                 Sheet sheet = workbook.getSheet(clientName); // Assuming data is in the first sheet
+            Sheet sheet = workbook.getSheet(clientName); // Assuming data is in the first sheet
 
-                 Iterator<Row> iterator = sheet.iterator();
+            Iterator<Row> iterator = sheet.iterator();
 
-                 // Assuming the first row contains headers
-                 Row headerRow = iterator.next().getSheet().getRow(0);
-                 JSONObject jsonRows = new JSONObject();
-                 while (iterator.hasNext()) {
-                     Row currentRow = iterator.next();
-                     JSONObject tempJson = new JSONObject();
+            // Assuming the first row contains headers
+            Row headerRow = iterator.next().getSheet().getRow(0);
+            JSONObject jsonRows = new JSONObject();
+            while (iterator.hasNext()) {
+                Row currentRow = iterator.next();
+                JSONObject tempJson = new JSONObject();
+                String secondData = "";
 
-                     // Create input file in json format
-                     if(!(currentRow.getCell(2).getStringCellValue().equalsIgnoreCase("jurisdiction") | currentRow.getCell(2).getStringCellValue().equalsIgnoreCase("ProductType"))) {
-                         for (int i = 0; i < headerRow.getLastCellNum(); i++) {
 
-                             Cell cell = currentRow.getCell(i);
-                             String excelValue = getCellValue(cell);
-                             if (!excelValue.isEmpty())
-                                 tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), excelValue);
-                         }
-                         jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2EWIZARDNAME.getText())).getStringCellValue().trim() + "|" + currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2EDATAITEMID.getText())).getStringCellValue().trim(), tempJson);
-                     }
-                     else
-                         jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2EDATAITEMID.getText())).getStringCellValue().trim(), currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2ETESTDATA.getText())).getStringCellValue().trim());
-                 }
-                 JSONObject masterJson = new JSONObject();
-                 masterJson.put(clientName, jsonRows);
+                // Create input file in json format
+                if (!(currentRow.getCell(2).getStringCellValue().equalsIgnoreCase("jurisdiction") | currentRow.getCell(2).getStringCellValue().equalsIgnoreCase("ProductType"))) {
+                    for (int i = 0; i < headerRow.getLastCellNum(); i++) {
 
-                 JSONObject defaultEntry = getJsonObject();
+                        Cell cell = currentRow.getCell(i);
+                        String excelValue = getCellValue(cell);
+                        if (!excelValue.isEmpty())
+                            tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), excelValue);
+                    }
+                    secondData = currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2EDATAITEMID.getText())).getStringCellValue().trim();
+                    if (secondData.isEmpty())
+                        secondData = currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2ETITLE.getText())).getStringCellValue().trim();
+                    jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2EWIZARDNAME.getText())).getStringCellValue().trim() + "|" + secondData, tempJson);
+                } else
+                    jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2EDATAITEMID.getText())).getStringCellValue().trim(), currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2ETESTDATA.getText())).getStringCellValue().trim());
+            }
+            JSONObject masterJson = new JSONObject();
+            masterJson.put(clientName, jsonRows);
 
-                 masterJson.put("commonTestData", defaultEntry);
+            JSONObject defaultEntry = getJsonObject();
 
-                 jsonObject.put("testData", masterJson);
-                 FileWriter jsonTestData = new FileWriter(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
-                 BufferedWriter writer = new BufferedWriter(jsonTestData);
-                 writer.write(String.valueOf(jsonObject));
-                 writer.close();
+            masterJson.put("commonTestData", defaultEntry);
+
+            jsonObject.put("testData", masterJson);
+            FileWriter jsonTestData = new FileWriter(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
+            BufferedWriter writer = new BufferedWriter(jsonTestData);
+            writer.write(String.valueOf(jsonObject));
+            writer.close();
         } catch (IOException e) {
             e.printStackTrace();
-        }
-        catch(Exception e)        {
+        } catch (Exception e) {
             throw new FLException("Reading Properties File Failed" + e.getMessage());
         }
     }
