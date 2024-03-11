@@ -94,7 +94,7 @@ public class Flow_StepDefinitions extends FLUtilities {
         Workbook workbook = new XSSFWorkbook(fileInputStream);
         Sheet sheet = workbook.getSheet(clientName);
         Iterator<Row> iterator = sheet.iterator();
-        
+
         // Assuming the fifth row contains headers
         Row headerRow = iterator.next();
 
@@ -109,8 +109,8 @@ public class Flow_StepDefinitions extends FLUtilities {
             dataItemID = getExcelColumnValue(excelFilePath, clientName, rowIndex, dataItemIDColumnIndex);
             titleName = getExcelColumnValue(excelFilePath, clientName, rowIndex, titleColumnIndex);
             String valueJson = "";
-            if(!dataItemID.toLowerCase().contains("lookup")) {
-                if(!dataItemID.isEmpty())
+            if (!dataItemID.toLowerCase().contains("lookup")) {
+                if (!dataItemID.isEmpty())
                     valueJson = testContext.getMapTestData().get(wizardName + "|" + dataItemID).trim();
                 else
                     valueJson = testContext.getMapTestData().get(wizardName + "|" + titleName).trim();
@@ -125,14 +125,12 @@ public class Flow_StepDefinitions extends FLUtilities {
                         clickElement(driver, findElement(driver, String.format(onCommonMethodsPage.getRadioField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim(), JsonPath.read(valueJson, "$.TestData").toString().trim())));
                         break;
                     case "textbox":
-                        if(valueJson.contains("DataItemID")) {
+                        if (valueJson.contains("DataItemID")) {
                             sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())), JsonPath.read(valueJson, "$.TestData").toString().trim());
                             if (JsonPath.read(valueJson, "$.DataItemID").toString().trim().toLowerCase().contains("date")) {
                                 new Actions(driver).moveToElement(onCommonMethodsPage.getFormHeader()).click().perform();
                             }
-                        }
-                        else
-                        {
+                        } else {
                             sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getTxtField(), JsonPath.read(valueJson, "$.Title").toString().trim())), JsonPath.read(valueJson, "$.TestData").toString().trim());
                         }
                         break;
@@ -166,19 +164,16 @@ public class Flow_StepDefinitions extends FLUtilities {
                 element.click();
         }
     }
+
     private boolean getCheckBoxAction(String action) {
         return action.equalsIgnoreCase("check");
     }
 
     public void moveToPage(String formHeader, String pageHeader) {
         if (!(onCommonMethodsPage.getPageHeader().getText().equalsIgnoreCase(pageHeader) & onCommonMethodsPage.getFormHeader().getText().equalsIgnoreCase(formHeader))) {
-                if (onCommonMethodsPage.getList_WizardPageNameExpand().size() > 0) {
-                clickElementByJSE(driver, onCommonMethodsPage.getWizardPageNameExpand());
-            }
-            //clickElementByJSE(driver, onCommonMethodsPage.getWizardPageNameExpand());
-            List<WebElement> mandetoryFormList = findElements(driver, String.format(onCommonMethodsPage.getMandetoryFormElement(), formHeader));
-            int i = 0;
-            for (WebElement element : mandetoryFormList) {
+            clickElementByJSE(driver, onCommonMethodsPage.getWizardPageNameExpand());
+            List<WebElement> mandatoryFormsList = findElements(driver, String.format(onCommonMethodsPage.getMandetoryFormElement(), formHeader));
+            for (WebElement element : mandatoryFormsList) {
                 String form = element.getAttribute("innerText");
                 if (form.equals(pageHeader)) {
                     element.click();
