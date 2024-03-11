@@ -125,7 +125,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             field = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, fieldColumnIndex);
             section = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, sectionColumnIndex);
             String valueJson = testContext.getMapTestData().get(field).trim();
-            expectedResult = "";
+            expectedResult= "";
 
             moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
 
@@ -193,7 +193,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                         }
                                         switch (requiredSecondAttributeElse.toLowerCase()) {
                                             case "disable":
-                                                if (!requiredFirstAttributeElse.equalsIgnoreCase("hide")) {
+                                                if(!requiredFirstAttributeElse.equalsIgnoreCase("hide")) {
                                                     radioOptions = findElements(driver, String.format(onCommonMethodsPage.getRadioField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim()));
                                                     for (WebElement element : radioOptions)
                                                         onSoftAssertionHandlerPage.assertTrue(field, "Radio button \"" + element.getAttribute("title") + "\" disabled when " + condition + " is " + result, element.getAttribute("aria-checked"), "false", element.getAttribute("aria-checked").equalsIgnoreCase("false"), testContext);
@@ -209,7 +209,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                     condition = listConditions.get(0);
                                     expectedResult = listConditions.get(1);
 
-                                    if (expectedResult.isEmpty())
+                                    if(expectedResult.isEmpty())
                                         verifyData(valueJson, field, "", "", requiredAttributeValue);
                                     else {
                                         for (String result : expectedResult.split(",")) {
@@ -299,7 +299,7 @@ public class Rules_StepDefinitions extends FLUtilities {
     public void moveToPage(String pageHeader, String formHeader) {
         if (!(onCommonMethodsPage.getPageHeader().getText().equalsIgnoreCase(pageHeader) & onCommonMethodsPage.getFormHeader().getText().equalsIgnoreCase(formHeader))) {
             clickElementByJSE(driver, onCommonMethodsPage.getWizardPageNameExpand());
-            List<WebElement> mandetoryFormList = findElements(driver, String.format(onCommonMethodsPage.getMandetoryFormElement(), formHeader));
+            List<WebElement> mandetoryFormList = findElements(driver, String.format(onCommonMethodsPage.getMandatoryFormElement(), formHeader));
             int i = 0;
             for (WebElement element : mandetoryFormList) {
                 String form = element.getAttribute("innerText");
@@ -336,14 +336,14 @@ public class Rules_StepDefinitions extends FLUtilities {
     public List<String> getDisplayRuleConditions(String valueJson, String requiredPattern, String parameter, String distinctRule) {
         Pattern pattern = Pattern.compile(requiredPattern);
         Matcher matcher;
-        if (parameter.equalsIgnoreCase(""))
+        if(parameter.equalsIgnoreCase(""))
             matcher = pattern.matcher(distinctRule);
         else
             matcher = pattern.matcher(JsonPath.read(valueJson, "$." + parameter).toString().trim());
 
         int count = 1;
         List<String> options = new ArrayList<>();
-        while (matcher.find()) {
+        while(matcher.find()) {
             while (count <= matcher.groupCount()) {
                 options.add(matcher.group(count));
                 count++;
@@ -360,7 +360,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             expectedText = findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).getAttribute("value");
         if (expectedText.equalsIgnoreCase(""))
             expectedText = "blank";
-        if (condition.isEmpty())
+        if(condition.isEmpty())
             onSoftAssertionHandlerPage.assertTrue(field, "Default Value ", requiredAttributeValue.toLowerCase(), expectedText.toLowerCase(), requiredAttributeValue.equalsIgnoreCase(expectedText), testContext);
         else
             onSoftAssertionHandlerPage.assertTrue(field, "Default Value when " + condition + " is " + result, requiredAttributeValue.toLowerCase(), expectedText.toLowerCase(), requiredAttributeValue.equalsIgnoreCase(expectedText), testContext);
@@ -375,7 +375,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             for (String result : dependentResult.split(",")) {
                 setDependentCondition(dependentCondition, valueJson, result);
                 expectedText = findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).getAttribute(attribute);
-                if (rule.equalsIgnoreCase("format"))
+                if(rule.equalsIgnoreCase("format"))
                     expectedText = expectedText.replaceAll("9", "#");
                 onSoftAssertionHandlerPage.assertTrue(field, rule + " when " + dependentCondition + " is " + dependentResult, expectedText, JsonPath.read(valueJson, "$." + rule).toString().trim(), expectedText.equalsIgnoreCase(JsonPath.read(valueJson, "$." + rule).toString().trim()), testContext);
             }
