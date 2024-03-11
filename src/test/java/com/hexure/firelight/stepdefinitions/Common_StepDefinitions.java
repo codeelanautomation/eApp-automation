@@ -12,6 +12,7 @@ import org.junit.Assert;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.*;
+
 import java.util.List;
 
 public class Common_StepDefinitions extends FLUtilities {
@@ -48,7 +49,7 @@ public class Common_StepDefinitions extends FLUtilities {
         openLoginPage(driver, testContext);
         testContext.setUiType(testContext.getMapTestData().get("uiType"));
         System.out.println("UI TYPE is = " + testContext.getMapTestData().get("uiType"));
-        testContext.getScenario().write("<div width='100%' style='font-size:3vw; border: none; color: green; text-align:center; font-weight: bold; background-color: #C5D88A;'>"+ testContext.getTestCaseID() + "</div>");
+        testContext.getScenario().write("<div width='100%' style='font-size:3vw; border: none; color: green; text-align:center; font-weight: bold; background-color: #C5D88A;'>" + testContext.getTestCaseID() + "</div>");
         Log.info("TEST CASE " + testCaseID + " STARTED");
     }
 
@@ -121,12 +122,12 @@ public class Common_StepDefinitions extends FLUtilities {
 //            clickElement(driver, findElement(driver, String.format(onDataEntryPage.getFormMenu(), formMenu, formName)));
 //        } else
 //        {
-            List<WebElement> mandetoryFormList = findElements(driver, String.format(onCreateApplicationPage.optionalFormList, formMenu));
-            for (WebElement element : mandetoryFormList) {
-                String form = element.getAttribute("innerText");
-                if (form.equals(formName)) {
-                    element.click();
-                    break;
+        List<WebElement> mandetoryFormList = findElements(driver, String.format(onCreateApplicationPage.optionalFormList, formMenu));
+        for (WebElement element : mandetoryFormList) {
+            String form = element.getAttribute("innerText");
+            if (form.equals(formName)) {
+                element.click();
+                break;
 //                }
             }
         }

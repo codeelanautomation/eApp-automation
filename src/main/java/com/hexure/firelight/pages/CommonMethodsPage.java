@@ -21,7 +21,7 @@ public class CommonMethodsPage extends FLUtilities {
     public String radioFieldWithOption = "//div[@data-dataitemid='%s']//div[@role='checkbox' and @title='%s']";
     public String inputErrorField = "//input[@data-dataitemid='%s']//ancestor::div[@class='ITComponent']//span[@class='validationText']";
     public String fieldWithTitleAttribute = "//*[@title=\"%s\"]|//*[@aria-label=\"%s\"]";
-    public String mandetoryFormElement="//*[@class=\"navDrawer__bundleName\" and text()=\"%s\"]/..//*[@class=\"far fa-exclamation-triangle navDrawer__pageGraphic validation-summary-errors\"]/../..";
+    public String mandatoryFormElement = "//*[@class=\"navDrawer__bundleName\" and text()=\"%s\"]/..//*[@class=\"far fa-exclamation-triangle navDrawer__pageGraphic validation-summary-errors\"]/../..";
 
     @FindBy(xpath = "//*[@id='ToggleMessagesLink']")
     private WebElement redColorErrorValidationBubble;
@@ -32,7 +32,7 @@ public class CommonMethodsPage extends FLUtilities {
     @FindBy(id = "root__wizardName")
     private WebElement formHeader;
 
-    @FindBy(xpath="//*[@class='ITWizardPageName']")
+    @FindBy(xpath = "//*[@class='ITWizardPageName']")
     private WebElement pageHeader;
 
     @FindBy(id = "imgExpand")
@@ -45,6 +45,7 @@ public class CommonMethodsPage extends FLUtilities {
     public CommonMethodsPage(WebDriver driver) {
         initElements(driver);
     }
+
     private void initElements(WebDriver driver) {
         PageFactory.initElements(driver, this);
     }

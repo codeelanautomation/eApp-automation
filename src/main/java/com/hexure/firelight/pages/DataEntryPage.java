@@ -10,10 +10,10 @@ import org.openqa.selenium.support.PageFactory;
 @Data
 public class DataEntryPage extends FLUtilities {
 
-    @FindBy(id="root__wizardName")
+    @FindBy(id = "root__wizardName")
     private WebElement dataEntryPageHeader;
 
-    @FindBy(xpath="//*[@class='ITWizardPageName']")
+    @FindBy(xpath = "//*[@class='ITWizardPageName']")
     private WebElement formName;
 
     public DataEntryPage(WebDriver driver) {

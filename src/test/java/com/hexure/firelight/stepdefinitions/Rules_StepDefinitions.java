@@ -284,7 +284,7 @@ public class Rules_StepDefinitions extends FLUtilities {
     public void moveToPage(String pageHeader, String formHeader) {
         if (!(onCommonMethodsPage.getPageHeader().getText().equalsIgnoreCase(pageHeader) & onCommonMethodsPage.getFormHeader().getText().equalsIgnoreCase(formHeader))) {
             clickElementByJSE(driver, onCommonMethodsPage.getWizardPageNameExpand());
-            List<WebElement> mandetoryFormList = findElements(driver, String.format(onCommonMethodsPage.getMandetoryFormElement(), formHeader));
+            List<WebElement> mandetoryFormList = findElements(driver, String.format(onCommonMethodsPage.getMandatoryFormElement(), formHeader));
             int i = 0;
             for (WebElement element : mandetoryFormList) {
                 String form = element.getAttribute("innerText");

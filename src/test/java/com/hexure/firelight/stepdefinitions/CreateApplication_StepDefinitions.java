@@ -51,12 +51,12 @@ public class CreateApplication_StepDefinitions extends FLUtilities {
     public void UserOpensGivenProductForApp(String product) {
         captureScreenshot(driver, testContext, false);
         syncElement(driver, findElement(driver, String.format(onCreateApplicationPage.list_OfProducts, product)), EnumsCommon.TOCLICKABLE.getText());
-       try {
-           clickElement(driver, findElement(driver, String.format(onCreateApplicationPage.list_OfProducts, product)));
-       } catch (StaleElementReferenceException e){
-           clickElement(driver, findElement(driver, String.format(onCreateApplicationPage.list_OfProducts, product)));
-       }
-           addPropertyValueInJSON(testContext.getTestCaseID(), testContext, EnumsJSONProp.PRODUCT.getText(), product);
+        try {
+            clickElement(driver, findElement(driver, String.format(onCreateApplicationPage.list_OfProducts, product)));
+        } catch (StaleElementReferenceException e) {
+            clickElement(driver, findElement(driver, String.format(onCreateApplicationPage.list_OfProducts, product)));
+        }
+        addPropertyValueInJSON(testContext.getTestCaseID(), testContext, EnumsJSONProp.PRODUCT.getText(), product);
     }
 
 

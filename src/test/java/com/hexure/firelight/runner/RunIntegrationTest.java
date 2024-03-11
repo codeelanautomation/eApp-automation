@@ -14,14 +14,14 @@ import org.junit.runner.RunWith;
 )
 public class RunIntegrationTest {
 
-        public static void main(String[] args) {
-                // Add the UniqueTestCounter listener to your test run
-                org.junit.runner.JUnitCore core = new org.junit.runner.JUnitCore();
-                core.addListener(new UniqueTestCounter());
+    public static void main(String[] args) {
+        // Add the UniqueTestCounter listener to your test run
+        org.junit.runner.JUnitCore core = new org.junit.runner.JUnitCore();
+        core.addListener(new UniqueTestCounter());
 
-                // Run your tests
-                core.run(RunIntegrationTest.class);
-        }
+        // Run your tests
+        core.run(RunIntegrationTest.class);
+    }
 
 
 }

@@ -33,6 +33,6 @@ public class Login_StepDefinitions extends FLUtilities {
     @Then("User verifies the {string} page should be open")
     public void user_verifies_the_page_should_be_open(String pageName) {
         captureScreenshot(driver, testContext, false);
-        Assert.assertEquals(pageName+" page was mismatched", pageName, driver.getTitle().trim());
+        Assert.assertEquals(pageName + " page was mismatched", pageName, driver.getTitle().trim());
     }
 }

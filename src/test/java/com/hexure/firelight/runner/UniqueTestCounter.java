@@ -1,4 +1,5 @@
 package com.hexure.firelight.runner;
+
 import io.qameta.allure.Allure;
 import org.junit.runner.Description;
 import org.junit.runner.notification.RunListener;
