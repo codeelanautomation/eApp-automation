@@ -14,4 +14,4 @@ Feature: FireLight_End2End_Tests
     Then User enters new Application name
     Then User clicks on Create button on Rename window
     Then User verifies Page heading "Annuity Owner Module" with form name "Client Data" for data entry flow
-    Then User validate wizard fields for workbook "Template.xlsx"
+    Then User validate wizard fields for workbook "MasterTemplate.xlsx"
