@@ -172,7 +172,7 @@ public class Flow_StepDefinitions extends FLUtilities {
     public void moveToPage(String formHeader, String pageHeader) {
         if (!(onCommonMethodsPage.getPageHeader().getText().equalsIgnoreCase(pageHeader) & onCommonMethodsPage.getFormHeader().getText().equalsIgnoreCase(formHeader))) {
             clickElementByJSE(driver, onCommonMethodsPage.getWizardPageNameExpand());
-            List<WebElement> mandatoryFormsList = findElements(driver, String.format(onCommonMethodsPage.getMandetoryFormElement(), formHeader));
+            List<WebElement> mandatoryFormsList = findElements(driver, String.format(onCommonMethodsPage.getMandatoryFormElement(), formHeader));
             for (WebElement element : mandatoryFormsList) {
                 String form = element.getAttribute("innerText");
                 if (form.equals(pageHeader)) {
