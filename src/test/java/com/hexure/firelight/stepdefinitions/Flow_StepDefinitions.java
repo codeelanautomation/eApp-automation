@@ -109,15 +109,13 @@ public class Flow_StepDefinitions extends FLUtilities {
         int titleColumnIndex = findColumnIndex(headerRow, EnumsCommon.E2ETITLE.getText());
 
 
-        int count = 0;
+        int count = 1;
         for (int rowIndex = 3; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
             wizardName = getExcelColumnValue(excelFilePath, clientName, rowIndex, wizardColumnIndex);
             dataItemID = getExcelColumnValue(excelFilePath, clientName, rowIndex, dataItemIDColumnIndex);
             titleName = getExcelColumnValue(excelFilePath, clientName, rowIndex, titleColumnIndex);
             String valueJson = "";
 
-            if(rowIndex > 7)
-                break;
             if (!dataItemID.toLowerCase().contains("lookup")) {
                 if (!dataItemID.isEmpty())
                     valueJson = testContext.getMapTestData().get(wizardName + "|" + dataItemID).trim();
