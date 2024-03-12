@@ -10,8 +10,8 @@ import org.openqa.selenium.support.PageFactory;
 
 @Data
 public class CreateApplicationPage extends FLUtilities {
-    public static String mandetoryFormList = "//div[@class='navDrawer__bundleName' and text()='%s']/..//span[@class='far fa-exclamation-triangle navDrawer__pageGraphic validation-summary-errors']/../..";
-    public By WizardPageNameExpandmvc = By.xpath("//*[@class='ITWizardPageName']");
+    public String mandetoryFormList = "//div[@class='navDrawer__bundleName' and text()='%s']/..//span[@class='far fa-exclamation-triangle navDrawer__pageGraphic validation-summary-errors']/../..";
+    public String WizardPageNameExpandmvc = "//*[@class='ITWizardPageName']";
     public String optionalFormList = "//*[@class=\"navDrawer__bundleName\" and text()=\"%s\"]/..//*[@class=\"far fa-file navDrawer__pageGraphic \" or @class=\"fas fa-file-alt navDrawer__pageGraphic \"]/../..";
     public String list_OfProducts = "//div[@id='divProducts']/a//div[contains(text(),'%s')]";
 

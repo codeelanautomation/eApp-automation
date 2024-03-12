@@ -415,41 +415,6 @@ public class FLUtilities extends BaseClass {
         }
     }
 
-    protected List<WebElement> getElements(WebDriver driver, By locator) {
-        try {
-            return driver.findElements(locator);
-        } catch (Exception e) {
-            Log.error("Could not find elements with locator " + locator, e);
-            throw new FLException("Could not find elements with locator >>>> " + e.getMessage());
-        }
-    }
-
-    protected WebElement getElement(WebDriver driver, By locator) {
-        try {
-            syncElement(driver, driver.findElement(locator), EnumsCommon.TOVISIBLE.getText());
-            return driver.findElement(locator);
-        } catch (Exception e) {
-            Log.error("Could not find any element with locator " + locator, e);
-            throw new FLException("Could not find any element with locator >>>> " + e.getMessage());
-        }
-    }
-
-    public By getExistingLocator(WebDriver driver, By locator, By locator1, By locator2, By locator3) {
-        try {
-            if (getElements(driver, locator).isEmpty())
-                return locator;
-            else if (getElements(driver, locator1).isEmpty())
-                return locator1;
-            else if (getElements(driver, locator2).isEmpty())
-                return locator2;
-            else if (getElements(driver, locator3).isEmpty())
-                return locator3;
-        } catch (StaleElementReferenceException e) {
-        } catch (Exception e) {
-        }
-        return null;
-    }
-
     private boolean getCheckBoxAction(String action) {
         return action.equalsIgnoreCase("select");
     }
