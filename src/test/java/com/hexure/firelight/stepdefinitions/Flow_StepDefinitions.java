@@ -7,10 +7,12 @@ import com.hexure.firelight.pages.CommonMethodsPage;
 import com.hexure.firelight.pages.SoftAssertionHandlerPage;
 import com.jayway.jsonpath.JsonPath;
 
+import cucumber.api.Scenario;
 import cucumber.api.java.en.Given;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.bytedeco.opencv.presets.opencv_core;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -21,6 +23,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -89,12 +93,14 @@ public class Flow_StepDefinitions extends FLUtilities {
         String wizardName = "";
         String dataItemID = "";
         String titleName = "";
+        String formName = "";
+        String testData = "";
 
         FileInputStream fileInputStream = new FileInputStream(excelFilePath);
         Workbook workbook = new XSSFWorkbook(fileInputStream);
         Sheet sheet = workbook.getSheet(clientName);
         Iterator<Row> iterator = sheet.iterator();
-
+        List<List<String>> listInputFields = new ArrayList<>();
         // Assuming the fifth row contains headers
         Row headerRow = iterator.next();
 
@@ -103,47 +109,57 @@ public class Flow_StepDefinitions extends FLUtilities {
         int titleColumnIndex = findColumnIndex(headerRow, EnumsCommon.E2ETITLE.getText());
 
 
-        int count = 0;
+        int count = 1;
         for (int rowIndex = 3; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
             wizardName = getExcelColumnValue(excelFilePath, clientName, rowIndex, wizardColumnIndex);
             dataItemID = getExcelColumnValue(excelFilePath, clientName, rowIndex, dataItemIDColumnIndex);
             titleName = getExcelColumnValue(excelFilePath, clientName, rowIndex, titleColumnIndex);
             String valueJson = "";
+
             if (!dataItemID.toLowerCase().contains("lookup")) {
                 if (!dataItemID.isEmpty())
                     valueJson = testContext.getMapTestData().get(wizardName + "|" + dataItemID).trim();
                 else
                     valueJson = testContext.getMapTestData().get(wizardName + "|" + titleName).trim();
-                System.out.println(dataItemID);
-                moveToPage(JsonPath.read(valueJson, "$.FormName").toString().trim(), JsonPath.read(valueJson, "$.WizardName").toString().trim());
-                switch (JsonPath.read(valueJson, "$.ControlType").toString().trim().toLowerCase()) {
+                formName = JsonPath.read(valueJson, "$.FormName").toString().trim();
+                testData = JsonPath.read(valueJson, "$.TestData").toString().trim();
+
+                moveToPage(formName, wizardName);
+                String controlType = JsonPath.read(valueJson, "$.ControlType").toString().trim().toLowerCase();
+                switch (controlType) {
                     case "dropdown":
-                        new Select(findElement(driver, String.format(onCommonMethodsPage.getSelectField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim()))).selectByVisibleText(JsonPath.read(valueJson, "$.TestData").toString().trim());
-                        findElement(driver, String.format(onCommonMethodsPage.getSelectField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())).sendKeys(Keys.TAB);
+                        new Select(findElement(driver, String.format(onCommonMethodsPage.getSelectField(), dataItemID))).selectByVisibleText(testData);
+                        findElement(driver, String.format(onCommonMethodsPage.getSelectField(), dataItemID)).sendKeys(Keys.TAB);
+                        listInputFields.add(Arrays.asList(String.valueOf(count++), formName, wizardName, dataItemID, controlType, testData));
                         break;
                     case "radio":
-                        clickElement(driver, findElement(driver, String.format(onCommonMethodsPage.getRadioField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim(), JsonPath.read(valueJson, "$.TestData").toString().trim())));
+                        clickElement(driver, findElement(driver, String.format(onCommonMethodsPage.getRadioField(), dataItemID, testData)));
+                        listInputFields.add(Arrays.asList(String.valueOf(count++), formName, wizardName, dataItemID, controlType, testData));
                         break;
                     case "textbox":
                         if (valueJson.contains("DataItemID")) {
-                            sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())), JsonPath.read(valueJson, "$.TestData").toString().trim());
-                            if (JsonPath.read(valueJson, "$.DataItemID").toString().trim().toLowerCase().contains("date")) {
+                            sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getInputField(), dataItemID)), testData);
+                            if (dataItemID.toLowerCase().contains("date")) {
                                 new Actions(driver).moveToElement(onCommonMethodsPage.getFormHeader()).click().perform();
                             }
+                            listInputFields.add(Arrays.asList(String.valueOf(count++), formName, wizardName, dataItemID, controlType, testData));
                         } else {
-                            sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getTxtField(), JsonPath.read(valueJson, "$.Title").toString().trim())), JsonPath.read(valueJson, "$.TestData").toString().trim());
+                            sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getTxtField(), titleName)), testData);
+                            listInputFields.add(Arrays.asList(String.valueOf(count++), formName, wizardName, titleName, controlType, testData));
                         }
                         break;
                     case "checkbox":
-                        checkBoxSelectYesNO(JsonPath.read(valueJson, "$.TestData").toString().trim(), findElement(driver, String.format(onCommonMethodsPage.getChkBoxField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())));
+                        checkBoxSelectYesNO(testData, findElement(driver, String.format(onCommonMethodsPage.getChkBoxField(), dataItemID)));
+                        listInputFields.add(Arrays.asList(String.valueOf(count++), formName, wizardName, dataItemID, controlType, testData));
                         break;
                     case "phone":
-                        sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getInputField(), JsonPath.read(valueJson, "$.DataItemID").toString().trim())), JsonPath.read(valueJson, "$.TestData").toString().trim());
+                        sendKeys(driver, findElement(driver, String.format(onCommonMethodsPage.getInputField(), dataItemID)), testData);
+                        listInputFields.add(Arrays.asList(String.valueOf(count++), formName, wizardName, dataItemID, controlType, testData));
                         break;
                 }
             }
         }
-        onSoftAssertionHandlerPage.afterScenario(testContext);
+        printTabularReport(listInputFields, testContext);
         workbook.close();
         fileInputStream.close();
     }
@@ -181,6 +197,17 @@ public class Flow_StepDefinitions extends FLUtilities {
                 }
             }
         }
+    }
+
+    private void printTabularReport(List<List<String>> entries, TestContext testContext) {
+        Scenario scenario = testContext.getScenario();
+        String resultSet = "";
+        resultSet += "<table border=\"1\" width=\"90%\"> <tr style='color: blue; font-weight: bold; background-color: #C5D88A;'> <th>S.No</th> <th>Form Name</th> <th>Wizard Name</th> <th>Common Tag</th> <th>Control Type</th> <th>Test Data</th> </tr>";
+
+        for (List<String> entry : entries)
+            resultSet += "<tr style='color: green; font-weight: bold; background-color: #C5D88A;'> <td>" + entry.get(0) + "</td> <td>" + entry.get(1) + "</td> <td>" + entry.get(2) + "</td> <td>" + entry.get(3) + "</td> <td>" + entry.get(4) + "</td> <td>" + entry.get(5) + "</td> </tr>";
+        resultSet += "</table>";
+        scenario.write(resultSet);
     }
 }
 
