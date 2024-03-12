@@ -123,8 +123,8 @@ public class Rules_StepDefinitions extends FLUtilities {
         List<String> rulesList = Arrays.asList("ListOptions", "ValidationRules", "RulesWizard", "Length", "Format");
         for (int rowIndex = 0; rowIndex < sheet.getLastRowNum(); rowIndex++) {
 
-            if (rowIndex > 3)
-                break;
+//            if (rowIndex > 3)
+//                break;
             field = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, fieldColumnIndex);
             section = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, sectionColumnIndex);
             String valueJson = testContext.getMapTestData().get(field).trim();
@@ -147,8 +147,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                             break;
                         case "RulesWizard":
                             for (String distinctRule : JsonPath.read(valueJson, "$." + rule).toString().trim().split((";"))) {
-                                if (Pattern.compile("If (.*?) = (.*?) then (.*?) and (.*?) else if (.*?) = (.*?), then (.*?) and (.*)\\.").matcher(distinctRule).find()) {
-                                    listConditions = getDisplayRuleConditions(valueJson, "If (.*?) = (.*?) then (.*?) and (.*?) else if (.*?) = (.*?), then (.*?) and (.*)\\.", "", distinctRule);
+                                if (Pattern.compile("If (.*?) = (.*?), then (.*?) and (.*?), else if (.*?) = (.*?), then (.*?) and (.*)\\.").matcher(distinctRule).find()) {
+                                    listConditions = getDisplayRuleConditions(valueJson, "If (.*?) = (.*?), then (.*?) and (.*?), else if (.*?) = (.*?), then (.*?) and (.*)\\.", "", distinctRule);
                                     condition = listConditions.get(0);
                                     expectedResult = listConditions.get(1);
                                     requiredFirstAttribute = listConditions.get(2);
@@ -158,7 +158,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                     requiredFirstAttributeElse = listConditions.get(6);
                                     requiredSecondAttributeElse = listConditions.get(7);
 
-                                    for (String result : expectedResult.split(",")) {
+                                    for (String result : expectedResult.split(", ")) {
                                         setDependentCondition(condition, valueJson, result);
                                         if (requiredFirstAttribute.equalsIgnoreCase("display")) {
                                             switch (JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim()) {
@@ -185,7 +185,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                             }
                                         }
                                     }
-                                    for (String result : expectedResultElse.split(",")) {
+                                    for (String result : expectedResultElse.split(", ")) {
                                         setDependentCondition(conditionElse, valueJson, result);
                                         switch (requiredFirstAttributeElse.toLowerCase()) {
                                             case "disable":
@@ -235,13 +235,13 @@ public class Rules_StepDefinitions extends FLUtilities {
                                     if(valueJson.contains("FieldValues"))
                                         listFieldValueConditions = getDisplayRuleConditions(valueJson, "(.*?) = (.*)", "FieldValues", "");
                                     if (!listFieldValueConditions.isEmpty()) {
-                                        condition = listConditions.get(0);
-                                        expectedResult = listConditions.get(1);
+                                        condition = listFieldValueConditions.get(0);
+                                        expectedResult = listFieldValueConditions.get(1);
                                     }
                                     if (expectedResult.isEmpty())
                                         verifyData(valueJson, field, "", "", requiredAttributeValue);
                                     else {
-                                        for (String result : expectedResult.split(",")) {
+                                        for (String result : expectedResult.split(", ")) {
                                             setDependentCondition(condition, valueJson, result);
                                             switch (requiredAttributeValue.toLowerCase().trim()) {
                                                 case "blank":
@@ -261,6 +261,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                                         }
                                     }
                                 }
+                                else
+                                    System.out.println("Rule " + distinctRule + " does not match any criteria for field " + field);
                             }
                             break;
                         case "Length":
@@ -391,7 +393,7 @@ public class Rules_StepDefinitions extends FLUtilities {
         String dependentResult = listConditions.get(1);
         String expectedText;
         if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank")) {
-            for (String result : dependentResult.split(",")) {
+            for (String result : dependentResult.split(", ")) {
                 setDependentCondition(dependentCondition, valueJson, result);
                 expectedText = getElement(valueJson, "input", null).getAttribute(attribute);
                 if (rule.equalsIgnoreCase("format"))
