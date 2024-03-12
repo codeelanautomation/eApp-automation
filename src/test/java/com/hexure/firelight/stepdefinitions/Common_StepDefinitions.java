@@ -94,7 +94,7 @@ public class Common_StepDefinitions extends FLUtilities {
         String script = "return getComputedStyle(arguments[0]).getPropertyValue('color');";
         captureScreenshot(driver, testContext, false);
         onCreateApplicationPage.getWizardPageNameExpand().click();
-        List<WebElement> mandetoryFormList = findElements(driver, String.format(CreateApplicationPage.mandetoryFormList, formMenu));
+        List<WebElement> mandetoryFormList = findElements(driver, String.format(onCreateApplicationPage.mandetoryFormList, formMenu));
         for (WebElement element : mandetoryFormList) {
             System.out.println("**********" + element.getAttribute("innerText"));
             String form = element.getAttribute("innerText");
@@ -112,7 +112,7 @@ public class Common_StepDefinitions extends FLUtilities {
     @Then("User opens {string} Optional for Form {string}")
     public void openOptionalForForm(String formName, String formMenu) {
         waitForPageToLoad(driver);
-        clickElement(driver, getElement(driver, onCreateApplicationPage.getWizardPageNameExpandmvc()));
+        clickElement(driver, findElement(driver, onCreateApplicationPage.getWizardPageNameExpandmvc()));
         sleepInMilliSeconds(3000);
 //        if (findElements(driver, String.format(onCommonMethods_reactPage.expandMandetoryFormList, formName)).isEmpty()) {
 //            if (findElement(driver, String.format(onCommonMethods_reactPage.expandMandetoryFormList, formName)).getText().equalsIgnoreCase("▼"))

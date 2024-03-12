@@ -27,46 +27,63 @@ public class ForeSightExcelToJSON_StepDefinitions {
     public void createForesightTestData(String jsonFile, String excelFile) {
         String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + excelFile;
         try (FileInputStream file = new FileInputStream(filePath);
-             XSSFWorkbook workbook = new XSSFWorkbook(file)) {
-            for (int sheetCount = 0; sheetCount < workbook.getNumberOfSheets(); sheetCount++) {
-                Sheet sheet = workbook.getSheetAt(sheetCount); // Assuming data is in the first sheet
+            XSSFWorkbook workbook = new XSSFWorkbook(file)) {
+            Sheet sheet = workbook.getSheet("E-App Wizard Spec"); // Assuming data is in the first sheet
+            Iterator<Row> iterator = sheet.iterator();
 
-                if (sheet.getSheetName().equalsIgnoreCase("Annuity Owner Module")) {
-                    Iterator<Row> iterator = sheet.iterator();
+            // Assuming the first row contains headers
+            Row headerRow = iterator.next().getSheet().getRow(0);
+            JSONObject jsonRows = new JSONObject();
+            while (iterator.hasNext()) {
+                Row currentRow = iterator.next();
+                JSONObject tempJson = new JSONObject();
 
-                    // Assuming the first row contains headers
-                    Row headerRow = iterator.next().getSheet().getRow(0);
-                    JSONObject jsonRows = new JSONObject();
-                    while (iterator.hasNext()) {
-                        Row currentRow = iterator.next();
-                        JSONObject tempJson = new JSONObject();
+                // Create input file in json format
+                for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+                    if (requiredColumns.contains(headerRow.getCell(i).getStringCellValue().trim())) {
 
-                        // Create input file in json format
-                        for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-                            if (requiredColumns.contains(headerRow.getCell(i).getStringCellValue().trim())) {
-
-                                Cell cell = currentRow.getCell(i);
-                                String excelValue = getCellValue(cell);
-                                if (!excelValue.isEmpty())
-                                    tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), excelValue);
-                            }
-                        }
-                        jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim(), tempJson);
+                        Cell cell = currentRow.getCell(i);
+                        String excelValue = getCellValue(cell);
+                        if (!excelValue.isEmpty())
+                            tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "").replaceAll("\n", ""), excelValue);
                     }
-                    JSONObject masterJson = new JSONObject();
-                    masterJson.put(excelFile.replaceAll(".xlsx", ""), jsonRows);
+                }
+                jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim(), tempJson);
+            }
 
-                    JSONObject defaultEntry = getJsonObject();
+            sheet = workbook.getSheet("Data List"); // Assuming data is in the first sheet
+            iterator = sheet.iterator();
 
-                    masterJson.put("commonTestData", defaultEntry);
+            // Assuming the first row contains headers
+            headerRow = iterator.next().getSheet().getRow(0);
 
-                    jsonObject.put("testData", masterJson);
-                    FileWriter jsonTestData = new FileWriter(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
-                    BufferedWriter writer = new BufferedWriter(jsonTestData);
-                    writer.write(String.valueOf(jsonObject));
-                    writer.close();
+            while (iterator.hasNext()) {
+                Row currentRow = iterator.next();
+
+                // Create input file in json format
+                for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+                        Cell cell = currentRow.getCell(i);
+                        String excelValue = getCellValue(cell);
+                        if (!excelValue.isEmpty()) {
+                            if(jsonRows.containsKey(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")))
+                                jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), jsonRows.get(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")).toString() + ", " + excelValue);
+                            else
+                                jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), excelValue);
+                        }
                 }
             }
+            JSONObject masterJson = new JSONObject();
+            masterJson.put(excelFile.replaceAll(".xlsx", ""), jsonRows);
+
+            JSONObject defaultEntry = getJsonObject();
+
+            masterJson.put("commonTestData", defaultEntry);
+
+            jsonObject.put("testData", masterJson);
+            FileWriter jsonTestData = new FileWriter(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
+            BufferedWriter writer = new BufferedWriter(jsonTestData);
+            writer.write(String.valueOf(jsonObject));
+            writer.close();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (Exception e) {
@@ -75,18 +92,13 @@ public class ForeSightExcelToJSON_StepDefinitions {
     }
 
     private static String getCellValue(Cell cell) {
-        String excelValue;
+        String excelValue = "";
 
-        if (cell != null && cell.getCellType() == CellType.STRING) {
+        if (cell != null && cell.getCellType() == CellType.STRING && !cell.getStringCellValue().trim().equalsIgnoreCase("None")) {
             excelValue = cell.getStringCellValue().trim();
-            if (excelValue.contains("//"))
-                excelValue = excelValue.replaceAll("//", "/");
-            if (excelValue.contains("\n"))
-                excelValue = excelValue.replaceAll("\n", ";");
+            excelValue = excelValue.replaceAll("//", "/").replaceAll("[0-9].[\\s]*[\t]*", "").replaceAll("\n", ";");
         } else if (cell != null && cell.getCellType() == CellType.NUMERIC) {
             excelValue = String.valueOf(((XSSFCell) cell).getRawValue()).trim();
-        } else {
-            excelValue = "";
         }
         return excelValue;
     }
