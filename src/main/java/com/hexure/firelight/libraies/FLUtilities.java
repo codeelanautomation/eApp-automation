@@ -29,7 +29,6 @@ import java.io.*;
 import java.sql.*;
 import java.time.Duration;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.io.IOException;
@@ -329,9 +328,15 @@ public class FLUtilities extends BaseClass {
     }
 
     public WebElement findElement(WebDriver driver, String stringXpath) {
-        WebElement element = driver.findElement(By.xpath(stringXpath));
-        syncElement(driver, element, EnumsCommon.TOVISIBLE.getText());
-        return element;
+        try {
+            WebElement element = driver.findElement(By.xpath(stringXpath));
+            syncElement(driver, element, EnumsCommon.TOVISIBLE.getText());
+            return element;
+        } catch (NoSuchElementException e) {
+            // Handle the exception here (e.g., logging)
+            System.out.println("No Such Element Exception is showing");
+            return null; // or throw a custom exception
+        }
     }
 
     public List<WebElement> findElements(WebDriver driver, String stringXpath) {
