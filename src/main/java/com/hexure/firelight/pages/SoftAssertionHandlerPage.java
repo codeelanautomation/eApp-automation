@@ -21,10 +21,12 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         PageFactory.initElements(driver, this);
     }
 
-    public void assertTrue(String countValidation, String order, String field, String rule, Object actualValue, Object expectedValue, boolean condition, TestContext testContext) {
+    public void assertTrue(WebDriver driver, String countValidation, String order, String field, String rule, Object actualValue, Object expectedValue, boolean condition, TestContext testContext) {
         String result = "Passed";
-        if (!condition)
+        if (!condition) {
+            captureScreenshot(driver, testContext, condition);
             result = "Failed";
+        }
         assertions.add(Arrays.asList(countValidation, order, field, rule, actualValue.toString(), expectedValue.toString(), result));
     }
 
