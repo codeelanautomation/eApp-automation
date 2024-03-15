@@ -106,6 +106,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
     private static JSONObject getJsonObject() {
         JSONObject defaultEntry = new JSONObject();
         defaultEntry.put("InvalidTin", "123456789");
+        defaultEntry.put("InvalidSSN", "123456789");
         return defaultEntry;
     }
 
