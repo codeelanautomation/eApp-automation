@@ -96,7 +96,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
 
         if (cell != null && cell.getCellType() == CellType.STRING && !cell.getStringCellValue().trim().equalsIgnoreCase("None")) {
             excelValue = cell.getStringCellValue().trim();
-            excelValue = excelValue.replaceAll("//", "/").replaceAll("\n", ";").replaceAll("[0-9].[\\s]*[\t]*", "").replaceAll("[\\s]+[.]+", ".").replaceAll("[\\s]+", " ");
+            excelValue = excelValue.replaceAll("//", "/").replaceAll("\n", ";").replaceAll("[\\s]+[.]+", ".").replaceAll("[\\s]+", " ");
         } else if (cell != null && cell.getCellType() == CellType.NUMERIC) {
             excelValue = String.valueOf(((XSSFCell) cell).getRawValue()).trim();
         }
