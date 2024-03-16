@@ -152,6 +152,7 @@ public class FLUtilities extends BaseClass {
             Log.error("SendKeys Failed ", e);
             throw new FLException(stringToInput + " could not be entered in element" + e.getMessage());
         }
+        sleepInMilliSeconds(1000);
     }
 
     protected void selectOptionFromList(WebDriver driver, List<WebElement> webElementList, String optionValue, String actionType) {
@@ -334,7 +335,7 @@ public class FLUtilities extends BaseClass {
             return element;
         } catch (NoSuchElementException e) {
             // Handle the exception here (e.g., logging)
-            System.out.println("No Such Element Exception is showing " + stringXpath);
+            System.out.println("No Such Element Exception is showing on searching element " + stringXpath);
             return null; // or throw a custom exception
         }
     }
@@ -420,8 +421,19 @@ public class FLUtilities extends BaseClass {
         }
     }
 
-    private boolean getCheckBoxAction(String action) {
-        return action.equalsIgnoreCase("select");
+    protected void checkBoxSelectYesNO(String userAction, WebElement element) {
+        if (getCheckBoxAction(userAction)) {
+            if (element.getAttribute("aria-checked").equals("false"))
+                element.click();
+        } else {
+            if (element.getAttribute("aria-checked").equals("true"))
+                element.click();
+        }
     }
+
+    private boolean getCheckBoxAction(String action) {
+        return action.equalsIgnoreCase("yes") | action.equalsIgnoreCase("check");
+    }
+
 
 }
