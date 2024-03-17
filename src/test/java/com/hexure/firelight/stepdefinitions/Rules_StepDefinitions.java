@@ -136,15 +136,12 @@ public class Rules_StepDefinitions extends FLUtilities {
                 String valueJson = testContext.getMapTestData().get(field).trim();
                 wizardControlType = JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim();
                 order = JsonPath.read(valueJson, "$.Order").toString().trim();
-                fieldValues = JsonPath.read(valueJson, "$.FieldValues").toString().trim();
                 getWebElements = getElements(valueJson, wizardControlType);
-                webElement = getElement(valueJson, wizardControlType, null);
 
                 expectedResult = "";
                 System.out.println("field is " + field);
                 if (!field.toLowerCase().contains("lookup")) {
                     moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
-
                     for (String rule : rulesList) {
                         try {
                             switch (rule) {
@@ -191,7 +188,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                     }
                                                     if (requiredSecondAttribute.equalsIgnoreCase("enable")) {
                                                         if (!(wizardControlType.equals("Radio Button"))) {
-                                                            expectedFlag = webElement.isEnabled();
+                                                            expectedFlag = getElement(valueJson, wizardControlType, null).isEnabled();
                                                             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, field, "Field is enabled when " + condition + " is " + result, expectedFlag, "true", expectedFlag, testContext);
                                                         } else {
                                                             for (WebElement element : getWebElements)
@@ -214,7 +211,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                             }
                                                             break;
                                                         case "set to no":
-                                                            WebElement element = getElement(valueJson, wizardControlType, "No");
+                                                            WebElement element = getElement(valueJson, "radioField", "No");
                                                             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, field, "Radio button No is selected when " + conditionElse + " is " + result, element.getAttribute("aria-checked"), "true", element.getAttribute("aria-checked").equalsIgnoreCase("true"), testContext);
                                                             break;
                                                         case "prefilled with":
@@ -259,13 +256,13 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                 requiredAttributeValue = listConditions.get(1);
 
                                                 if (valueJson.contains("FieldValues")) {
-                                                    if (Pattern.compile("(.*?) = (.*?) and (.*?) = (.*)").matcher(fieldValues).find()) {
+                                                    if (Pattern.compile("(.*?) = (.*?) and (.*?) = (.*)").matcher(JsonPath.read(valueJson, "$.FieldValues").toString().trim()).find()) {
                                                         listFieldValueConditions = getDisplayRuleConditions(valueJson, "(.*?) = (.*?) and (.*?) = (.*)", "FieldValues", "");
                                                         condition = listFieldValueConditions.get(0);
                                                         expectedResult = listFieldValueConditions.get(1);
                                                         conditionAnother = listFieldValueConditions.get(2);
                                                         expectedResultAnother = listFieldValueConditions.get(3);
-                                                    } else if (Pattern.compile("(.*?) = (.*)").matcher(fieldValues).find()) {
+                                                    } else if (Pattern.compile("(.*?) = (.*)").matcher(JsonPath.read(valueJson, "$.FieldValues").toString().trim()).find()) {
                                                         listFieldValueConditions = getDisplayRuleConditions(valueJson, "(.*?) = (.*)", "FieldValues", "");
                                                         condition = listFieldValueConditions.get(0);
                                                         expectedResult = listFieldValueConditions.get(1);
@@ -276,6 +273,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                     verifyData(valueJson, field, "", "", requiredAttributeValue);
                                                     if (valueJson.contains("ValidationRules"))
                                                         handleValidationRules(valueJson, "", "", field);
+                                                    handleSectionRules(valueJson, wizardControlType, section, order, field);
                                                 } else {
                                                     for (String result : expectedResult.split(", ")) {
                                                         setDependentCondition(condition, "=", valueJson, result);
@@ -294,6 +292,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                         }
                                                         if (valueJson.contains("ValidationRules"))
                                                             handleValidationRules(valueJson, condition, result, field);
+                                                        handleSectionRules(valueJson, wizardControlType, section, order, field);
                                                     }
                                                 }
                                             } else if (Pattern.compile("[(.*?).]* (.*?)\\.").matcher(distinctRule).find()) {
@@ -311,14 +310,14 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                             setDependentCondition(condition, "=", valueJson, result);
                                                             LocalDate birthDatePastMonth = todaysDate.minusYears(25).plusMonths(-1);
                                                             LocalDate birthDateFutureMonth = todaysDate.minusYears(25).plusMonths(1);
-                                                            sendKeys(driver, webElement, birthDatePastMonth.format(format));
+                                                            sendKeys(driver, getElement(valueJson, wizardControlType, null), birthDatePastMonth.format(format));
                                                             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, field, "Age when " + condition + " is " + result + " and birth date is " + birthDatePastMonth.format(formatWithSlash), "25", String.valueOf(calculateAge(birthDatePastMonth, todaysDate)), String.valueOf(calculateAge(birthDatePastMonth, todaysDate)).equalsIgnoreCase("25"), testContext);
-                                                            sendKeys(driver, webElement, birthDateFutureMonth.format(format));
+                                                            sendKeys(driver, getElement(valueJson, wizardControlType, null), birthDateFutureMonth.format(format));
                                                             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, field, "Age when " + condition + " is " + result + " and birth date is " + birthDateFutureMonth.format(formatWithSlash), "24", String.valueOf(calculateAge(birthDateFutureMonth, todaysDate)), String.valueOf(calculateAge(birthDateFutureMonth, todaysDate)).equalsIgnoreCase("24"), testContext);
                                                         }
                                                         break;
                                                     case "Always enabled":
-                                                        expectedFlag = webElement.isEnabled();
+                                                        expectedFlag = getElement(valueJson, wizardControlType, null).isEnabled();
                                                         onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, field, "Field is always enabled", expectedFlag, "true", expectedFlag, testContext);
                                                         break;
                                                     case "Optional":
@@ -354,6 +353,10 @@ public class Rules_StepDefinitions extends FLUtilities {
         fileInputStream.close();
     }
 
+    public void handleSectionRules(String valueJson, String wizardControlType, String section, String order, String field) {
+        boolean expectedFlag = getElementSection(valueJson, wizardControlType).getText().equalsIgnoreCase(section);
+        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, field, "Field is displayed under section " + section, expectedFlag, "true", expectedFlag, testContext);
+    }
 
     public int calculateAge(LocalDate dob, LocalDate currentDate) {
         return Period.between(dob, currentDate).getYears();
@@ -387,7 +390,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                 checkBoxSelectYesNO(result, getElement(valueDependentJson, "checkbox", null));
                 break;
             case "radio button":
-                checkBoxSelectYesNO("yes", getElement(valueDependentJson, "radio button", result));
+                checkBoxSelectYesNO("yes", getElement(valueDependentJson, "radioField", result));
                 break;
             default:
                 sendKeys(driver, getElement(valueDependentJson, "single line textbox", null), result);
@@ -437,7 +440,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                 return findElement(driver, String.format(onCommonMethodsPage.getSelectField(), commonTag));
             case "checkbox":
                 return findElement(driver, String.format(onCommonMethodsPage.getRadioFieldCheckbox(), commonTag));
-            case "radio button":
+            case "radiofield":
                 return findElement(driver, String.format(onCommonMethodsPage.getRadioFieldWithOption(), commonTag, optionalValue));
             case "errortype":
                 switch (optionalValue.toLowerCase()) {
@@ -451,6 +454,20 @@ public class Rules_StepDefinitions extends FLUtilities {
                 }
             default:
                 return findElement(driver, String.format(onCommonMethodsPage.getInputField(), commonTag));
+        }
+    }
+
+    public WebElement getElementSection(String valueJson, String datatype) {
+        String commonTag = JsonPath.read(valueJson, "$.CommonTag").toString().trim();
+        switch (datatype.toLowerCase()) {
+            case "dropdown":
+            case "state dropdown":
+                return findElement(driver, String.format(onCommonMethodsPage.getSectionSelect(), commonTag));
+            case "checkbox":
+            case "radio button":
+                return findElement(driver, String.format(onCommonMethodsPage.getSectionRadio(), commonTag));
+            default:
+                return findElement(driver, String.format(onCommonMethodsPage.getSectionInput(), commonTag));
         }
     }
 
