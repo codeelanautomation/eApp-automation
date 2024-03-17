@@ -1,6 +1,6 @@
 Feature: FireLight_End2End_Tests
 
-  This feature will verify UAT Application End2End Tests
+  This feature will verify UAT Wizard Validations
 
   @E2EWizardTestFlow
   Scenario: TC_01_Complete the REACT application with Pre Signature Review with Signature Then Submit
