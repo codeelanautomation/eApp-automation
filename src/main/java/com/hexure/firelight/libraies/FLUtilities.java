@@ -95,7 +95,9 @@ public class FLUtilities extends BaseClass {
             if (!element.isDisplayed())
                 scrollToWebElement(driver, element);
             element.click();
-        } catch (StaleElementReferenceException e) {
+        } catch (StaleElementReferenceException | ElementClickInterceptedException e) {
+            if (!element.isDisplayed())
+                scrollToWebElement(driver, element);
             element.click();
         } catch (Exception e) {
             Log.error("Could Not Click WebElement ", e);
