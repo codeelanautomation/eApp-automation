@@ -184,7 +184,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                     setDependentCondition(condition, expectedOperator, valueJson, result);
                                                     if (requiredFirstAttribute.equalsIgnoreCase("display")) {
                                                         expectedFlag = !getWebElements.isEmpty();
-                                                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, field, "Field is displayed when " + condition + " is " + result, expectedFlag, "true", expectedFlag, testContext);
+                                                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, field, "Field is displayed when " + condition + " "+expectedOperator +" "+ result, expectedFlag, "true", expectedFlag, testContext);
                                                     }
                                                     if (requiredSecondAttribute.equalsIgnoreCase("enable")) {
                                                         if (!(wizardControlType.equals("Radio Button"))) {
@@ -197,6 +197,10 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                     }
                                                 }
                                                 for (String result : expectedResultElse.split(", ")) {
+                                                    if(result.equalsIgnoreCase("blank"))
+                                                    {
+                                                        result = "";
+                                                    }
                                                     setDependentCondition(conditionElse, "=", valueJson, result);
                                                     if (requiredFirstAttributeElse.contains("prefilled with")) {
                                                         listConditions = getDisplayRuleConditions(valueJson, "prefilled with (.*)", "", requiredFirstAttributeElse);
@@ -652,9 +656,9 @@ public class Rules_StepDefinitions extends FLUtilities {
         switch (expectedResult.toLowerCase()) {
             case "blank":
                 if (dependentCondition.isEmpty())
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, "Mandatory Field Validation", error, requiredErrorMessage, error.equalsIgnoreCase(requiredErrorMessage), testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, "Mandatory Field Validation" + field + " is " + expectedResult, error, requiredErrorMessage, error.equalsIgnoreCase(requiredErrorMessage), testContext);
                 else
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, "Mandatory Field Validation when " + dependentCondition + " is " + dependentResult, error, requiredErrorMessage, error.equalsIgnoreCase(requiredErrorMessage), testContext);
+                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, "Mandatory Field Validation when "  +dependentCondition + " is " + dependentResult+ " and "+field + " is " + expectedResult, error, requiredErrorMessage, error.equalsIgnoreCase(requiredErrorMessage), testContext);
                 break;
             case "invalid":
             case "current date":
