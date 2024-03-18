@@ -10,7 +10,6 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.hexure.firelight.libraies.*;
-import org.bytedeco.opencv.presets.opencv_core;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.Select;
@@ -123,7 +122,7 @@ public class Rules_StepDefinitions extends FLUtilities {
         String dataType = "";
         String wizardControlType = "";
         String order = "";
-        String resultvalue = "";
+
         // Assuming the fifth row contains headers
         Row headerRow = iterator.next();
 
@@ -200,7 +199,6 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                     {
                                                         result = "";
                                                     }
-                                                    resultvalue = result;
                                                     setDependentCondition(conditionElse, "=", valueJson, result);
                                                     if (requiredFirstAttributeElse.contains("prefilled with")) {
                                                         listConditions = getDisplayRuleConditions(valueJson, "prefilled with (.*)", "", requiredFirstAttributeElse);
