@@ -171,20 +171,6 @@ public class Flow_StepDefinitions extends FLUtilities {
         moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
     }
 
-    protected void checkBoxSelectYesNO(String userAction, WebElement element) {
-        if (getCheckBoxAction(userAction)) {
-            if (element.getAttribute("aria-checked").equals("false"))
-                element.click();
-        } else {
-            if (element.getAttribute("aria-checked").equals("true"))
-                element.click();
-        }
-    }
-
-    private boolean getCheckBoxAction(String action) {
-        return action.equalsIgnoreCase("check");
-    }
-
     public void moveToPage(String formHeader, String pageHeader) {
         if (!(onCommonMethodsPage.getPageHeader().getText().equalsIgnoreCase(pageHeader) & onCommonMethodsPage.getFormHeader().getText().equalsIgnoreCase(formHeader))) {
             clickElementByJSE(driver, onCommonMethodsPage.getWizardPageNameExpand());
