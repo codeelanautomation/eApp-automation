@@ -12,6 +12,7 @@ import java.util.List;
 
 public class SoftAssertionHandlerPage extends FLUtilities {
     private final List<List<String>> assertions = new ArrayList<>();
+    private final List<List<String>> assertionsNoElement = new ArrayList<>();
 
     public SoftAssertionHandlerPage(WebDriver driver) {
         initElements(driver);
@@ -30,6 +31,10 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         assertions.add(Arrays.asList(countValidation, order, field, rule, actualValue.toString(), expectedValue.toString(), result));
     }
 
+    public void assertNoElement(WebDriver driver, String field, String message, TestContext testContext) {
+        assertions.add(Arrays.asList(field, message));
+    }
+
 //    public void assertEquals(String message, Object actual, Object expected, TestContext testContext) {
 //        assertTrue(message, actual.equals(expected), testContext);
 //    }
@@ -41,6 +46,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
 
     public void assertAll(TestContext testContext) {
         printResults(assertions, testContext);
+        printNoElementResults(assertionsNoElement, testContext);
     }
 
     private void printResults(List<List<String>> assertions, TestContext testContext) {
@@ -54,6 +60,20 @@ public class SoftAssertionHandlerPage extends FLUtilities {
                     resultSet += "<tr style='color: green; font-weight: bold; background-color: #C5D88A;'> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> <td>" + assertion.get(2) + "</td> <td>" + assertion.get(3) + "</td> <td>" + assertion.get(4) + "</td> <td>" + assertion.get(5) + "</td> <td>" + assertion.get(6) + "</td> </tr>";
                 else
                     resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> <td>" + assertion.get(2) + "</td> <td>" + assertion.get(3) + "</td> <td>" + assertion.get(4) + "</td> <td>" + assertion.get(5) + "</td> <td>" + assertion.get(6) + "</td> </tr>";
+            }
+            resultSet += "</table>";
+            scenario.write(resultSet);
+        }
+    }
+
+    private void printNoElementResults(List<List<String>> assertions, TestContext testContext) {
+        Scenario scenario = testContext.getScenario();
+        String resultSet = "";
+        if (!assertions.isEmpty()) {
+            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>Field</th>  <th>Message</th></tr>";
+
+            for (List<String> assertion : assertions) {
+                resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> </tr>";
             }
             resultSet += "</table>";
             scenario.write(resultSet);
