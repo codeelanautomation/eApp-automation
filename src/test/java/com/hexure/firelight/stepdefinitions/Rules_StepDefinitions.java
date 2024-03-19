@@ -14,10 +14,12 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.Select;
 
+import javax.swing.text.MaskFormatter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
@@ -182,7 +184,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                     setDependentCondition(condition, expectedOperator, valueJson, result);
                                                     if (requiredFirstAttribute.equalsIgnoreCase("display")) {
                                                         expectedFlag = !getElements(valueJson, wizardControlType).isEmpty();
-                                                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, field, "Field is displayed when " + condition + " "+expectedOperator +" "+ result, expectedFlag, "true", expectedFlag, testContext);
+                                                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, field, "Field is displayed when " + condition + " " + expectedOperator + " " + result, expectedFlag, "true", expectedFlag, testContext);
                                                     }
                                                     if (requiredSecondAttribute.equalsIgnoreCase("enable")) {
                                                         if (!(wizardControlType.equals("Radio Button"))) {
@@ -195,8 +197,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                     }
                                                 }
                                                 for (String result : expectedResultElse.split(", ")) {
-                                                    if(result.equalsIgnoreCase("blank"))
-                                                    {
+                                                    if (result.equalsIgnoreCase("blank")) {
                                                         result = "";
                                                     }
                                                     setDependentCondition(conditionElse, "=", valueJson, result);
@@ -378,7 +379,6 @@ public class Rules_StepDefinitions extends FLUtilities {
         } else if (expectedOperator.equalsIgnoreCase("<>")) {
             new Select(getElement(valueDependentJson, "dropdown", null)).selectByIndex(1);
         }
-        sleepInMilliSeconds(1000);
         moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
     }
 
@@ -398,8 +398,6 @@ public class Rules_StepDefinitions extends FLUtilities {
                 break;
 
         }
-        waitForPageToLoad(driver);
-        sleepInMilliSeconds(1000);
     }
 
     public void moveToPage(String pageHeader, String formHeader) {
@@ -476,7 +474,6 @@ public class Rules_StepDefinitions extends FLUtilities {
         List<String> actualOptions = new ArrayList<>();
         switch (dataType) {
             case "Dropdown":
-                sleepInMilliSeconds(2000);
                 List<WebElement> dropdownOptions = new Select(getElement(valueJson, "dropdown", null)).getOptions();
                 for (WebElement element : dropdownOptions) {
                     if (element.getText().equalsIgnoreCase(""))
@@ -594,31 +591,45 @@ public class Rules_StepDefinitions extends FLUtilities {
         String expectedText = "";
         String expectedFormat = "";
         String temp = "";
-        if(rule.equalsIgnoreCase("length")) {
-            for (int length = attributeValue - 1; length <= attributeValue + 1; length++) {
-                temp = RandomStringUtils.random(length, allowedChars);
+        MaskFormatter formatter;
+        String error = "";
+        String format;
+        try {
+            if (rule.equalsIgnoreCase("length")) {
+                for (int length = attributeValue - 1; length <= attributeValue + 1; length++) {
+                    temp = RandomStringUtils.random(length, allowedChars);
+                    setValue(valueJson, temp);
+                    expectedText = getElement(valueJson, "single line textbox", null).getAttribute("value");
+                    error = clickRedBubble(valueJson);
+                    if (length == attributeValue + 1)
+                        temp = temp.substring(0, temp.length() - 1);
+
+                    if (valueJson.contains("format")) {
+                        format = JsonPath.read(valueJson, "$.Format").toString().trim().replaceAll("[a-zA-Z]", "#");
+                        formatter = new MaskFormatter(format);
+                        formatter.setValueContainsLiteralCharacters(false);
+                        temp = formatter.valueToString(temp);
+                    }
+
+                    if(error.isEmpty()) {
+                        if (dependentCondition.equals(""))
+                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, rule + " validations when length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
+                        else
+                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, rule + " validations when " + dependentCondition + " is " + dependentResult + " and length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
+                    }
+                }
+            } else {
+                temp = RandomStringUtils.random(attributeValue, allowedChars);
                 setValue(valueJson, temp);
                 expectedText = getElement(valueJson, "single line textbox", null).getAttribute("value");
-                if (length == attributeValue + 1)
-                    temp = temp.substring(0, temp.length() - 1);
-
-                if(JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim().equalsIgnoreCase("DOB") | JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim().equalsIgnoreCase("mm/dd/yyyy"))
-                    temp = "99/99/9999";
-
+                expectedFormat = getElement(valueJson, "single line textbox", null).getAttribute("mask");
                 if (dependentCondition.equals(""))
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, rule + " validations when length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, rule + "validations when length is " + attributeValue, expectedText, expectedFormat, expectedText.equalsIgnoreCase(expectedFormat), testContext);
                 else
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, rule + " validations when " + dependentCondition + " is " + dependentResult + " and length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, rule + " validations when " + dependentCondition + " is " + dependentResult + " and length is " + attributeValue, expectedText, expectedFormat, expectedText.equalsIgnoreCase(expectedFormat), testContext);
             }
-        } else {
-            temp = RandomStringUtils.random(attributeValue, allowedChars);
-            setValue(valueJson, temp);
-            expectedText = getElement(valueJson, "single line textbox", null).getAttribute("value");
-            expectedFormat = getElement(valueJson, "single line textbox", null).getAttribute("mask");
-            if (dependentCondition.equals(""))
-                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, rule + "validations when length is " + attributeValue, expectedText, expectedFormat, expectedText.equalsIgnoreCase(expectedFormat), testContext);
-            else
-                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, rule + " validations when " + dependentCondition + " is " + dependentResult + " and length is " + attributeValue, expectedText, expectedFormat, expectedText.equalsIgnoreCase(expectedFormat), testContext);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -690,7 +701,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                 if (dependentCondition.isEmpty())
                     onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, "Validation Rule -> Mandatory Field Validation" + field + " is " + expectedResult, error, requiredErrorMessage, error.equalsIgnoreCase(requiredErrorMessage), testContext);
                 else
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, "Validation Rule -> Mandatory Field Validation when "  +dependentCondition + " is " + dependentResult+ " and "+field + " is " + expectedResult, error, requiredErrorMessage, error.equalsIgnoreCase(requiredErrorMessage), testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, "Validation Rule -> Mandatory Field Validation when " + dependentCondition + " is " + dependentResult + " and " + field + " is " + expectedResult, error, requiredErrorMessage, error.equalsIgnoreCase(requiredErrorMessage), testContext);
                 break;
             case "invalid":
             case "current date":
@@ -716,7 +727,6 @@ public class Rules_StepDefinitions extends FLUtilities {
             // Handle null pointer exception
             error = "";
         }
-        sleepInMilliSeconds(1000);
         return error;
     }
 
@@ -726,8 +736,6 @@ public class Rules_StepDefinitions extends FLUtilities {
 
         for (String invalidEmail : invalidEmails) {
             sendKeys(driver, getElement(valueJson, "input", null), invalidEmail);
-            waitForPageToLoad(driver);
-            sleepInMilliSeconds(2000);
             String error = clickRedBubble(valueJson);
             String validationMessage = "Invalid Value Validation when " + field + " is " + invalidEmail;
             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, validationMessage, error, requiredErrorMessage, error.equalsIgnoreCase(requiredErrorMessage), testContext);
