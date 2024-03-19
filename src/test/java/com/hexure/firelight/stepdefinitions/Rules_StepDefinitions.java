@@ -611,7 +611,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                         temp = formatter.valueToString(temp);
                     }
 
-                    if(error.isEmpty()) {
+                    if (error.isEmpty()) {
                         if (dependentCondition.equals(""))
                             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, rule + " validations when length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
                         else
