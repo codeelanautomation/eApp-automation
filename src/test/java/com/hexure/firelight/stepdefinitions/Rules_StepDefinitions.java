@@ -678,14 +678,32 @@ public class Rules_StepDefinitions extends FLUtilities {
     }
 
     public void getAttributeValue(String field, String valueJson, String requiredPattern, String parameter, String rule, String attribute) {
+        List<String> listConditions = new ArrayList<>();
+        String dependentCondition = "";
+        String dependentResult = "";
+        String conditionAnother = "";
+        String expectedResultAnother = "";
         if (!valueJson.contains("FieldValues"))
             getLength(valueJson, attribute, rule, field, "", "");
         else {
-            List<String> listConditions = getDisplayRuleConditions(valueJson, requiredPattern, parameter, "");
-            String dependentCondition = listConditions.get(0);
-            String dependentResult = listConditions.get(1);
+            if (valueJson.contains("FieldValues")) {
+                if (Pattern.compile("(.*?) = (.*?) and (.*?) = (.*)").matcher(JsonPath.read(valueJson, "$.FieldValues").toString().trim()).find()) {
+                    listConditions = getDisplayRuleConditions(valueJson, "(.*?) = (.*?) and (.*?) = (.*)", "FieldValues", "");
+                    dependentCondition = listConditions.get(0);
+                    dependentResult = listConditions.get(1);
+                    conditionAnother = listConditions.get(2);
+                    expectedResultAnother = listConditions.get(3);
+                } else if (Pattern.compile("(.*?) = (.*)").matcher(JsonPath.read(valueJson, "$.FieldValues").toString().trim()).find()) {
+                    listConditions = getDisplayRuleConditions(valueJson, "(.*?) = (.*)", "FieldValues", "");
+                    dependentCondition = listConditions.get(0);
+                    dependentResult = listConditions.get(1);
+                }
+            }
+
             for (String result : dependentResult.split(", ")) {
                 setDependentCondition(dependentCondition, "=", valueJson, result);
+                if (!conditionAnother.equals(""))
+                    setDependentCondition(conditionAnother, "=", valueJson, expectedResultAnother);
                 getLength(valueJson, attribute, rule, field, dependentCondition, result);
             }
         }
