@@ -459,6 +459,8 @@ public class Rules_StepDefinitions extends FLUtilities {
             default:
                 return "TestValue";
         }
+        waitForPageToLoad(driver);
+        sleepInMilliSeconds(1000);
     }
 
     public void moveToPage(String pageHeader, String formHeader) {
