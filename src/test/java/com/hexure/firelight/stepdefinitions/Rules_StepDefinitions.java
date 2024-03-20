@@ -182,7 +182,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                 conditionAnother = "";
                                 for (String distinctRule : JsonPath.read(valueJson, "$." + rule).toString().trim().split((";"))) {
                                     if (!(distinctRule.contains("lookup") | distinctRule.contains("not required to use") | distinctRule.contains("implemented then specify"))) {
-                                        if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) = (.*?) and (.*?) = (.*?), then (.*?) and (.*?), else if (.*?) = (.*?) or (.*?) = (.*?), then (.*?) and (.*)\\.").matcher(distinctRule).find()) {
+                                        if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) = (.*?) and (.*?) = (.*?), then (.*?) and (.*?), else if (.*?) = (.*?) or (.*?) = (.*?), then (.*?) and (.*)\\.?").matcher(distinctRule).find()) {
                                             if (valueJson.contains("FieldValues")) {
                                                 if (Pattern.compile("(.*?) = (.*?) and (.*?) = (.*)").matcher(JsonPath.read(valueJson, "$.FieldValues").toString().trim()).find()) {
                                                     listFieldValueConditions = getDisplayRuleConditions(valueJson, "(.*?) = (.*?) and (.*?) = (.*)", "FieldValues", "");
@@ -236,8 +236,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                 setVisibilityRules(requiredFirstAttributeElse, valueJson, wizardControlType, order, field, conditionElseAnother, expectedOperator, result, requiredSecondAttributeElse);
                                                 setVisibilityRules(requiredSecondAttributeElse, valueJson, wizardControlType, order, field, conditionElseAnother, expectedOperator, result, requiredSecondAttributeElse);
                                             }
-                                        } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) (.*?) (.*?), then (.*?) and (.*?), else if (.*?) = (.*?), then (.*?) and (.*)\\.").matcher(distinctRule).find()) {
-                                            listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) (.*?) (.*?), then (.*?) and (.*?), else if (.*?) = (.*?), then (.*?) and (.*)\\.", "", distinctRule);
+                                        } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) (.*?) (.*?), then (.*?) and (.*?), else if (.*?) = (.*?), then (.*?) and (.*)\\.?").matcher(distinctRule).find()) {
+                                            listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) (.*?) (.*?), then (.*?) and (.*?), else if (.*?) = (.*?), then (.*?) and (.*)\\.?", "", distinctRule);
                                             condition = listConditions.get(1);
                                             expectedOperator = listConditions.get(2);
                                             expectedResult = listConditions.get(3);
@@ -267,8 +267,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                 setVisibilityRules(requiredFirstAttributeElse, valueJson, wizardControlType, order, field, conditionElse, expectedOperator, result, requiredSecondAttributeElse);
                                                 setVisibilityRules(requiredSecondAttributeElse, valueJson, wizardControlType, order, field, conditionElse, expectedOperator, result, requiredSecondAttributeElse);
                                             }
-                                        } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) = (.*?) and (.*?) = (.*?), then (.*?)\\.").matcher(distinctRule).find()) {
-                                            listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) = (.*?) and (.*?) = (.*?), then (.*?)\\.", "", distinctRule);
+                                        } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) = (.*?) and (.*?) = (.*?), then (.*?)\\.?").matcher(distinctRule).find()) {
+                                            listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) = (.*?) and (.*?) = (.*?), then (.*?)\\.?", "", distinctRule);
                                             condition = listConditions.get(1);
                                             expectedResult = listConditions.get(2);
                                             conditionAnother = listConditions.get(3);
@@ -286,8 +286,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                     verifyData(testContext.getMapTestData().get(prefilledAttribute.split(" = ")[0]).trim(), prefilledAttribute.split(" = ")[0], condition, result, "TestValue");
                                                 }
                                             }
-                                        } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) = (.*?), then (.*?) = (.*?)\\.").matcher(distinctRule).find()) {
-                                            listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) = (.*?), then (.*?) = (.*?)\\.", "", distinctRule);
+                                        } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) = (.*?), then (.*?) = (.*?)\\.?").matcher(distinctRule).find()) {
+                                            listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) = (.*?), then (.*?) = (.*?)\\.?", "", distinctRule);
                                             condition = listConditions.get(1);
                                             expectedResult = listConditions.get(2);
                                             requiredFirstAttribute = listConditions.get(3);
@@ -306,8 +306,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                     }
                                                 }
                                             }
-                                        } else if (Pattern.compile("(\\d+\\.\\s*)?(.*?) = (.*?)\\.").matcher(distinctRule).find()) {
-                                            listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?(.*?) = (.*?)\\.", "", distinctRule);
+                                        } else if (Pattern.compile("(\\d+\\.\\s*)?(.*?) = (.*?)\\.?").matcher(distinctRule).find()) {
+                                            listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?(.*?) = (.*?)\\.?", "", distinctRule);
                                             requiredFirstAttribute = listConditions.get(1);
                                             requiredAttributeValue = listConditions.get(2);
 
@@ -353,8 +353,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                     handleSectionRules(valueJson, wizardControlType, section, order, field);
                                                 }
                                             }
-                                        } else if (Pattern.compile("(\\d+\\.\\s*)?(.*?)\\.").matcher(distinctRule).find()) {
-                                            listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?(.*?)\\.", "", distinctRule);
+                                        } else if (Pattern.compile("(\\d+\\.\\s*)?(.*?)\\.?").matcher(distinctRule).find()) {
+                                            listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?(.*?)\\.?", "", distinctRule);
                                             requiredAttributeValue = listConditions.get(1);
                                             if (valueJson.contains("FieldValues")) {
                                                 listFieldValueConditions = getDisplayRuleConditions(valueJson, "(.*?) = (.*)", "FieldValues", "");
