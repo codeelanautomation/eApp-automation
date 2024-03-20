@@ -94,7 +94,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
     private static String getCellValue(Cell cell) {
         String excelValue = "";
 
-        if (cell != null && cell.getCellType() == CellType.STRING && !cell.getStringCellValue().trim().equalsIgnoreCase("None")) {
+        if (cell != null && cell.getCellType() == CellType.STRING && !(cell.getStringCellValue().trim().equalsIgnoreCase("None") | cell.getStringCellValue().trim().equalsIgnoreCase("Blank"))) {
             excelValue = cell.getStringCellValue().trim();
             excelValue = excelValue.replaceAll("//", "/").replaceAll("\n", ";").replaceAll("[\\s]+[.]+", ".").replaceAll("[\\s]+", " ");
         } else if (cell != null && cell.getCellType() == CellType.NUMERIC) {
