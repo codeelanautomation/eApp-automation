@@ -32,7 +32,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
     }
 
     public void assertNoElement(WebDriver driver, String field, String message, TestContext testContext) {
-        assertions.add(Arrays.asList(field, message));
+        assertionsNoElement.add(Arrays.asList(field, message));
     }
 
 //    public void assertEquals(String message, Object actual, Object expected, TestContext testContext) {
