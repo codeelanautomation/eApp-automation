@@ -90,20 +90,26 @@ public class FLUtilities extends BaseClass {
 
     protected void clickElement(WebDriver driver, WebElement element) {
         syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
-
-        try {
-            if (!element.isDisplayed())
-                scrollToWebElement(driver, element);
-            element.click();
-        } catch (StaleElementReferenceException | ElementClickInterceptedException e) {
-            if (!element.isDisplayed())
-                scrollToWebElement(driver, element);
-            element.click();
-        } catch (Exception e) {
-            Log.error("Could Not Click WebElement ", e);
-            throw new FLException("Could Not Click WebElement " + e.getMessage());
+        int retryCount = 4;
+        for (int attempt = 0; attempt <= retryCount; attempt++) {
+            try {
+                if (!element.isDisplayed()) {
+                    scrollToWebElement(driver, element);
+                }
+                element.click();
+                return; // Exit the method if click is successful
+            } catch (StaleElementReferenceException | ElementClickInterceptedException e) {
+                element.click();
+            } catch (Exception e) {
+                Log.error("Could not click WebElement ", e);
+                throw new FLException("Could not click WebElement " + e.getMessage());
+            }
         }
+
+        // If all retry attempts fail, throw an exception
+        throw new FLException("Failed to click WebElement after " + retryCount + " attempts");
     }
+
 
     protected void scrollToWebElement(WebDriver driver, WebElement element) {
         try {

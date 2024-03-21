@@ -495,9 +495,9 @@ public class Rules_StepDefinitions extends FLUtilities {
             setValue(valueDependentJson, result);
         } else if (expectedOperator.equalsIgnoreCase("<>")) {
             new Select(getElement(valueDependentJson, "dropdown", null)).selectByIndex(1);
-            waitForPageToLoad(driver);
-            sleepInMilliSeconds(1000);
         }
+        waitForPageToLoad(driver);
+        sleepInMilliSeconds(2000);
         moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
     }
 
