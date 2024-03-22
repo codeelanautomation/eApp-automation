@@ -13,6 +13,8 @@ import java.util.List;
 public class SoftAssertionHandlerPage extends FLUtilities {
     private final List<List<String>> assertions = new ArrayList<>();
     private final List<List<String>> assertionsNoElement = new ArrayList<>();
+    private final List<List<String>> skippedRules = new ArrayList<>();
+    private final List<String> skippedElements = new ArrayList<>();
 
     public SoftAssertionHandlerPage(WebDriver driver) {
         initElements(driver);
@@ -35,6 +37,14 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         assertionsNoElement.add(Arrays.asList(field, message));
     }
 
+    public void assertSkippedElement(WebDriver driver, String field, TestContext testContext) {
+        skippedElements.add(field);
+    }
+
+    public void assertSkippedRules(WebDriver driver, String field, String rule, TestContext testContext) {
+        skippedRules.add(Arrays.asList(field, rule));
+    }
+
 //    public void assertEquals(String message, Object actual, Object expected, TestContext testContext) {
 //        assertTrue(message, actual.equals(expected), testContext);
 //    }
@@ -47,6 +57,8 @@ public class SoftAssertionHandlerPage extends FLUtilities {
     public void assertAll(TestContext testContext) {
         printResults(assertions, testContext);
         printNoElementResults(assertionsNoElement, testContext);
+        printSkippedElements(skippedElements, testContext);
+        printSkippedRules(skippedRules, testContext);
     }
 
     private void printResults(List<List<String>> assertions, TestContext testContext) {
@@ -71,6 +83,34 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         String resultSet = "";
         if (!assertions.isEmpty()) {
             resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>Field</th>  <th>Message</th></tr>";
+
+            for (List<String> assertion : assertions) {
+                resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> </tr>";
+            }
+            resultSet += "</table>";
+            scenario.write(resultSet);
+        }
+    }
+
+    private void printSkippedElements(List<String> assertions, TestContext testContext) {
+        Scenario scenario = testContext.getScenario();
+        String resultSet = "";
+        if (!assertions.isEmpty()) {
+            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>Field</th> </tr>";
+
+            for (String assertion : assertions) {
+                resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>" + assertion+ "</td> </tr>";
+            }
+            resultSet += "</table>";
+            scenario.write(resultSet);
+        }
+    }
+
+    private void printSkippedRules(List<List<String>> assertions, TestContext testContext) {
+        Scenario scenario = testContext.getScenario();
+        String resultSet = "";
+        if (!assertions.isEmpty()) {
+            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>Field</th>  <th>Rule</th></tr>";
 
             for (List<String> assertion : assertions) {
                 resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> </tr>";

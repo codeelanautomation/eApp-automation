@@ -191,7 +191,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                 testData = "";
                                 for (String distinctRule : JsonPath.read(valueJson, "$." + rule).toString().trim().split((";"))) {
                                     distinctRule = distinctRule.replaceFirst("\\.$", "");
-                                    if (!(distinctRule.contains("lookup") | distinctRule.contains("not required to use") | distinctRule.contains("implemented then specify"))) {
+                                    if (!(distinctRule.toLowerCase().contains("lookup") | distinctRule.toLowerCase().contains("not required to use") | distinctRule.toLowerCase().contains("implemented then specify") | distinctRule.toLowerCase().contains("skip for automation"))) {
                                         if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) = (.*?)\\,? then SHOW Options (.*)\\.?").matcher(distinctRule).find()) {
                                             listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) = (.*?)\\,? then SHOW Options (.*)\\.?", "", distinctRule);
                                             condition = listConditions.get(1);
@@ -445,6 +445,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                                         } else
                                             System.out.println("Rule " + distinctRule + " does not match any criteria for field " + field);
                                     }
+                                    else
+                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, field, distinctRule, testContext);
                                 }
                                 break;
                             case "Length":
@@ -461,6 +463,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                     }
                 }
             }
+            else
+                onSoftAssertionHandlerPage.assertSkippedElement(driver, field, testContext);
         }
         onSoftAssertionHandlerPage.afterScenario(testContext);
         workbook.close();
