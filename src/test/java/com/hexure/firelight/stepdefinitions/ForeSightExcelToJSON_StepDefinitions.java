@@ -38,10 +38,12 @@ public class ForeSightExcelToJSON_StepDefinitions {
 
                 // Create input file in json format
                 for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+//                    System.out.println(headerRow.getCell(i).getStringCellValue());
                     if (requiredColumns.contains(headerRow.getCell(i).getStringCellValue().trim())) {
 
                         Cell cell = currentRow.getCell(i);
                         String excelValue = getCellValue(cell);
+                        System.out.println(excelValue);
                         if (!excelValue.isEmpty())
                             tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "").replaceAll("\n", ""), excelValue);
                     }
@@ -92,9 +94,9 @@ public class ForeSightExcelToJSON_StepDefinitions {
     private static String getCellValue(Cell cell) {
         String excelValue = "";
 
-        if (cell != null && cell.getCellType() == CellType.STRING && !(cell.getStringCellValue().trim().equalsIgnoreCase("None") | cell.getStringCellValue().trim().equalsIgnoreCase("Blank"))) {
+        if (cell != null && cell.getCellType() == CellType.STRING && !(cell.getStringCellValue().trim().equalsIgnoreCase("None"))) {
             excelValue = cell.getStringCellValue().trim();
-            excelValue = excelValue.replaceAll("//", "/").replaceAll("\n", ";").replaceAll("[\\s]+[.]+", ".").replaceAll("[\\s]+", " ");
+            excelValue = excelValue.replaceAll("//", "/").replaceAll("[^\\x00-\\x7F]", "").replaceAll("\n", ";").replaceAll("=", " = ").replaceAll("\"", "").replaceAll("[\\s]+[.]+", ".").replaceAll("[\\s]+", " ").trim();
         } else if (cell != null && cell.getCellType() == CellType.NUMERIC) {
             excelValue = String.valueOf(((XSSFCell) cell).getRawValue()).trim();
         }
