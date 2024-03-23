@@ -43,7 +43,7 @@ public class CommonMethodsPage extends FLUtilities {
     @FindBy(id = "imgOpenWiz")
     private WebElement WizardPageNameExpand;
 
-    @FindBy(id = "imgCollapse")
+    @FindBy(id = "imgCloseWiz")
     private WebElement WizardPageNameCollapse;
 
     @FindBy(id = "imgExpand")
