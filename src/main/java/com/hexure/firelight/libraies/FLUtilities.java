@@ -91,7 +91,7 @@ public class FLUtilities extends BaseClass {
     protected void clickElement(WebDriver driver, WebElement element) {
         syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
         int retryCount = 4;
-        for (int attempt = 0; attempt <= retryCount; attempt++) {
+        for (int attempt = 0; attempt < retryCount; attempt++) {
             try {
                 if (!element.isDisplayed()) {
                     scrollToWebElement(driver, element);
@@ -99,13 +99,17 @@ public class FLUtilities extends BaseClass {
                 element.click();
                 return; // Exit the method if click is successful
             } catch (StaleElementReferenceException | ElementClickInterceptedException e) {
-                element.click();
+                // Retry after a brief delay
+                try {
+                    Thread.sleep(500); // Add a delay of 500 milliseconds between retries
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                }
             } catch (Exception e) {
                 Log.error("Could not click WebElement ", e);
-                throw new FLException("Could not click WebElement " + e.getMessage());
+                throw new FLException("Could not click WebElement: " + e.getMessage());
             }
         }
-
         // If all retry attempts fail, throw an exception
         throw new FLException("Failed to click WebElement after " + retryCount + " attempts");
     }
@@ -149,7 +153,8 @@ public class FLUtilities extends BaseClass {
             clickElement(driver, element);
             element.sendKeys(stringToInput);
             element.sendKeys(Keys.TAB);
-        } catch (ElementClickInterceptedException e) {
+        } catch (StaleElementReferenceException | ElementClickInterceptedException e) {
+            syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
             // Scroll the element into view
             ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
             element.clear();

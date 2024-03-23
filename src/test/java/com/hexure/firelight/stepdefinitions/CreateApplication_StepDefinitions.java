@@ -50,6 +50,7 @@ public class CreateApplication_StepDefinitions extends FLUtilities {
     @Then("User opens Given Product {string} for application")
     public void UserOpensGivenProductForApp(String product) {
         captureScreenshot(driver, testContext, false);
+        sleepInMilliSeconds(2000);
         syncElement(driver, findElement(driver, String.format(onCreateApplicationPage.list_OfProducts, product)), EnumsCommon.TOCLICKABLE.getText());
         try {
             clickElement(driver, findElement(driver, String.format(onCreateApplicationPage.list_OfProducts, product)));
