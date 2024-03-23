@@ -114,7 +114,6 @@ public class FLUtilities extends BaseClass {
         throw new FLException("Failed to click WebElement after " + retryCount + " attempts");
     }
 
-
     protected void scrollToWebElement(WebDriver driver, WebElement element) {
         try {
             ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
