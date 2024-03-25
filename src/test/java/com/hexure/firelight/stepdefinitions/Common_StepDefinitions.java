@@ -61,6 +61,10 @@ public class Common_StepDefinitions extends FLUtilities {
             case "Create":
                 clickElement(driver, onCreateApplicationPage.getBtn_Create());
                 break;
+            case "Close":
+                if(!onCreateApplicationPage.getLstBtnClose().isEmpty())
+                    clickElement(driver, onCreateApplicationPage.getBtnClose());
+                break;
             default:
                 clickElement(driver, onCommonMethodsPage.findElement(driver, String.format(onCommonMethodsPage.fieldWithTitleAttribute, whichButton, whichButton)));
                 break;

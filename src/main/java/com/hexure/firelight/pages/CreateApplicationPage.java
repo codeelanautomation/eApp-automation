@@ -8,6 +8,8 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 
+import java.util.List;
+
 @Data
 public class CreateApplicationPage extends FLUtilities {
     public String mandetoryFormList = "//div[@class='navDrawer__bundleName' and text()='%s']/..//span[@class='far fa-exclamation-triangle navDrawer__pageGraphic validation-summary-errors']/../..";
@@ -20,6 +22,12 @@ public class CreateApplicationPage extends FLUtilities {
 
     @FindBy(id = "txtAppName")
     private WebElement txtBox_newAppName;
+
+    @FindBy(xpath = "//a[@title='Close']")
+    private WebElement btnClose;
+
+    @FindBy(xpath = "//a[@title='Close']")
+    private List<WebElement> lstBtnClose;
 
     @FindBy(xpath = "//*[@class='ITWizardPageName']")
     private WebElement WizardPageNameExpand;

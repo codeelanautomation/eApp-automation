@@ -40,10 +40,10 @@ public class CommonMethodsPage extends FLUtilities {
     @FindBy(xpath = "//*[@class='ITWizardPageName']")
     private WebElement pageHeader;
 
-    @FindBy(id = "imgExpand")
+    @FindBy(id = "imgOpenWiz")
     private WebElement WizardPageNameExpand;
 
-    @FindBy(id = "imgCollapse")
+    @FindBy(id = "imgCloseWiz")
     private WebElement WizardPageNameCollapse;
 
     @FindBy(id = "imgExpand")

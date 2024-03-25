@@ -60,7 +60,9 @@ public class FLUtilities extends BaseClass {
                 default:
                     throw new FLException("Invalid Condition " + conditionForWait);
             }
-        } catch (StaleElementReferenceException e) {
+        } catch (StaleElementReferenceException | NoSuchElementException e) {
+            // Handle the exception here (e.g., logging)
+            System.out.println("No Such Element Exception is showing on searching element " + element);
         } catch (Exception e) {
             Log.error("Could Not Sync WebElement ", e);
             throw new FLException("Could Not Sync WebElement " + e.getMessage());
