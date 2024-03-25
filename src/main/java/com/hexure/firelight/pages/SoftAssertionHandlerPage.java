@@ -24,13 +24,13 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         PageFactory.initElements(driver, this);
     }
 
-    public void assertTrue(WebDriver driver, String countValidation, String order, String field, String rule, Object actualValue, Object expectedValue, boolean condition, TestContext testContext) {
+    public void assertTrue(WebDriver driver, String countValidation, String order, String field, String distinctRule, String rule, Object actualValue, Object expectedValue, boolean condition, TestContext testContext) {
         String result = "Passed";
         if (!condition) {
             captureScreenshot(driver, testContext, condition);
             result = "Failed";
         }
-        assertions.add(Arrays.asList(countValidation, order, field, rule, actualValue.toString(), expectedValue.toString(), result));
+        assertions.add(Arrays.asList(countValidation, order, field, distinctRule, rule, actualValue.toString(), expectedValue.toString(), result));
     }
 
     public void assertNoElement(WebDriver driver, String field, String message, TestContext testContext) {
@@ -65,13 +65,13 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         Scenario scenario = testContext.getScenario();
         String resultSet = "";
         if (!assertions.isEmpty()) {
-            resultSet += "<table border=\"1\" width=\"400\"> <tr> <th>S.No</th>  <th>Order</th>  <th>Field</th> <th>Rule</th> <th>Actual Value (UI)</th> <th>Expected Value (Excel Template)</th> <th>Result</th> </tr>";
+            resultSet += "<table border=\"1\" width=\"400\"> <tr> <th>S.No</th>  <th>Order</th>  <th>Field</th> <th>Validations</th> <th>Actual Value (UI)</th> <th>Expected Value (Excel Template)</th> <th>Result</th> </tr>";
 
             for (List<String> assertion : assertions) {
-                if (assertion.get(6).contains("Passed"))
-                    resultSet += "<tr style='color: green; font-weight: bold; background-color: #C5D88A;'> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> <td>" + assertion.get(2) + "</td> <td>" + assertion.get(3) + "</td> <td>" + assertion.get(4) + "</td> <td>" + assertion.get(5) + "</td> <td>" + assertion.get(6) + "</td> </tr>";
+                if (assertion.get(7).contains("Passed"))
+                    resultSet += "<tr style='color: green; font-weight: bold; background-color: #C5D88A;'> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> <td>" + assertion.get(2) + "</td> <td>" + assertion.get(4) + "</td> <td>" + assertion.get(5) + "</td> <td>" + assertion.get(6) + "</td> <td>" + assertion.get(6) + "</td> </tr>";
                 else
-                    resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> <td>" + assertion.get(2) + "</td> <td>" + assertion.get(3) + "</td> <td>" + assertion.get(4) + "</td> <td>" + assertion.get(5) + "</td> <td>" + assertion.get(6) + "</td> </tr>";
+                    resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> <td>" + assertion.get(2) + "</td> <td>" + assertion.get(4) + "</td> <td>" + assertion.get(5) + "</td> <td>" + assertion.get(6) + "</td> <td>" + assertion.get(7)+ "</td> </tr>";
             }
             resultSet += "</table>";
             scenario.write(resultSet);
@@ -96,7 +96,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         Scenario scenario = testContext.getScenario();
         String resultSet = "";
         if (!assertions.isEmpty()) {
-            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>Field</th> </tr>";
+            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>Fields Not Validated</th> </tr>";
 
             for (String assertion : assertions) {
                 resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>" + assertion+ "</td> </tr>";
@@ -110,7 +110,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         Scenario scenario = testContext.getScenario();
         String resultSet = "";
         if (!assertions.isEmpty()) {
-            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>Field</th>  <th>Rule</th></tr>";
+            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>Field</th>  <th>Skipped Rule</th></tr>";
 
             for (List<String> assertion : assertions) {
                 resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> </tr>";

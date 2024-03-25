@@ -442,7 +442,7 @@ public class FLUtilities extends BaseClass {
     }
 
     private boolean getCheckBoxAction(String action) {
-        return action.equalsIgnoreCase("yes") | action.equalsIgnoreCase("check") | action.equalsIgnoreCase("checked");
+        return action.toLowerCase().equalsIgnoreCase("yes") | action.toLowerCase().equalsIgnoreCase("check") | action.toLowerCase().equalsIgnoreCase("checked");
     }
 
 
