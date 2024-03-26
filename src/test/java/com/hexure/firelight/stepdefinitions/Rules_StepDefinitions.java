@@ -274,8 +274,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                 setVisibilityRules(requiredFirstAttributeElse, valueJson, wizardControlType, order, field, conditionElse, expectedOperator, result, requiredSecondAttributeElse, dependentPrefilledCondition);
                                                 setVisibilityRules(requiredSecondAttributeElse, valueJson, wizardControlType, order, field, conditionElse, expectedOperator, result, requiredSecondAttributeElse, dependentPrefilledCondition);
                                             }
-                                        } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) = (.*?) and (.*?) = (.*?), then (.*?)\\.?").matcher(distinctRule).find()) {
-                                            listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) = (.*?) and (.*?) = (.*?), then (.*?)\\.?", "", distinctRule);
+                                        } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) = (.*?) and (.*?) = (.*?), then (.*?)\\.?$").matcher(distinctRule).find()) {
+                                            listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) = (.*?) and (.*?) = (.*?), then (.*?)\\.?$", "", distinctRule);
                                             condition = listConditions.get(1);
                                             expectedResult = listConditions.get(2);
                                             conditionAnother = listConditions.get(3);
@@ -918,6 +918,7 @@ public class Rules_StepDefinitions extends FLUtilities {
     }
 
     public String clickRedBubble(String valueJson) {
+        waitForPageToLoad(driver);
         String error = "";
         try {
             if (onCommonMethodsPage.getListErrors().isEmpty())
