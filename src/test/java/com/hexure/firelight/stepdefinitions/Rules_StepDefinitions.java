@@ -142,10 +142,6 @@ public class Rules_StepDefinitions extends FLUtilities {
                 order = JsonPath.read(valueJson, "$.Order").toString().trim();
                 String commonTag = JsonPath.read(valueJson, "$.CommonTag").toString().trim();
 
-                if(field.equalsIgnoreCase("Owner_SSN"))
-                    System.out.println(field);
-                if (rowIndex > 48)
-                    break;
                 expectedResult = "";
                 if (!(field.toLowerCase().contains("lookup") | valueJson.toLowerCase().contains("hide for day") | commonTag.equalsIgnoreCase("No Tag"))) {
                     moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
@@ -211,8 +207,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                             break;
                                                     }
                                                 }
-                                            } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) then (.*)\\.?").matcher(distinctRule).find()) {
-                                                List<String> listExpectedConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) then (.*)\\.?", "", distinctRule);
+                                            } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?)(?:,)? then (.*)\\.?").matcher(distinctRule).find()) {
+                                                List<String> listExpectedConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?)(?:,)? then (.*)\\.?", "", distinctRule);
                                                 condition = listExpectedConditions.get(1);
                                                 expectedResults = Arrays.asList(listExpectedConditions.get(2).split(" AND|and "));
                                                 conditionElse = expectedResult = conditionAnother = expectedResultAnother = "";
@@ -1044,6 +1040,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                     onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, "Validation Rule -> Invalid Value Validation when " + field + " is " + inputValue + " and " + dependentCondition + " is " + dependentResult, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
                 sendKeys(driver, getElement(valueJson, "single line textbox", null), "");
                 break;
+            default:
+                onSoftAssertionHandlerPage.assertSkippedRules(driver, field, distinctRule, testContext);
         }
     }
 
