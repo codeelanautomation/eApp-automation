@@ -17,7 +17,7 @@ import org.junit.runner.RunWith;
                 "io.qameta.allure.cucumber4jvm.AllureCucumber4Jvm"
         },
         features = {"classpath:"},
-        tags = {"@End2EndFlow"},
+        tags = {"@E2EWizardTestFlow"},
         glue = {"com.hexure.firelight.stepdefinitions"},
         dryRun = false
 )
