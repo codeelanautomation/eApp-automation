@@ -64,17 +64,25 @@ public class SoftAssertionHandlerPage extends FLUtilities {
     private void printResults(List<List<String>> assertions, TestContext testContext) {
         Scenario scenario = testContext.getScenario();
         String resultSet = "";
+        int countPassed = 0;
+        int countFailed = 0;
+
         if (!assertions.isEmpty()) {
-            resultSet += "<table border=\"1\" width=\"400\"> <tr> <th>S.No</th>  <th>Order</th>  <th>Field</th> <th>Validations</th> <th>Actual Value (UI)</th> <th>Expected Value (Excel Template)</th> <th>Result</th> </tr>";
+            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>S.No</th>  <th>Order</th>  <th>Field</th> <th>Validations</th> <th>Actual Value (UI)</th> <th>Expected Value (Excel Template)</th> <th>Result</th> </tr>";
 
             for (List<String> assertion : assertions) {
-                if (assertion.get(7).contains("Passed"))
-                    resultSet += "<tr style='color: green; font-weight: bold; background-color: #C5D88A;'> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> <td>" + assertion.get(2) + "</td> <td>" + assertion.get(4) + "</td> <td>" + assertion.get(5) + "</td> <td>" + assertion.get(6) + "</td> <td>" + assertion.get(6) + "</td> </tr>";
-                else
-                    resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> <td>" + assertion.get(2) + "</td> <td>" + assertion.get(4) + "</td> <td>" + assertion.get(5) + "</td> <td>" + assertion.get(6) + "</td> <td>" + assertion.get(7)+ "</td> </tr>";
+                if (assertion.get(7).contains("Passed")) {
+                    countPassed++;
+                    resultSet += "<tr style='color: green; font-weight: bold; background-color: #C5D88A;'> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(0) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(1) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(2) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(4) + "</td> <td style='white-space: pre-wrap; min-width: 300px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(5).trim() + "</td> <td style='white-space: pre-wrap; min-width: 300px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(6).trim() + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(6) + "</td> </tr>";
+                }
+                else {
+                    countFailed++;
+                    resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(0) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(1) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(2) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(4) + "</td> <td style='white-space: pre-wrap; min-width: 300px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(5).trim() + "</td> <td style='white-space: pre-wrap; min-width: 300px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(6).trim() + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(7) + "</td> </tr>";
+                }
             }
             resultSet += "</table>";
             scenario.write(resultSet);
+            scenario.write("<table border=\"1\" width=\"400\"> <tr> <td>Total Count </td> <td>" + (countFailed + countPassed) + "</td> </tr> <tr style='color: green; font-weight: bold; background-color: #C5D88A;'> <td>PassedCount</td> <td>" + countPassed + "</td> <tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>FailedCount</td> <td>" + countFailed + "</td></tr><table>");
         }
     }
 

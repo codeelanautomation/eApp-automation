@@ -1,5 +1,7 @@
 package com.hexure.firelight.stepdefinitions;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.hexure.firelight.libraies.Enums.EnumsExcelColumns;
 import com.hexure.firelight.libraies.Enums.EnumsJSONProp;
 import com.hexure.firelight.libraies.EnumsCommon;
@@ -20,6 +22,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
 
     JSONObject jsonObject = new JSONObject();
     List<String> requiredColumns = Arrays.asList(EnumsExcelColumns.ENUMSEXCELCOLUMNS.getText().split(", "));
+    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     @Given("Create {string} file for eApp flow with file {string}")
     public void createForesightTestData(String jsonFile, String excelFile) {
@@ -82,7 +85,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
             jsonObject.put("testData", masterJson);
             FileWriter jsonTestData = new FileWriter(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
             BufferedWriter writer = new BufferedWriter(jsonTestData);
-            writer.write(String.valueOf(jsonObject));
+            writer.write(gson.toJson(jsonObject));
             writer.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -107,6 +110,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
         JSONObject defaultEntry = new JSONObject();
         defaultEntry.put("InvalidTin", "123456789");
         defaultEntry.put("InvalidSSN", "123456789");
+        defaultEntry.put("InvalidDate", "02292023");
         defaultEntry.put("InvalidEmail","test,test@,testgmail.com,%%@test.c,test@gmail .com,example.com,example@@example.com");
         return defaultEntry;
     }
