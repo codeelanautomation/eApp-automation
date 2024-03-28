@@ -5,6 +5,7 @@ import cucumber.api.Scenario;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.PageFactory;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,6 +16,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
     private final List<List<String>> assertionsNoElement = new ArrayList<>();
     private final List<List<String>> skippedRules = new ArrayList<>();
     private final List<String> skippedElements = new ArrayList<>();
+    int fieldCount = 0;
 
     public SoftAssertionHandlerPage(WebDriver driver) {
         initElements(driver);
@@ -31,6 +33,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
             result = "Failed";
         }
         assertions.add(Arrays.asList(countValidation, order, field, distinctRule, rule, actualValue.toString(), expectedValue.toString(), result));
+        fieldCount = Integer.parseInt(order);
     }
 
     public void assertNoElement(WebDriver driver, String field, String message, TestContext testContext) {
@@ -73,16 +76,16 @@ public class SoftAssertionHandlerPage extends FLUtilities {
             for (List<String> assertion : assertions) {
                 if (assertion.get(7).contains("Passed")) {
                     countPassed++;
-                    resultSet += "<tr style='color: green; font-weight: bold; background-color: #C5D88A;'> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(0) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(1) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(2) + "</td> <td style='white-space: pre-wrap; min-width: 300px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(3) +"</td> <td style='white-space: pre-wrap; min-width: 300px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(4) + "</td> <td style='white-space: pre-wrap; min-width: 300px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(5).trim() + "</td> <td style='white-space: pre-wrap; min-width: 300px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(6).trim() + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(7) + "</td> </tr>";
+                    resultSet += "<tr style='color: green; font-weight: bold; background-color: #C5D88A;'> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(0) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(1) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(2) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(3) +"</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(4) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(5).trim() + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(6).trim() + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(7) + "</td> </tr>";
                 }
                 else {
                     countFailed++;
-                    resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(0) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(1) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(2) + "</td> <td style='white-space: pre-wrap; min-width: 300px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(3) + "</td> <td style='white-space: pre-wrap; min-width: 300px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(4) + "</td> <td style='white-space: pre-wrap; min-width: 300px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(5).trim() + "</td> <td style='white-space: pre-wrap; min-width: 300px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(6).trim() + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(7) + "</td> </tr>";
+                    resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(0) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(1) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(2) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(3) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(4) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(5).trim() + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(6).trim() + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(7) + "</td> </tr>";
                 }
             }
+            scenario.write("<table border=\"1\" width=\"400\"> <tr style='font-weight: bold; background-color: #C5D88A;'> <th>Execution Summary </th> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Total Rules Evaluated </td> <td>" + (countFailed + countPassed) + "</tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Total Fields Count</td> <td>" + fieldCount + "</td> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Rules Validation Passed</td> <td>" + countPassed + "</td> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Rules Validation Failed</td> <td>" + countFailed + "</td></tr><table>");
             resultSet += "</table>";
             scenario.write(resultSet);
-            scenario.write("<table border=\"1\" width=\"400\"> <tr> <td>Total Count </td> <td>" + (countFailed + countPassed) + "</td> </tr> <tr style='color: green; font-weight: bold; background-color: #C5D88A;'> <td>PassedCount</td> <td>" + countPassed + "</td> <tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>FailedCount</td> <td>" + countFailed + "</td></tr><table>");
         }
     }
 
@@ -103,11 +106,12 @@ public class SoftAssertionHandlerPage extends FLUtilities {
     private void printSkippedElements(List<String> assertions, TestContext testContext) {
         Scenario scenario = testContext.getScenario();
         String resultSet = "";
+        int count = 1;
         if (!assertions.isEmpty()) {
-            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>Fields Not Validated</th> </tr>";
+            resultSet += "<div style='background-color: #C5D88A;'> </div> <table border=\"1\" width=\"100%\"> <tr style='font-weight: bold; background-color: #C5D88A;'> <th>S.No</th> <th>Fields Not Validated</th> </tr>";
 
             for (String assertion : assertions) {
-                resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>" + assertion+ "</td> </tr>";
+                resultSet += "<tr style='background-color: #C5D88A;'> <td>" + (count++) + "</td> <td>" + assertion+ "</td> </tr>";
             }
             resultSet += "</table>";
             scenario.write(resultSet);
@@ -118,10 +122,11 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         Scenario scenario = testContext.getScenario();
         String resultSet = "";
         if (!assertions.isEmpty()) {
-            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>Field</th>  <th>Skipped Rule</th></tr>";
+            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>S.No.</th> <th>Field</th>  <th>Skipped Rule</th></tr>";
 
+            int serialNumber = 1; // Start with 1
             for (List<String> assertion : assertions) {
-                resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> </tr>";
+                resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>" + serialNumber++ + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> </tr>";
             }
             resultSet += "</table>";
             scenario.write(resultSet);

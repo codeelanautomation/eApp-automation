@@ -1,6 +1,7 @@
 package com.hexure.firelight.stepdefinitions;
 
 import com.hexure.firelight.pages.CommonMethodsPage;
+import com.hexure.firelight.pages.LoginPage;
 import com.hexure.firelight.pages.SoftAssertionHandlerPage;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
@@ -21,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.ParseException;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -37,12 +39,18 @@ public class Rules_StepDefinitions extends FLUtilities {
     DateTimeFormatter formatWithSlash = DateTimeFormatter.ofPattern(("MM/dd/yyyy"));
     LocalDate todaysDate = LocalDate.now();
     String prefilledValue = "";
+    private final LoginPage onLoginPage;
+    private long endTime;
+    String difference;
+    private LocalTime endLocalTime;
+    DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     public Rules_StepDefinitions(TestContext context) {
         testContext = context;
         driver = context.getDriver();
         onCommonMethodsPage = testContext.getPageObjectManager().getCommonMethodPage();
         onSoftAssertionHandlerPage = testContext.getPageObjectManager().getSoftAssertionHandlerPage();
+        onLoginPage = testContext.getPageObjectManager().getLoginPage();
     }
 
     private static int findColumnIndex(Row headerRow, String columnName) {
@@ -305,8 +313,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                     setVisibilityRules(requiredFirstAttributeElse, valueJson, wizardControlType, order, field, conditionElse, expectedOperator, result, requiredSecondAttributeElse, dependentPrefilledCondition, distinctRule);
                                                     setVisibilityRules(requiredSecondAttributeElse, valueJson, wizardControlType, order, field, conditionElse, expectedOperator, result, requiredSecondAttributeElse, dependentPrefilledCondition, distinctRule);
                                                 }
-                                            } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) = (.*?) (AND|and) (.*?) = (.*?),? then (.*)\\.?").matcher(distinctRule).find()) {
-                                                listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) = (.*?) (AND|and) (.*?) = (.*),? then (.*?)\\.?", "", distinctRule);
+                                            } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) = (.*?) (AND|and) (.*?) = (.*?),? then (.*)\\.?$").matcher(distinctRule).find()) {
+                                                listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) = (.*?) (AND|and) (.*?) = (.*),? then (.*?)\\.?$", "", distinctRule);
                                                 condition = listConditions.get(1);
                                                 expectedResult = listConditions.get(2);
                                                 conditionAnother = listConditions.get(4);
@@ -455,7 +463,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                 } else
                     onSoftAssertionHandlerPage.assertSkippedElement(driver, field, testContext);
             }
-            onSoftAssertionHandlerPage.afterScenario(testContext);
+            printFinalResults();
             workbook.close();
             fileInputStream.close();
         } catch (IOException e) {
@@ -1076,6 +1084,7 @@ public class Rules_StepDefinitions extends FLUtilities {
     }
 
     public String clickRedBubble(String valueJson) {
+        waitForPageToLoad(driver);
         String error;
         try {
             if (onCommonMethodsPage.getListErrors().isEmpty())
@@ -1101,6 +1110,18 @@ public class Rules_StepDefinitions extends FLUtilities {
             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, validationMessage, error, requiredErrorMessage, error.equalsIgnoreCase(requiredErrorMessage), testContext);
         }
         return lastInvalidEmail;
+    }
+    public void printFinalResults() {
+        endTime = System.currentTimeMillis();
+        long durationMillis = endTime - onLoginPage.getStartTime();
+        long hours = durationMillis / (1000 * 60 * 60);
+        long minutes = (durationMillis % (1000 * 60 * 60)) / (1000 * 60);
+        long seconds = ((durationMillis % (1000 * 60 * 60)) % (1000 * 60)) / 1000;
+
+        difference = String.format("%dh %dm %ds", hours, minutes, seconds);
+        testContext.getScenario().write("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'> Cucumber Report : " + LocalDate.now() + "</div>");
+        //testContext.getScenario().write("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>" + timeFormat.format(onLoginPage.getStartLocalTime()).toString() + " - " + timeFormat.format(endLocalTime) + "(" + difference + ")</div>");
+        onSoftAssertionHandlerPage.afterScenario(testContext);
     }
 }
 
