@@ -39,38 +39,5 @@ public class Hooks extends FLUtilities {
     @After
     public void cleanUp() {
         closeBrowser(testContext);
-        cucumberReport();
-    }
-    public static void cucumberReport()
-    {
-        {
-            String cssFilePath = System.getProperty("user.dir") + "\\target\\cucumber-reports\\cucumber.html\\style.css"; // Specify the path to your cucumber.html file
-            String newCSSRule1 = "details { background: #C5D88A; }\n"; // New CSS rule 1
-            String newCSSRule2 = ".cucumber-report .step .embedded-text { background: #C5D88A; }\n"; // New CSS rule 2
-
-            try {
-                // Read the existing CSS file content
-                BufferedReader reader = new BufferedReader(new FileReader(cssFilePath));
-                StringBuilder content = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    content.append(line).append("\n");
-                }
-                reader.close();
-
-                // Append the new CSS rules to the content
-                content.append(newCSSRule1);
-                content.append(newCSSRule2);
-
-                // Write the updated content back to the CSS file
-                BufferedWriter writer = new BufferedWriter(new FileWriter(cssFilePath));
-                writer.write(content.toString());
-                writer.close();
-
-                System.out.println("CSS file updated successfully 1.");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 }
