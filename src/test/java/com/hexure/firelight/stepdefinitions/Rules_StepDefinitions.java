@@ -1113,6 +1113,7 @@ public class Rules_StepDefinitions extends FLUtilities {
     }
     public void printFinalResults() {
         endTime = System.currentTimeMillis();
+        endLocalTime = LocalTime.now();
         long durationMillis = endTime - onLoginPage.getStartTime();
         long hours = durationMillis / (1000 * 60 * 60);
         long minutes = (durationMillis % (1000 * 60 * 60)) / (1000 * 60);
@@ -1120,7 +1121,7 @@ public class Rules_StepDefinitions extends FLUtilities {
 
         difference = String.format("%dh %dm %ds", hours, minutes, seconds);
         testContext.getScenario().write("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'> Cucumber Report : " + LocalDate.now() + "</div>");
-        //testContext.getScenario().write("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>" + timeFormat.format(onLoginPage.getStartLocalTime()).toString() + " - " + timeFormat.format(endLocalTime) + "(" + difference + ")</div>");
+        testContext.getScenario().write("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>" + timeFormat.format(onLoginPage.getStartLocalTime()) + " - " + timeFormat.format(endLocalTime) + "(" + difference + ")</div>");
         onSoftAssertionHandlerPage.afterScenario(testContext);
     }
 }
