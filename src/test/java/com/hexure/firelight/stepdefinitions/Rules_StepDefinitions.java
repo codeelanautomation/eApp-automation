@@ -194,7 +194,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                     conditionAnother = "";
                                     for (String distinctRule : JsonPath.read(valueJson, "$." + rule).toString().trim().split(";")) {
                                         distinctRule = distinctRule.replaceAll("(\\d+\\.\\s*)?","").trim().replaceFirst("\\.$", "").trim();
-                                        System.out.println(field + " -> " + distinctRule);
+                                        System.out.println(rowIndex + ". "+ field + " -> " + distinctRule);
                                         if (!(distinctRule.toLowerCase().contains("lookup") | distinctRule.toLowerCase().contains("not required to use") | distinctRule.toLowerCase().contains("implemented then specify") | distinctRule.toLowerCase().contains("skip for automation"))) {
                                             if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) = (.*?),? then SHOW Options (.*)\\.?").matcher(distinctRule).find()) {
                                                 listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) = (.*?),? then SHOW Options (.*)\\.?", "", distinctRule);
@@ -1120,8 +1120,8 @@ public class Rules_StepDefinitions extends FLUtilities {
         long seconds = ((durationMillis % (1000 * 60 * 60)) % (1000 * 60)) / 1000;
 
         difference = String.format("%dh %dm %ds", hours, minutes, seconds);
-        testContext.getScenario().write("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'> Cucumber Report : " + LocalDate.now() + "</div>");
-        testContext.getScenario().write("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>" + timeFormat.format(onLoginPage.getStartLocalTime()) + " - " + timeFormat.format(endLocalTime) + "(" + difference + ")</div>");
+        testContext.getScenario().write("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>Cucumber Report : " + LocalDate.now() + "</div>");
+        testContext.getScenario().write("<div width='100%' style='font-size:1.2vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>" +timeFormat.format(onLoginPage.getStartLocalTime()) + " - " + timeFormat.format(endLocalTime) + "(" + difference + ")</div>");
         onSoftAssertionHandlerPage.afterScenario(testContext);
     }
 }
