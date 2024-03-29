@@ -9,13 +9,13 @@ import org.openqa.selenium.support.PageFactory;
 
 @Data
 public class LoginPage extends FLUtilities {
-    @FindBy(xpath = "//input[@id='userName' or contains(@name,'userName')]")
+    @FindBy(id = "userName")
     private WebElement txtbox_userName;
 
-    @FindBy(xpath = "//input[@id='password' or contains(@name,'password')]")
+    @FindBy(id = "password")
     private WebElement txtbox_Password;
 
-    @FindBy(xpath = "//button[@id='login']")
+    @FindBy(id = "login")
     private WebElement btn_SignIn;
 
     public LoginPage(WebDriver driver) {
