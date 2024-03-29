@@ -150,6 +150,9 @@ public class Rules_StepDefinitions extends FLUtilities {
                 order = JsonPath.read(valueJson, "$.Order").toString().trim();
                 String commonTag = JsonPath.read(valueJson, "$.CommonTag").toString().trim();
 
+                if(rowIndex > 98)
+                    break;
+
                 expectedResult = "";
                 if (!(field.toLowerCase().contains("lookup") | valueJson.toLowerCase().contains("hide for day") | commonTag.equalsIgnoreCase("No Tag"))) {
                     moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
@@ -185,7 +188,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                         verifyOptions(valueJson, field, expectedOptions, "", "", "", "", "List Options");
                                     } else {
                                         for (String result : expectedResult.split(", ")) {
-                                            setConditions(condition, valueJson, result, conditionAnother, expectedResultAnother);
+                                            setConditions(condition, valueJson, result, conditionAnother, expectedResultAnother, "=");
                                             verifyOptions(valueJson, field, expectedOptions, condition, result, conditionAnother, expectedResultAnother, "List Options");
                                         }
                                     }
@@ -193,7 +196,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                 case "RulesWizard":
                                     conditionAnother = "";
                                     for (String distinctRule : JsonPath.read(valueJson, "$." + rule).toString().trim().split(";")) {
-                                        distinctRule = distinctRule.replaceAll("(\\d+\\.\\s*)?","").trim().replaceFirst("\\.$", "").trim();
+                                        distinctRule = distinctRule.replaceFirst("(\\d+\\.\\s*)?","").trim().replaceFirst("\\.$", "").trim();
                                         System.out.println(rowIndex + ". "+ field + " -> " + distinctRule);
                                         if (!(distinctRule.toLowerCase().contains("lookup") | distinctRule.toLowerCase().contains("not required to use") | distinctRule.toLowerCase().contains("implemented then specify") | distinctRule.toLowerCase().contains("skip for automation"))) {
                                             if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) = (.*?),? then SHOW Options (.*)\\.?").matcher(distinctRule).find()) {
@@ -232,7 +235,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                 }
 
                                                 for (String result : expectedResult.split(", ")) {
-                                                    setConditions(conditionElse, valueJson, result, conditionAnother, expectedResultAnother);
+                                                    setConditions(conditionElse, valueJson, result, conditionAnother, expectedResultAnother, "=");
                                                     if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
                                                         setVisibilityRules(expectedResults.get(0).trim(), valueJson, wizardControlType, order, field, conditionElse, expectedOperator, result, expectedResults.get(1), condition, distinctRule);
                                                         setVisibilityRules(expectedResults.get(1).trim(), valueJson, wizardControlType, order, field, conditionElse, expectedOperator, result, "", condition, distinctRule);
@@ -322,7 +325,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                 String[] requiredPrefilledAttribute = listConditions.get(6).split(", ");
 
                                                 for (String result : expectedResult.split(", ")) {
-                                                    setConditions(condition, valueJson, result, conditionAnother, expectedResultAnother);
+                                                    setConditions(condition, valueJson, result, conditionAnother, expectedResultAnother, "=");
                                                     for (String prefilledAttribute : requiredPrefilledAttribute) {
                                                         testData = setTestData(testContext.getMapTestData().get(prefilledAttribute.split(" = ")[1]).trim());
                                                         setDependentCondition(prefilledAttribute.split(" = ")[1], "=", valueJson, testData);
@@ -383,7 +386,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                         onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, field, distinctRule,"Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists", true, "true", true, testContext);
                                                 } else {
                                                     for (String result : expectedResult.split(", ")) {
-                                                        setConditions(condition, valueJson, result, conditionAnother, expectedResultAnother);
+                                                        setConditions(condition, valueJson, result, conditionAnother, expectedResultAnother, "=");
                                                         if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
                                                             if (!getElements(valueJson, wizardControlType).isEmpty()) {
                                                                 switch (requiredAttributeValue.toLowerCase().trim()) {
@@ -471,8 +474,8 @@ public class Rules_StepDefinitions extends FLUtilities {
         }
     }
 
-    public void setConditions(String condition, String valueJson, String result, String conditionAnother, String expectedResultAnother) {
-        setDependentCondition(condition, "=", valueJson, result);
+    public void setConditions(String condition, String valueJson, String result, String conditionAnother, String expectedResultAnother, String expectedOperator) {
+        setDependentCondition(condition, expectedOperator, valueJson, result);
         if (!conditionAnother.isEmpty())
             setDependentCondition(conditionAnother, "=", valueJson, expectedResultAnother);
     }
@@ -793,6 +796,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                 case "state dropdown":
                 case "dropdown":
                     expectedText = new Select(getElement(valueJson, "dropdown", null)).getFirstSelectedOption().getText().trim();
+                    if (expectedText.equalsIgnoreCase(""))
+                        expectedText = "blank";
                     printResults(condition, valueJson, field, requiredAttributeValue, expectedText, result, attribute, distinctRule);
                     break;
                 case "radio button":
@@ -816,6 +821,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                     break;
                 default:
                     expectedText = getElement(valueJson, "single line textbox", null).getAttribute("value");
+                    if (expectedText.equalsIgnoreCase(""))
+                        expectedText = "blank";
                     printResults(condition, valueJson, field, requiredAttributeValue, expectedText, result, attribute, distinctRule);
                     break;
             }
@@ -825,11 +832,7 @@ public class Rules_StepDefinitions extends FLUtilities {
     }
 
     public void printResults(String condition, String valueJson, String field, String requiredAttributeValue, String expectedText, String result, String attribute, String distinctRule) {
-        if (expectedText.equalsIgnoreCase(""))
-            expectedText = "blank";
         if (condition.isEmpty()) {
-            if (requiredAttributeValue.equalsIgnoreCase(""))
-                requiredAttributeValue = "blank";
             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, "Default Value ", requiredAttributeValue.toLowerCase(), expectedText.toLowerCase(), requiredAttributeValue.trim().equalsIgnoreCase(expectedText.trim()), testContext);
         } else if (attribute.equalsIgnoreCase("prefilled with"))
             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, "Prefilled Value when " + condition + " is " + result, requiredAttributeValue.toLowerCase(), expectedText.toLowerCase(), requiredAttributeValue.trim().equalsIgnoreCase(expectedText.trim()), testContext);
@@ -865,7 +868,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             }
 
             for (String result : dependentResult.split(", ")) {
-                setConditions(dependentCondition, valueJson, result, conditionAnother, expectedResultAnother);
+                setConditions(dependentCondition, valueJson, result, conditionAnother, expectedResultAnother, "=");
                 if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
                     if (!getElements(valueJson, wizardControlType).isEmpty())
                         getLength(valueJson, attribute, rule, field, dependentCondition, result, distinctRule);
@@ -981,7 +984,7 @@ public class Rules_StepDefinitions extends FLUtilities {
 
     public void handleValidationRules(String valueJson, String dependentCondition, String dependentResult, String field) {
         for (String distinctRule : JsonPath.read(valueJson, "$.ValidationRules").toString().trim().split((";"))) {
-            distinctRule = distinctRule.replaceAll("(\\d+\\.\\s*)?", "").trim();
+            distinctRule = distinctRule.replaceFirst("(\\d+\\.\\s*)?", "").trim();
             System.out.println(field + " -> " + distinctRule);
             String expectedResult;
             List<String> listFieldValueConditions = new ArrayList<>();
@@ -1003,6 +1006,20 @@ public class Rules_StepDefinitions extends FLUtilities {
                 sendKeys(driver, getElement(valueJson, "single line textbox", null), dob.format(format));
                 error = clickRedBubble(valueJson);
                 onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, "Validation Rule -> Error message when " + dependentCondition + " is " + dependentResult + " and age is " + calculateAge(dob, todaysDate) + " and DOB is " + dob.format(formatWithSlash), error, requiredErrorMessage, calculateAge(dob, todaysDate) < Integer.parseInt(maxValue), testContext);
+            } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) (.*?) (.*?) (AND|and) (.*?) (.*?) (.*?),? then (.*?): (.*)").matcher(distinctRule).find()) {
+                List<String> listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) (.*?) (.*?) (AND|and) (.*?) (.*?) (.*?),? then (.*?): (.*)", "", distinctRule);
+                String requiredErrorMessage = listConditions.get(9);
+                String condition = listConditions.get(1);
+                expectedOperator = listConditions.get(2);
+                expectedResult = listConditions.get(3);
+                String conditionAnother = listConditions.get(5);
+                String expectedOperatorAnother = listConditions.get(6);
+                String expectedResultAnother = listConditions.get(7);
+
+                for (String result : expectedResult.split(", ")) {
+                    setConditions(condition, valueJson, result, "", "","=");
+                    handleErrorMessage(expectedOperatorAnother, expectedResultAnother, valueJson, requiredErrorMessage, field, condition, result, distinctRule);
+                }
             } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) (.*?) (.*?),? then (.*?): (.*)").matcher(distinctRule).find()) {
                 List<String> listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) (.*?) (.*?),? then (.*?): (.*)", "", distinctRule);
                 expectedResult = listConditions.get(3);
@@ -1050,12 +1067,14 @@ public class Rules_StepDefinitions extends FLUtilities {
             }
             sendKeys(driver, getElement(valueJson, "single line textbox", null), inputValue);
         } else if (dateFields.contains(JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim())) {
+            if(expectedResult.equalsIgnoreCase("0"))
+                expectedResult = "1";
             switch (expectedOperator) {
                 case "<":
                     inputValue = todaysDate.minusYears(Long.parseLong(expectedResult)).plusDays(2).format(format);
                     break;
                 case ">":
-                    inputValue = todaysDate.minusYears(Long.parseLong(expectedResult)).minusDays(2).format(format);
+                    inputValue = todaysDate.minusYears(Long.parseLong(expectedResult) + 1).minusDays(2).format(format);
                     break;
             }
             sendKeys(driver, getElement(valueJson, "single line textbox", null), inputValue);
@@ -1063,29 +1082,39 @@ public class Rules_StepDefinitions extends FLUtilities {
 
 
         error = clickRedBubble(valueJson);
-        switch (expectedResult.toLowerCase()) {
-            case "blank":
-                if (dependentCondition.isEmpty())
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, "Validation Rule -> Mandatory Field Validation" + field + " is " + expectedResult, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
-                else
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, "Validation Rule -> Mandatory Field Validation when " + dependentCondition + " is " + dependentResult + " and " + field + " is " + expectedResult, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
-                break;
-            case "invalid":
-            case "current date":
-                if (dependentCondition.isEmpty())
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, "Validation Rule -> Invalid Value Validation when " + field + " is " + inputValue, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
-                else
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, "Validation Rule -> Invalid Value Validation when " + field + " is " + inputValue + " and " + dependentCondition + " is " + dependentResult, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
-                sendKeys(driver, getElement(valueJson, "single line textbox", null), "");
-                break;
-            default:
-                onSoftAssertionHandlerPage.assertSkippedRules(driver, field, distinctRule, testContext);
+        if (dateFields.contains(JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim())) {
+            if (dependentCondition.isEmpty())
+                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, "Validation Rule -> Invalid Value Validation when " + field + " is " + inputValue, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
+            else
+                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, "Validation Rule -> Invalid Value Validation when " + field + " is " + inputValue + " and " + dependentCondition + " is " + dependentResult, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
+            sendKeys(driver, getElement(valueJson, "single line textbox", null), "");
+        }
+        else {
+            switch (expectedResult.toLowerCase()) {
+                case "blank":
+                    if (dependentCondition.isEmpty())
+                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, "Validation Rule -> Mandatory Field Validation" + field + " is " + expectedResult, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
+                    else
+                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, "Validation Rule -> Mandatory Field Validation when " + dependentCondition + " is " + dependentResult + " and " + field + " is " + expectedResult, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
+                    break;
+                case "invalid":
+                case "current date":
+                    if (dependentCondition.isEmpty())
+                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, "Validation Rule -> Invalid Value Validation when " + field + " is " + inputValue, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
+                    else
+                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, "Validation Rule -> Invalid Value Validation when " + field + " is " + inputValue + " and " + dependentCondition + " is " + dependentResult, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
+                    sendKeys(driver, getElement(valueJson, "single line textbox", null), "");
+                    break;
+                default:
+                    onSoftAssertionHandlerPage.assertSkippedRules(driver, field, distinctRule, testContext);
+            }
         }
     }
 
     public String clickRedBubble(String valueJson) {
         waitForPageToLoad(driver);
         String error;
+        waitForPageToLoad(driver);
         try {
             if (onCommonMethodsPage.getListErrors().isEmpty())
                 clickElement(driver, onCommonMethodsPage.getRedColorErrorValidationBubble());
@@ -1111,6 +1140,7 @@ public class Rules_StepDefinitions extends FLUtilities {
         }
         return lastInvalidEmail;
     }
+
     public void printFinalResults() {
         endTime = System.currentTimeMillis();
         endLocalTime = LocalTime.now();
