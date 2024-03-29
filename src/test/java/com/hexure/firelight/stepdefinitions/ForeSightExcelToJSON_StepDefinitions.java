@@ -17,6 +17,8 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ForeSightExcelToJSON_StepDefinitions {
 
@@ -29,12 +31,35 @@ public class ForeSightExcelToJSON_StepDefinitions {
         String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + excelFile;
         try (FileInputStream file = new FileInputStream(filePath);
             XSSFWorkbook workbook = new XSSFWorkbook(file)) {
-            Sheet sheet = workbook.getSheet("E-App Wizard Spec"); // Assuming data is in the first sheet
+
+            Sheet sheet = workbook.getSheet("Data List"); // Assuming data is in the first sheet
             Iterator<Row> iterator = sheet.iterator();
 
             // Assuming the first row contains headers
             Row headerRow = iterator.next().getSheet().getRow(0);
             JSONObject jsonRows = new JSONObject();
+
+            while (iterator.hasNext()) {
+                Row currentRow = iterator.next();
+
+                // Create input file in json format
+                for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+                    Cell cell = currentRow.getCell(i);
+                    String excelValue = getCellValue(cell, jsonRows);
+                    if (!excelValue.isEmpty()) {
+                        if(jsonRows.containsKey(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")))
+                            jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), jsonRows.get(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")).toString() + ", " + excelValue);
+                        else
+                            jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), excelValue);
+                    }
+                }
+            }
+
+            sheet = workbook.getSheet("E-App Wizard Spec"); // Assuming data is in the first sheet
+            iterator = sheet.iterator();
+
+            // Assuming the first row contains headers
+            headerRow = iterator.next().getSheet().getRow(0);
             while (iterator.hasNext()) {
                 Row currentRow = iterator.next();
                 JSONObject tempJson = new JSONObject();
@@ -45,7 +70,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     if (requiredColumns.contains(headerRow.getCell(i).getStringCellValue().trim())) {
 
                         Cell cell = currentRow.getCell(i);
-                        String excelValue = getCellValue(cell);
+                        String excelValue = getCellValue(cell, jsonRows);
                         System.out.println(excelValue);
                         if (!excelValue.isEmpty())
                             tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "").replaceAll("\n", ""), excelValue);
@@ -54,27 +79,6 @@ public class ForeSightExcelToJSON_StepDefinitions {
                 jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim(), tempJson);
             }
 
-            sheet = workbook.getSheet("Data List"); // Assuming data is in the first sheet
-            iterator = sheet.iterator();
-
-            // Assuming the first row contains headers
-            headerRow = iterator.next().getSheet().getRow(0);
-
-            while (iterator.hasNext()) {
-                Row currentRow = iterator.next();
-
-                // Create input file in json format
-                for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-                        Cell cell = currentRow.getCell(i);
-                        String excelValue = getCellValue(cell);
-                        if (!excelValue.isEmpty()) {
-                            if(jsonRows.containsKey(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")))
-                                jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), jsonRows.get(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")).toString() + ", " + excelValue);
-                            else
-                                jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), excelValue);
-                        }
-                }
-            }
             JSONObject masterJson = new JSONObject();
             masterJson.put(excelFile.replaceAll(".xlsx", ""), jsonRows);
 
@@ -94,15 +98,69 @@ public class ForeSightExcelToJSON_StepDefinitions {
         }
     }
 
-    private static String getCellValue(Cell cell) {
+    private static String getCellValue(Cell cell, JSONObject jsonRows) {
         String excelValue = "";
-
+        String newValue = "";
+        List<String> listRules = new ArrayList<>();
         if (cell != null && cell.getCellType() == CellType.STRING && !(cell.getStringCellValue().trim().equalsIgnoreCase("None"))) {
             excelValue = cell.getStringCellValue().trim();
             excelValue = excelValue.replaceAll("//", "/").replaceAll("[^\\x00-\\x7F]", "").replaceAll("\n", ";").replaceAll("=", " = ").replaceAll("“", "").replaceAll("\"", "").replaceAll("[\\s]+[.]+", ".").replaceAll("[\\s]+", " ").trim();
-        } else if (cell != null && cell.getCellType() == CellType.NUMERIC) {
+            if (excelValue.toLowerCase().contains("(") & excelValue.toLowerCase().contains("or") & !(excelValue.toLowerCase().contains("skip for automation"))) {
+                listRules = Arrays.asList(excelValue.split(";"));
+                for (String rule : listRules) {
+                    JSONObject values = new JSONObject();
+                    List<String> resultValue = new ArrayList<>();
+                    if (rule.toLowerCase().contains("(") & rule.toLowerCase().contains("or")) {
+                        Pattern pattern = Pattern.compile("(.*?)\\((.*?)\\)(.*)");
+                        Matcher matcher = pattern.matcher(rule);
+                        while (matcher.find()) {
+                            List<String> orConditions = Arrays.asList(matcher.group(2).split(" OR "));
+                            for (String condition : orConditions)
+                                newValue += matcher.group(1) + condition + matcher.group(3) + ";";
+                        }
+                    } else
+                        newValue += rule + ";";
+                }
+                excelValue = newValue;
+            }
+            newValue = "";
+            if (excelValue.toLowerCase().contains("<>") & !(excelValue.toLowerCase().contains("skip for automation"))) {
+                listRules = Arrays.asList(excelValue.split(";"));
+                for (String rule : listRules) {
+                    JSONObject values = new JSONObject();
+                    List<String> resultValue = new ArrayList<>();
+                    if (rule.toLowerCase().contains("<>")) {
+                        String conditionAnother = "";
+                        String expectedResult = "";
+                        Pattern pattern = Pattern.compile("(\\d+\\.\\s*)?If (.*?) <> (.*?),? (.*)\\.?");
+                        Matcher matcher = pattern.matcher(rule);
+                        while (matcher.find()) {
+                            conditionAnother = matcher.group(2);
+                            expectedResult = matcher.group(3);
+                        }
+                        if (jsonRows.containsKey(conditionAnother)) {
+                            values = (JSONObject) jsonRows.get(conditionAnother);
+                            if (values.containsKey("ListOptions")) {
+                                resultValue = new ArrayList<>(Arrays.asList(jsonRows.get(values.get("ListOptions").toString().trim().replaceAll(" ", "")).toString().trim().split(", ")));
+
+                                Set<String> valuesToRemove = new HashSet<>(Arrays.asList("Blank", expectedResult));
+                                // Remove elements that match the given condition
+                                resultValue.removeIf(valuesToRemove::contains);
+
+//                                resultValue.remove("Blank");
+//                                resultValue.remove(expectedResult);
+                                for (String value : resultValue) {
+                                    newValue += rule.replace(expectedResult, value).replace("<>", "=") + ";";
+                                }
+                            }
+                        }
+                    } else
+                        newValue += rule + ";";
+                }
+                    excelValue = newValue;
+            }
+        } else if (cell != null && cell.getCellType() == CellType.NUMERIC)
             excelValue = String.valueOf(((XSSFCell) cell).getRawValue()).trim();
-        }
         return excelValue;
     }
 
