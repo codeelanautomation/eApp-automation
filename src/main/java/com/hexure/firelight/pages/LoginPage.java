@@ -11,13 +11,13 @@ import java.time.LocalTime;
 
 @Data
 public class LoginPage extends FLUtilities {
-    @FindBy(xpath = "//input[contains(@name,'UserName')]")
+    @FindBy(id = "userName")
     private WebElement txtbox_userName;
 
-    @FindBy(xpath = "//input[contains(@name,'Password')]")
+    @FindBy(id = "password")
     private WebElement txtbox_Password;
 
-    @FindBy(xpath = "//input[contains(@id,'Login')]")
+    @FindBy(id = "login")
     private WebElement btn_SignIn;
 
     public long startTime;

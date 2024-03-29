@@ -84,7 +84,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
                 }
             }
             testContext.getScenario().write("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>Execution Summary </div>");
-            scenario.write("<table border=\"1\" width=\"400\"> <tr style='font-weight: bold; background-color: #C5D88A;'> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Fields Evaluated</td> <td>" + fieldCount + "</td></tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Total Rules Evaluated </td> <td>" + (countFailed + countPassed) + "</td> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Rules Validation Passed</td> <td>" + countPassed + "</td> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Rules Validation Failed</td> <td>" + countFailed + "</td></tr><table>");
+            scenario.write("<table border=\"1\" width=\"400\"> <tr style='font-weight: bold; background-color: #C5D88A;'> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Fields Evaluated</td> <td>" + fieldCount + "</td></tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Total Rules Evaluated </td> <td>" + (countFailed + countPassed) + "</td> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Rules Validation Passed</td> <td><font color=\"green\">" + countPassed + "</font></td> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Rules Validation Failed</td> <td><font color=\"red\">" + countFailed + "</font></td></tr><table>");
             resultSet += "</table>";
             scenario.write(resultSet);
         }
