@@ -60,7 +60,9 @@ public class FLUtilities extends BaseClass {
                 default:
                     throw new FLException("Invalid Condition " + conditionForWait);
             }
-        } catch (StaleElementReferenceException e) {
+        } catch (StaleElementReferenceException | NoSuchElementException e) {
+            // Handle the exception here (e.g., logging)
+            System.out.println("No Such Element Exception is showing on searching element " + element);
         } catch (Exception e) {
             Log.error("Could Not Sync WebElement ", e);
             throw new FLException("Could Not Sync WebElement " + e.getMessage());
@@ -89,9 +91,9 @@ public class FLUtilities extends BaseClass {
     }
 
     protected void clickElement(WebDriver driver, WebElement element) {
-        syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
         int retryCount = 4;
-        for (int attempt = 0; attempt <= retryCount; attempt++) {
+        for (int attempt = 0; attempt < retryCount; attempt++) {
+            syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
             try {
                 if (!element.isDisplayed()) {
                     scrollToWebElement(driver, element);
@@ -99,13 +101,17 @@ public class FLUtilities extends BaseClass {
                 element.click();
                 return; // Exit the method if click is successful
             } catch (StaleElementReferenceException | ElementClickInterceptedException e) {
-                element.click();
+                // Retry after a brief delay
+                try {
+                    Thread.sleep(500); // Add a delay of 500 milliseconds between retries
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                }
             } catch (Exception e) {
                 Log.error("Could not click WebElement ", e);
-                throw new FLException("Could not click WebElement " + e.getMessage());
+                throw new FLException("Could not click WebElement: " + e.getMessage());
             }
         }
-
         // If all retry attempts fail, throw an exception
         throw new FLException("Failed to click WebElement after " + retryCount + " attempts");
     }
@@ -149,7 +155,8 @@ public class FLUtilities extends BaseClass {
             clickElement(driver, element);
             element.sendKeys(stringToInput);
             element.sendKeys(Keys.TAB);
-        } catch (ElementClickInterceptedException e) {
+        } catch (StaleElementReferenceException | ElementClickInterceptedException e) {
+            syncElement(driver,element,EnumsCommon.TOCLICKABLE.getText());
             // Scroll the element into view
             ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
             element.clear();
@@ -160,6 +167,7 @@ public class FLUtilities extends BaseClass {
             Log.error("SendKeys Failed ", e);
             throw new FLException(stringToInput + " could not be entered in element" + e.getMessage());
         }
+        waitForPageToLoad(driver);
         sleepInMilliSeconds(1000);
     }
 
@@ -440,7 +448,7 @@ public class FLUtilities extends BaseClass {
     }
 
     private boolean getCheckBoxAction(String action) {
-        return action.equalsIgnoreCase("yes") | action.equalsIgnoreCase("check") | action.equalsIgnoreCase("checked");
+        return action.toLowerCase().equalsIgnoreCase("yes") | action.toLowerCase().equalsIgnoreCase("check") | action.toLowerCase().equalsIgnoreCase("checked");
     }
 
 

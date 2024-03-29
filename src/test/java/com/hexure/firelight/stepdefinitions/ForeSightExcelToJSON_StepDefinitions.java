@@ -1,5 +1,7 @@
 package com.hexure.firelight.stepdefinitions;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.hexure.firelight.libraies.Enums.EnumsExcelColumns;
 import com.hexure.firelight.libraies.Enums.EnumsJSONProp;
 import com.hexure.firelight.libraies.EnumsCommon;
@@ -20,6 +22,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
 
     JSONObject jsonObject = new JSONObject();
     List<String> requiredColumns = Arrays.asList(EnumsExcelColumns.ENUMSEXCELCOLUMNS.getText().split(", "));
+    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     @Given("Create {string} file for eApp flow with file {string}")
     public void createForesightTestData(String jsonFile, String excelFile) {
@@ -38,10 +41,12 @@ public class ForeSightExcelToJSON_StepDefinitions {
 
                 // Create input file in json format
                 for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+//                    System.out.println(headerRow.getCell(i).getStringCellValue());
                     if (requiredColumns.contains(headerRow.getCell(i).getStringCellValue().trim())) {
 
                         Cell cell = currentRow.getCell(i);
                         String excelValue = getCellValue(cell);
+                        System.out.println(excelValue);
                         if (!excelValue.isEmpty())
                             tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "").replaceAll("\n", ""), excelValue);
                     }
@@ -80,7 +85,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
             jsonObject.put("testData", masterJson);
             FileWriter jsonTestData = new FileWriter(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
             BufferedWriter writer = new BufferedWriter(jsonTestData);
-            writer.write(String.valueOf(jsonObject));
+            writer.write(gson.toJson(jsonObject));
             writer.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -92,9 +97,9 @@ public class ForeSightExcelToJSON_StepDefinitions {
     private static String getCellValue(Cell cell) {
         String excelValue = "";
 
-        if (cell != null && cell.getCellType() == CellType.STRING && !(cell.getStringCellValue().trim().equalsIgnoreCase("None") | cell.getStringCellValue().trim().equalsIgnoreCase("Blank"))) {
+        if (cell != null && cell.getCellType() == CellType.STRING && !(cell.getStringCellValue().trim().equalsIgnoreCase("None"))) {
             excelValue = cell.getStringCellValue().trim();
-            excelValue = excelValue.replaceAll("//", "/").replaceAll("\n", ";").replaceAll("[\\s]+[.]+", ".").replaceAll("[\\s]+", " ");
+            excelValue = excelValue.replaceAll("//", "/").replaceAll("[^\\x00-\\x7F]", "").replaceAll("\n", ";").replaceAll("=", " = ").replaceAll("“", "").replaceAll("\"", "").replaceAll("[\\s]+[.]+", ".").replaceAll("[\\s]+", " ").trim();
         } else if (cell != null && cell.getCellType() == CellType.NUMERIC) {
             excelValue = String.valueOf(((XSSFCell) cell).getRawValue()).trim();
         }
@@ -105,6 +110,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
         JSONObject defaultEntry = new JSONObject();
         defaultEntry.put("InvalidTin", "123456789");
         defaultEntry.put("InvalidSSN", "123456789");
+        defaultEntry.put("InvalidDate", "02292023");
         defaultEntry.put("InvalidEmail","test,test@,testgmail.com,%%@test.c,test@gmail .com,example.com,example@@example.com");
         return defaultEntry;
     }
