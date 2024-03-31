@@ -5,7 +5,6 @@ import cucumber.api.Scenario;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.PageFactory;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -16,7 +15,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
     private final List<List<String>> assertionsNoElement = new ArrayList<>();
     private final List<List<String>> skippedRules = new ArrayList<>();
     private final List<String> skippedElements = new ArrayList<>();
-    int fieldCount = 0;
+    private int fieldCount = 0;
 
     public SoftAssertionHandlerPage(WebDriver driver) {
         initElements(driver);

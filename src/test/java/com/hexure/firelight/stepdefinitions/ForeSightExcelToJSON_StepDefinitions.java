@@ -147,8 +147,6 @@ public class ForeSightExcelToJSON_StepDefinitions {
                                 // Remove elements that match the given condition
                                 resultValue.removeIf(valuesToRemove::contains);
 
-//                                resultValue.remove("Blank");
-//                                resultValue.remove(expectedResult);
                                 for (String value : resultValue) {
                                     newValue += rule.replace(expectedResult, value).replace("<>", "=") + ";";
                                 }
@@ -164,7 +162,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
         return excelValue;
     }
 
-    private static JSONObject getJsonObject() {
+    private JSONObject getJsonObject() {
         JSONObject defaultEntry = new JSONObject();
         defaultEntry.put("InvalidTin", "123456789");
         defaultEntry.put("InvalidSSN", "123456789");
@@ -173,7 +171,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
         return defaultEntry;
     }
 
-    private static int findColumnIndex(Row headerRow, String columnName) {
+    private int findColumnIndex(Row headerRow, String columnName) {
         Iterator<Cell> cellIterator = headerRow.cellIterator();
         while (cellIterator.hasNext()) {
             Cell cell = cellIterator.next();
@@ -184,7 +182,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
         return -1; // Column not found
     }
 
-    private static String getCellColumnValue(Cell cell) {
+    private String getCellColumnValue(Cell cell) {
         return cell == null ? "" : cell.toString().trim();
     }
 
