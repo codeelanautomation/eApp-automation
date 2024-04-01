@@ -49,6 +49,9 @@ public class CommonMethodsPage extends FLUtilities {
     @FindBy(id = "imgExpand")
     private List<WebElement> List_WizardPageNameExpand;
 
+    @FindBy(id = "imgCloseWiz")
+    private List<WebElement> List_WizardPageNameCollapse;
+
 
     public CommonMethodsPage(WebDriver driver) {
         initElements(driver);

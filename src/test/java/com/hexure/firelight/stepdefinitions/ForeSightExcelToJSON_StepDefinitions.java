@@ -54,13 +54,15 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     }
                 }
             }
-
+            int count = 0;
             sheet = workbook.getSheet("E-App Wizard Spec"); // Assuming data is in the first sheet
             iterator = sheet.iterator();
 
             // Assuming the first row contains headers
             headerRow = iterator.next().getSheet().getRow(0);
             while (iterator.hasNext()) {
+                if(count++ > 110)
+                    break;
                 Row currentRow = iterator.next();
                 JSONObject tempJson = new JSONObject();
 
@@ -101,22 +103,26 @@ public class ForeSightExcelToJSON_StepDefinitions {
     private static String getCellValue(Cell cell, JSONObject jsonRows) {
         String excelValue = "";
         String newValue = "";
+        Pattern pattern = null;
         List<String> listRules = new ArrayList<>();
         if (cell != null && cell.getCellType() == CellType.STRING && !(cell.getStringCellValue().trim().equalsIgnoreCase("None"))) {
             excelValue = cell.getStringCellValue().trim();
-            excelValue = excelValue.replaceAll("//", "/").replaceAll("[^\\x00-\\x7F]", "").replaceAll("\n", ";").replaceAll("=", " = ").replaceAll("“", "").replaceAll("\"", "").replaceAll("[\\s]+[.]+", ".").replaceAll("[\\s]+", " ").trim();
-            if (excelValue.toLowerCase().contains("(") & excelValue.toLowerCase().contains("or") & !(excelValue.toLowerCase().contains("skip for automation"))) {
+            excelValue = excelValue.replaceAll("//", "/").replaceAll("[^\\x00-\\x7F]", "").replaceAll("\n", ";").replaceAll("=", " = ").replaceAll("<>", " <> ").replaceAll("“", "").replaceAll("\"", "").replaceAll("[\\s]+[.]+", ".").replaceAll("[\\s]+", " ").trim();
+            if (excelValue.toLowerCase().contains(" or ") & !(excelValue.toLowerCase().contains("skip for automation"))) {
                 listRules = Arrays.asList(excelValue.split(";"));
                 for (String rule : listRules) {
                     JSONObject values = new JSONObject();
                     List<String> resultValue = new ArrayList<>();
-                    if (rule.toLowerCase().contains("(") & rule.toLowerCase().contains("or")) {
-                        Pattern pattern = Pattern.compile("(.*?)\\((.*?)\\)(.*)");
+                    if (rule.toLowerCase().contains(" or ")) {
+                        if(rule.toLowerCase().contains("("))
+                            pattern = Pattern.compile("(.*?)\\((.*?)\\)(.*)");
+                        else
+                            pattern = Pattern.compile("(\\d+\\.\\s*)?If (.*?) (.*?)(?:,)? then (.*)\\.?");
                         Matcher matcher = pattern.matcher(rule);
                         while (matcher.find()) {
                             List<String> orConditions = Arrays.asList(matcher.group(2).split(" OR "));
                             for (String condition : orConditions)
-                                newValue += matcher.group(1) + condition + matcher.group(3) + ";";
+                                newValue += rule.replaceAll(matcher.group(2), condition).replaceAll("\\(", "").replaceAll("\\)", "") + ";";
                         }
                     } else
                         newValue += rule + ";";
@@ -132,7 +138,10 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     if (rule.toLowerCase().contains("<>")) {
                         String conditionAnother = "";
                         String expectedResult = "";
-                        Pattern pattern = Pattern.compile("(\\d+\\.\\s*)?If (.*?) <> (.*?),? (.*)\\.?");
+                        if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) <> (.*?) AND (.*?),? (.*)\\.?").matcher(rule).find())
+                            pattern = Pattern.compile("(\\d+\\.\\s*)?If (.*?) <> (.*?) AND (.*?),? (.*)\\.?");
+                        else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) <> (.*?),? then (.*)\\.?").matcher(rule).find())
+                            pattern = Pattern.compile("(\\d+\\.\\s*)?If (.*?) <> (.*?),? then (.*)\\.?");
                         Matcher matcher = pattern.matcher(rule);
                         while (matcher.find()) {
                             conditionAnother = matcher.group(2);

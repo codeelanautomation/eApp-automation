@@ -1,6 +1,5 @@
 package com.hexure.firelight.libraies;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -9,7 +8,6 @@ import org.apache.pdfbox.pdmodel.PDResources;
 import org.apache.pdfbox.pdmodel.graphics.PDXObject;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.text.PDFTextStripper;
-import org.json.simple.parser.ParseException;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
@@ -21,20 +19,12 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.StringSelection;
-import java.awt.event.KeyEvent;
 import java.io.*;
 import java.sql.*;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class FLUtilities extends BaseClass {
     private static final Logger Log = LogManager.getLogger(FLUtilities.class);
@@ -448,7 +438,7 @@ public class FLUtilities extends BaseClass {
     }
 
     private boolean getCheckBoxAction(String action) {
-        return action.toLowerCase().equalsIgnoreCase("yes") | action.toLowerCase().equalsIgnoreCase("check") | action.toLowerCase().equalsIgnoreCase("checked");
+        return action.equalsIgnoreCase("yes") | action.equalsIgnoreCase("check") | action.equalsIgnoreCase("checked");
     }
 
 

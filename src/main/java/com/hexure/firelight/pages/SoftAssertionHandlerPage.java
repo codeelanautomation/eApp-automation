@@ -14,7 +14,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
     private final List<List<String>> assertions = new ArrayList<>();
     private final List<List<String>> assertionsNoElement = new ArrayList<>();
     private final List<List<String>> skippedRules = new ArrayList<>();
-    private final List<String> skippedElements = new ArrayList<>();
+    private final List<List<String>> skippedElements = new ArrayList<>();
     private int fieldCount = 0;
 
     public SoftAssertionHandlerPage(WebDriver driver) {
@@ -39,12 +39,12 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         assertionsNoElement.add(Arrays.asList(field, message));
     }
 
-    public void assertSkippedElement(WebDriver driver, String field, TestContext testContext) {
-        skippedElements.add(field);
+    public void assertSkippedElement(WebDriver driver, String order, String field, TestContext testContext) {
+        skippedElements.add(Arrays.asList(order, field));
     }
 
-    public void assertSkippedRules(WebDriver driver, String field, String rule, TestContext testContext) {
-        skippedRules.add(Arrays.asList(field, rule));
+    public void assertSkippedRules(WebDriver driver, String order, String field, String rule, TestContext testContext) {
+        skippedRules.add(Arrays.asList(order, field, rule));
     }
 
 //    public void assertEquals(String message, Object actual, Object expected, TestContext testContext) {
@@ -103,15 +103,15 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         }
     }
 
-    private void printSkippedElements(List<String> assertions, TestContext testContext) {
+    private void printSkippedElements(List<List<String>> assertions, TestContext testContext) {
         Scenario scenario = testContext.getScenario();
         String resultSet = "";
         int count = 1;
         if (!assertions.isEmpty()) {
-            resultSet += "<div style='background-color: #C5D88A;'> </div> <table border=\"1\" width=\"100%\"> <tr style='font-weight: bold; background-color: #C5D88A;'> <th>S.No</th> <th>Fields Not Validated</th> </tr>";
+            resultSet += "<div style='background-color: #C5D88A;'> </div> <table border=\"1\" width=\"100%\"> <tr style='font-weight: bold; background-color: #C5D88A;'> <th>S.No</th> th>Order</th> <th>Fields Not Validated</th> </tr>";
 
-            for (String assertion : assertions) {
-                resultSet += "<tr style='background-color: #C5D88A;'> <td>" + (count++) + "</td> <td>" + assertion+ "</td> </tr>";
+            for (List<String> assertion : assertions) {
+                resultSet += "<tr style='background-color: #C5D88A;'> <td>" + (count++) + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1)+ "</td> </tr>";
             }
             resultSet += "</table>";
             scenario.write(resultSet);
@@ -122,11 +122,11 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         Scenario scenario = testContext.getScenario();
         String resultSet = "";
         if (!assertions.isEmpty()) {
-            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>S.No.</th> <th>Field</th>  <th>Skipped Rule</th></tr>";
+            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>S.No.</th> <th>Order</th> <th>Field</th>  <th>Skipped Rule</th></tr>";
 
             int serialNumber = 1; // Start with 1
             for (List<String> assertion : assertions) {
-                resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>" + serialNumber++ + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> </tr>";
+                resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>" + serialNumber++ + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) +"</td> <td>" + assertion.get(2) + "</td> </tr>";
             }
             resultSet += "</table> <div> </div><div style=\"text-align: center; font-weight: bold; font-size: 24px;\">End of the cucumber report</div>\n";
             scenario.write(resultSet);
