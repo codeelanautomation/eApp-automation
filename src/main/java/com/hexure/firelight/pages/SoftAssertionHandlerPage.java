@@ -128,7 +128,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
             for (List<String> assertion : assertions) {
                 resultSet += "<tr style='color: black; font-weight: bold; background-color: #C5D88A;'> <td>" + serialNumber++ + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) +"</td> <td>" + assertion.get(2) + "</td> </tr>";
             }
-            resultSet += "</table> <div> </div><div style=\"text-align: center; font-weight: bold; font-size: 24px;\">Need 20 La</div>\n";
+            resultSet += "</table> <div> </div><div style=\"text-align: center; font-weight: bold; font-size: 24px;\">End of the cucumber report</div>\n";
             scenario.write(resultSet);
         }
     }
