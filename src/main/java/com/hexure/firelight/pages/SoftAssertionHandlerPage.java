@@ -108,10 +108,10 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         String resultSet = "";
         int count = 1;
         if (!assertions.isEmpty()) {
-            resultSet += "<div style='background-color: #C5D88A;'> </div> <table border=\"1\" width=\"100%\"> <tr style='font-weight: bold; background-color: #C5D88A;'> <th>S.No</th> th>Order</th> <th>Fields Not Validated</th> </tr>";
+            resultSet += "<div style='background-color: #C5D88A;'></div> <table border=\"1\" width=\"100%\"> <tr style='font-weight: bold; background-color: #C5D88A;'> <th style='white-space: pre-wrap; min-width: 20px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>S.No</th> <th style='white-space: pre-wrap; min-width: 20px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Order</th> <th style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Fields Not Validated</th> </tr>";
 
             for (List<String> assertion : assertions) {
-                resultSet += "<tr style='background-color: #C5D88A;'> <td>" + (count++) + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1)+ "</td> </tr>";
+                resultSet += "<tr style='background-color: #C5D88A;'> <td style='white-space: pre-wrap;'>" + (count++) + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1)+ "</td> </tr>";
             }
             resultSet += "</table>";
             scenario.write(resultSet);
@@ -126,7 +126,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
 
             int serialNumber = 1; // Start with 1
             for (List<String> assertion : assertions) {
-                resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td>" + serialNumber++ + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) +"</td> <td>" + assertion.get(2) + "</td> </tr>";
+                resultSet += "<tr style='color: black; font-weight: bold; background-color: #C5D88A;'> <td>" + serialNumber++ + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) +"</td> <td>" + assertion.get(2) + "</td> </tr>";
             }
             resultSet += "</table> <div> </div><div style=\"text-align: center; font-weight: bold; font-size: 24px;\">End of the cucumber report</div>\n";
             scenario.write(resultSet);

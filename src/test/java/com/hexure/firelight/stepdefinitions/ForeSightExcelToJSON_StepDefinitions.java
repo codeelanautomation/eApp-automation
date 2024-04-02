@@ -61,8 +61,6 @@ public class ForeSightExcelToJSON_StepDefinitions {
             // Assuming the first row contains headers
             headerRow = iterator.next().getSheet().getRow(0);
             while (iterator.hasNext()) {
-                if(count++ > 110)
-                    break;
                 Row currentRow = iterator.next();
                 JSONObject tempJson = new JSONObject();
 
@@ -138,14 +136,12 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     if (rule.toLowerCase().contains("<>")) {
                         String conditionAnother = "";
                         String expectedResult = "";
-                        if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) <> (.*?) AND (.*?),? (.*)\\.?").matcher(rule).find())
-                            pattern = Pattern.compile("(\\d+\\.\\s*)?If (.*?) <> (.*?) AND (.*?),? (.*)\\.?");
-                        else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) <> (.*?),? then (.*)\\.?").matcher(rule).find())
-                            pattern = Pattern.compile("(\\d+\\.\\s*)?If (.*?) <> (.*?),? then (.*)\\.?");
+                        if (Pattern.compile("([^<>\\s]+)\\s*<>\\s*([^<>\\s]+)").matcher(rule).find())
+                            pattern = Pattern.compile("([^<>\\s]+)\\s*<>\\s*([^<>\\s]+)");
                         Matcher matcher = pattern.matcher(rule);
                         while (matcher.find()) {
-                            conditionAnother = matcher.group(2);
-                            expectedResult = matcher.group(3);
+                            conditionAnother = matcher.group(1);
+                            expectedResult = matcher.group(2);
                         }
                         if (jsonRows.containsKey(conditionAnother)) {
                             values = (JSONObject) jsonRows.get(conditionAnother);
@@ -159,7 +155,8 @@ public class ForeSightExcelToJSON_StepDefinitions {
                                 for (String value : resultValue) {
                                     newValue += rule.replace(expectedResult, value).replace("<>", "=") + ";";
                                 }
-                            }
+                            } else
+                                newValue = excelValue;
                         }
                     } else
                         newValue += rule + ";";
@@ -176,7 +173,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
         defaultEntry.put("InvalidTin", "123456789");
         defaultEntry.put("InvalidSSN", "123456789");
         defaultEntry.put("InvalidDate", "02292023");
-        defaultEntry.put("InvalidEmail","test,test@,testgmail.com,%%@test.c,test@gmail .com,example.com,example@@example.com");
+        defaultEntry.put("InvalidEmail", "test,test@,testgmail.com,%%@test.c,test@gmail .com,example.com,example@@example.com");
         return defaultEntry;
     }
 
