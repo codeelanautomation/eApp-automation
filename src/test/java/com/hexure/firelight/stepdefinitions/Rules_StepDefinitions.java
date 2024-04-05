@@ -501,7 +501,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             List<String> listConditions = getDisplayRuleConditions(valueJson, "SET ([^\\s]+)\\s* = (.*)", "", requiredAttribute);
             String conditionFirst = listConditions.get(0);
             String expectedResultFirst = listConditions.get(1);
-            if(testContext.getMapTestData().containsKey(expectedResultFirst)) {
+            if (testContext.getMapTestData().containsKey(expectedResultFirst)) {
                 String testData = setTestData(testContext.getMapTestData().get(expectedResultFirst).trim());
                 if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
                     moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
@@ -1048,7 +1048,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             distinctRule = distinctRule.replaceFirst("(\\d+\\.\\s*)?", "").trim();
             System.out.println(field + " -> " + distinctRule);
             String expectedResult;
-            List<String> listFieldValueConditions = new ArrayList<>();
+            String condition;
             String expectedOperator = "";
 
             if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) results in an age that is less than (.*?) or greater than (.*?),? then (.*?): (.*)").matcher(distinctRule).find()) {
@@ -1070,7 +1070,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             } else if (Pattern.compile("(\\d+\\.\\s*)?If ([^\\s]+)\\s* (.*?) (.*?) (?i)AND ([^\\s]+)\\s* (.*?) (.*?) (?i)AND ([^\\s]+)\\s* (.*?) (.*?),? then (.*?): (.*)").matcher(distinctRule).find()) {
                 List<String> listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) (.*?) (.*?) (?i)AND (.*?) (.*?) (.*?) (?i)AND (.*?) (.*?) (.*?),? then (.*?): (.*)", "", distinctRule);
                 String requiredErrorMessage = listConditions.get(11);
-                String condition = listConditions.get(1);
+                condition = listConditions.get(1);
                 expectedOperator = listConditions.get(2);
                 expectedResult = listConditions.get(3);
                 String conditionAnother = listConditions.get(4);
@@ -1086,14 +1086,14 @@ public class Rules_StepDefinitions extends FLUtilities {
                         setDependentCondition(conditionThird, expectedOperatorThird, valueJson, expectedResultThird);
                     if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
                         moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
-                        handleErrorMessage(expectedOperatorAnother, expectedResultAnother, valueJson, requiredErrorMessage, field, condition, result, distinctRule, order);
+                        handleErrorMessage("", expectedOperatorAnother, expectedResultAnother, valueJson, requiredErrorMessage, field, condition, result, distinctRule, order);
                     } else
                         onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order").toString().trim(), field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists when " + condition + " is " + result, true, false, false, testContext);
                 }
             } else if (Pattern.compile("(\\d+\\.\\s*)?If ([^\\s]+)\\s* (=|>|<) (.*?) (?i)AND ([^\\s]+)\\s* (.*?) (.*?),? then (.*?): (.*)").matcher(distinctRule).find()) {
                 List<String> listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If ([^\\s]+)\\s* (=|>|<) (.*?) (?i)AND (.*?) (.*?) (.*?),? then (.*?): (.*)", "", distinctRule);
                 String requiredErrorMessage = listConditions.get(8);
-                String condition = listConditions.get(1);
+                condition = listConditions.get(1);
                 expectedOperator = listConditions.get(2);
                 expectedResult = listConditions.get(3);
                 String conditionAnother = listConditions.get(4);
@@ -1104,16 +1104,17 @@ public class Rules_StepDefinitions extends FLUtilities {
                     setConditions(condition, valueJson, result, "", "", "=", "=");
                     if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
                         moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
-                        handleErrorMessage(expectedOperatorAnother, expectedResultAnother, valueJson, requiredErrorMessage, field, condition, result, distinctRule, order);
+                        handleErrorMessage("", expectedOperatorAnother, expectedResultAnother, valueJson, requiredErrorMessage, field, condition, result, distinctRule, order);
                     } else
                         onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order").toString().trim(), field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists when " + condition + " is " + result, true, false, false, testContext);
                 }
             } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) (<|=|>)(.*?),? then (.*?): (.*)").matcher(distinctRule).find()) {
                 List<String> listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) (<|=|>)(.*?),? then (.*?): (.*)", "", distinctRule);
+                condition = listConditions.get(1).trim();
                 expectedResult = listConditions.get(3).trim();
                 expectedOperator = listConditions.get(2).trim();
                 String requiredErrorMessage = listConditions.get(5).trim();
-                handleErrorMessage(expectedOperator, expectedResult, valueJson, requiredErrorMessage, field, dependentCondition, dependentResult, distinctRule, order);
+                handleErrorMessage(condition, expectedOperator, expectedResult, valueJson, requiredErrorMessage, field, dependentCondition, dependentResult, distinctRule, order);
             } else {
                 System.out.println("Rule " + distinctRule + " does not match any criteria for field " + field);
                 onSoftAssertionHandlerPage.assertSkippedRules(driver, order, field, distinctRule, testContext);
@@ -1121,10 +1122,12 @@ public class Rules_StepDefinitions extends FLUtilities {
         }
     }
 
-    public void handleErrorMessage(String expectedOperator, String expectedResult, String valueJson, String requiredErrorMessage, String field, String dependentCondition, String dependentResult, String distinctRule, String order) {
+    public void handleErrorMessage(String condition, String expectedOperator, String expectedResult, String valueJson, String requiredErrorMessage, String field, String dependentCondition, String dependentResult, String distinctRule, String order) {
         String inputValue = "";
-        List<String> dateFields = Arrays.asList("DOB", "Date", "mm/dd/yyyy");
+        List<String> dateFields = Arrays.asList("dob", "date", "mm/dd/yyyy");
         String error;
+        List<String> dateCondition = new ArrayList<>();
+
         if (expectedResult.equalsIgnoreCase("Invalid")) {
             switch (JsonPath.read(valueJson, "$.WizardControlTypes").toString()) {
                 case "TIN":
@@ -1154,15 +1157,23 @@ public class Rules_StepDefinitions extends FLUtilities {
                     break;
             }
             sendKeys(driver, getElement(valueJson, "single line textbox", null), inputValue);
-        } else if (dateFields.contains(JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim())) {
+        } else if (dateFields.contains(JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim().toLowerCase())) {
             if (expectedResult.equalsIgnoreCase("0"))
                 expectedResult = "1";
+            else if (expectedResult.toLowerCase().contains(" "))
+                dateCondition = Arrays.asList(expectedResult.split(" "));
+
             switch (expectedOperator) {
                 case "<":
                     inputValue = todaysDate.minusYears(Long.parseLong(expectedResult)).plusDays(2).format(format);
                     break;
                 case ">":
-                    inputValue = todaysDate.minusYears(Long.parseLong(expectedResult) + 1).minusDays(2).format(format);
+                    if (!dateCondition.isEmpty() && dateCondition.get(1).equalsIgnoreCase("months")) {
+                        inputValue = todaysDate.minusMonths(Long.parseLong(dateCondition.get(0))).minusDays(1).format(format);
+                        expectedResult = "current date";
+                    }
+                    else
+                        inputValue = todaysDate.minusYears(Long.parseLong(expectedResult) + 1).minusDays(1).format(format);
                     break;
             }
             sendKeys(driver, getElement(valueJson, "single line textbox", null), inputValue);
