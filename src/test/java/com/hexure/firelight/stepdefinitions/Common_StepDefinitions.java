@@ -49,7 +49,7 @@ public class Common_StepDefinitions extends FLUtilities {
         openLoginPage(driver, testContext);
         testContext.setUiType(testContext.getMapTestData().get("uiType"));
         System.out.println("UI TYPE is = " + testContext.getMapTestData().get("uiType"));
-        testContext.getScenario().write("<div width='100%' style='font-size:3vw; border: none; color: green; text-align:center; font-weight: bold; background-color: #C5D88A;'>" + testContext.getTestCaseID() + "</div>");
+        testContext.getScenario().write("<div style='width: 10%; position: absolute; top: 5px; font-size: 2vw; border: none; color: green; text-align: center; font-weight: bold; background-color: #C5D88A; left: 50%; transform: translateX(-50%);'>" + testContext.getTestCaseID() + "</div>");
         Log.info("TEST CASE " + testCaseID + " STARTED");
     }
 

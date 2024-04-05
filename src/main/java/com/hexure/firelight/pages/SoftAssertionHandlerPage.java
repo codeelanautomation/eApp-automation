@@ -82,7 +82,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
                     resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(0) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(1) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(2) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(3) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(4) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(5).trim() + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(6).trim() + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(7) + "</td> </tr>";
                 }
             }
-            testContext.getScenario().write("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>Execution Summary </div>");
+            testContext.getScenario().write("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>Execution Summary : </div>");
             scenario.write("<table border=\"1\" width=\"400\"> <tr style='font-weight: bold; background-color: #C5D88A;'> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Fields Evaluated</td> <td>" + fieldCount + "</td></tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Total Rules Evaluated </td> <td>" + (countFailed + countPassed) + "</td> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Rules Validation Passed</td> <td><font color=\"green\">" + countPassed + "</font></td> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Rules Validation Failed</td> <td><font color=\"red\">" + countFailed + "</font></td></tr><table>");
             resultSet += "</table>";
             scenario.write(resultSet);
@@ -108,7 +108,8 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         String resultSet = "";
         int count = 1;
         if (!assertions.isEmpty()) {
-            resultSet += "<div style='background-color: #C5D88A;'></div> <table border=\"1\" width=\"100%\"> <tr style='font-weight: bold; background-color: #C5D88A;'> <th style='white-space: pre-wrap; min-width: 20px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>S.No</th> <th style='white-space: pre-wrap; min-width: 20px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Order</th> <th style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Fields Not Validated</th> </tr>";
+            testContext.getScenario().write("<div width='50%' style='font-size:1.3vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>List Of Fields Not Validated : </div>");
+            resultSet += "<div style='background-color: #C5D88A;'></div> <table border=\"1\" width=\"50%\"> <tr style='font-weight: bold; background-color: #C5D88A;'> <th style='white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>S.No.</th> <th style='white-space: pre-wrap; width: 5%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Order</th> <th style='white-space: pre-wrap; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Fields Not Validated</th> </tr>";
 
             for (List<String> assertion : assertions) {
                 resultSet += "<tr style='background-color: #C5D88A;'> <td style='white-space: pre-wrap;'>" + (count++) + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1)+ "</td> </tr>";
@@ -122,11 +123,12 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         Scenario scenario = testContext.getScenario();
         String resultSet = "";
         if (!assertions.isEmpty()) {
+            testContext.getScenario().write("<div width='100%' style='font-size:1.3vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>List Of Rules Skipped : </div>");
             resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>S.No.</th> <th>Order</th> <th>Field</th>  <th>Skipped Rule</th></tr>";
 
             int serialNumber = 1; // Start with 1
             for (List<String> assertion : assertions) {
-                resultSet += "<tr style='color: black; font-weight: bold; background-color: #C5D88A;'> <td>" + serialNumber++ + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) +"</td> <td>" + assertion.get(2) + "</td> </tr>";
+                resultSet += "<tr style='color: black; background-color: #C5D88A;'> <td>" + serialNumber++ + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) +"</td> <td>" + assertion.get(2) + "</td> </tr>";
             }
             resultSet += "</table> <div> </div><div style=\"text-align: center; font-weight: bold; font-size: 24px;\">End of the cucumber report</div>\n";
             scenario.write(resultSet);

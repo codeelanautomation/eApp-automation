@@ -42,6 +42,7 @@ public class RunFireLightTest {
                 String cssFilePath = System.getProperty("user.dir") + "\\target\\cucumber-reports\\cucumber.html\\style.css"; // Specify the path to your cucumber.html file
                 String newCSSRule1 = "details { background: #C5D88A; }\n"; // New CSS rule 1
                 String newCSSRule2 = ".cucumber-report .step .embedded-text { background: #C5D88A; }\n"; // New CSS rule 2
+                String newCSSRule3 = "body { background: #C5D88A; }\n";
 
                 try {
                     // Read the existing CSS file content
@@ -56,6 +57,7 @@ public class RunFireLightTest {
                     // Append the new CSS rules to the content
                     content.append(newCSSRule1);
                     content.append(newCSSRule2);
+                    content.append(newCSSRule3);
 
                     // Write the updated content back to the CSS file
                     BufferedWriter writer = new BufferedWriter(new FileWriter(cssFilePath));
@@ -70,4 +72,3 @@ public class RunFireLightTest {
         }
     }
 }
-
