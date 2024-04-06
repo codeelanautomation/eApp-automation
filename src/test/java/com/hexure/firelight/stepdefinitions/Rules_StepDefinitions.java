@@ -181,6 +181,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                         String[] conditionValues;
                                         mapConditions.clear();
                                         String listConditionkeys = "";
+                                        List<String> invalidTag = new ArrayList<>();
 
                                         String options = JsonPath.read(valueJson, "$.ListOptions").toString().trim();
                                         if (options.contains(";"))
@@ -188,11 +189,11 @@ public class Rules_StepDefinitions extends FLUtilities {
                                         else
                                             expectedOptions = Arrays.asList(testContext.getMapTestData().get(options.replaceAll(" ", "")).split(", "));
 
-                                        List<String> invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim());
+                                        if (valueJson.contains("DisplayRules")) {
+                                            invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim());
+                                            setCombinationConditions(valueJson, "([^\\s]+)\\s* (=|<>) (.*)");
+                                        }
                                         if (invalidTag.isEmpty()) {
-                                            if (valueJson.contains("DisplayRules"))
-                                                setCombinationConditions(valueJson, "([^\\s]+)\\s* (=|<>) (.*)");
-
                                             if (combinationConditions.isEmpty()) {
                                                 verifyOptions(valueJson, field, expectedOptions, "", "", "", "", "List Options");
                                             } else {
@@ -472,7 +473,9 @@ public class Rules_StepDefinitions extends FLUtilities {
                                         }
                                         break;
                                     case "Length":
-                                        invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim());
+                                        invalidTag = new ArrayList<>();
+                                        if (valueJson.contains("DisplayRules"))
+                                            invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim());
                                         if (invalidTag.isEmpty()) {
                                             if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank"))
                                                 getAttributeValue(field, valueJson, order, wizardControlType, rule, "maxLength", "Length");
@@ -480,7 +483,9 @@ public class Rules_StepDefinitions extends FLUtilities {
                                             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, field, "Length", "Key " + invalidTag + " not a valid tag", false, "true", false, testContext);
                                         break;
                                     case "Format":
-                                        invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim());
+                                        invalidTag = new ArrayList<>();
+                                        if (valueJson.contains("DisplayRules"))
+                                            invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim());
                                         if (invalidTag.isEmpty()) {
                                             if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank"))
                                                 getAttributeValue(field, valueJson, order, wizardControlType, rule, "mask", "Format");
@@ -1330,12 +1335,14 @@ public class Rules_StepDefinitions extends FLUtilities {
         List<String> allKeys = new ArrayList<>();
         String listConditionkeys = "";
         String values;
+        List<String> invalidTag = new ArrayList<>();
 
-        List<String> invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim());
-        if (invalidTag.isEmpty()) {
-            if (valueJson.contains("DisplayRules"))
+            if (valueJson.contains("DisplayRules")) {
+                invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim());
                 setCombinationConditions(valueJson, "([^\\s]+)\\s* (=|<>) (.*)");
+            }
 
+        if (invalidTag.isEmpty()) {
             if (combinationConditions.isEmpty()) {
                 if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim()))
                     moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
