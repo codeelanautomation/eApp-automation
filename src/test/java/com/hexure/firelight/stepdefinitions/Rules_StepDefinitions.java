@@ -150,7 +150,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             int fieldColumnIndex = findColumnIndex(headerRow, EnumsCommon.FIELD.getText());
             int sectionColumnIndex = findColumnIndex(headerRow, EnumsCommon.SECTION.getText());
             List<String> rulesList = Arrays.asList("ListOptions", "ValidationRules", "RulesWizard", "Length", "Format");
-            for (int rowIndex = 104; rowIndex < sheet.getLastRowNum(); rowIndex++) {
+            for (int rowIndex = 0; rowIndex < sheet.getLastRowNum(); rowIndex++) {
                 field = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, fieldColumnIndex);
                 section = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, sectionColumnIndex);
                 String valueJson = testContext.getMapTestData().get(field).trim();
@@ -161,7 +161,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                 combinationConditions = new ArrayList<>();
                 howManyOperator = new HashMap<>();
 
-                if (rowIndex > 104)
+                if (rowIndex > 148)
                     break;
 
                 expectedResult = "";
@@ -662,7 +662,7 @@ public class Rules_StepDefinitions extends FLUtilities {
     }
 
     public void handleSectionRules(String valueJson, String wizardControlType, String section, String order, String field, String distinctRule) {
-        boolean expectedFlag = getElementSection(valueJson, wizardControlType).getText().equalsIgnoreCase(section);
+        boolean expectedFlag = getElementSection(valueJson, wizardControlType, section);
         onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, field, distinctRule, "Field is displayed under section " + section, expectedFlag, "true", expectedFlag, testContext);
     }
 
@@ -859,17 +859,17 @@ public class Rules_StepDefinitions extends FLUtilities {
         }
     }
 
-    public WebElement getElementSection(String valueJson, String datatype) {
+    public boolean getElementSection(String valueJson, String datatype, String section) {
         String commonTag = JsonPath.read(valueJson, "$.CommonTag").toString().trim();
         switch (datatype.toLowerCase()) {
             case "dropdown":
             case "state dropdown":
-                return findElement(driver, String.format(onCommonMethodsPage.getSectionSelect(), commonTag));
+                return findElements(driver, String.format(onCommonMethodsPage.getSectionSelect(), section, commonTag)).size() > 0;
             case "checkbox":
             case "radio button":
-                return findElement(driver, String.format(onCommonMethodsPage.getSectionRadio(), commonTag));
+                return findElements(driver, String.format(onCommonMethodsPage.getSectionRadio(), section, commonTag)).size() > 0;
             default:
-                return findElement(driver, String.format(onCommonMethodsPage.getSectionInput(), commonTag));
+                return findElements(driver, String.format(onCommonMethodsPage.getSectionInput(), section, commonTag)).size() > 0;
         }
     }
 
@@ -1271,10 +1271,11 @@ public class Rules_StepDefinitions extends FLUtilities {
 
             switch (expectedOperator) {
                 case "<":
-                    inputValue = todaysDate.minusYears(Long.parseLong(expectedResult)).minusDays(1).format(format);
+                    inputValue = todaysDate.minusYears(Long.parseLong(expectedResult)).plusDays(1).format(format);
                     break;
                 case "=":
-                    inputValue = todaysDate.minusYears(Long.parseLong(expectedResult)).format(format);
+                    if(!expectedResult.equalsIgnoreCase("blank"))
+                        inputValue = todaysDate.minusYears(Long.parseLong(expectedResult)).format(format);
                     break;
                 case ">":
                     if (!dateCondition.isEmpty() && dateCondition.get(1).equalsIgnoreCase("months")) {
