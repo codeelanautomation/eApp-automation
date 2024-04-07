@@ -359,7 +359,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                         if (valueJson.contains("DisplayRules"))
                                                             setCombinationConditions(valueJson, "(.*?) (=|<>) (.*)");
 
-                                                        if (combinationConditions.isEmpty()) {
+                                                        if (combinationConditions.isEmpty()) {   //Display rules is not available for this field
                                                             if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
                                                                 moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
                                                                 if (!getElements(valueJson, wizardControlType).isEmpty()) {
@@ -722,6 +722,36 @@ public class Rules_StepDefinitions extends FLUtilities {
         waitForPageToLoad(driver);
         sleepInMilliSeconds(1000);
     }
+
+    public void resetValue(String valueDependentJson, String result) {
+        waitForPageToLoad(driver);
+        if(result.equalsIgnoreCase("Blank"))
+        {
+            result = "";
+        }
+        switch (JsonPath.read(valueDependentJson, "$.WizardControlTypes").toString().trim().toLowerCase()) {
+            case "dropdown":
+            case "state dropdown":
+                new Select(getElement(valueDependentJson, "dropdown", null)).selectByVisibleText(result);
+                syncElement(driver, getElement(valueDependentJson, "dropdown", null), EnumsCommon.TOCLICKABLE.getText());
+                break;
+            case "checkbox":
+                checkBoxSelectYesNO("uncheck", getElement(valueDependentJson, "checkbox", null));
+                syncElement(driver, getElement(valueDependentJson, "checkbox", null), EnumsCommon.TOCLICKABLE.getText());
+                break;
+            case "radio button":
+                checkBoxSelectYesNO("unselected", getElement(valueDependentJson, "radioField", result));
+                syncElement(driver, getElement(valueDependentJson, "radioField", result), EnumsCommon.TOCLICKABLE.getText());
+                break;
+            default:
+                sendKeys(driver, getElement(valueDependentJson, "single line textbox", null), "");
+                syncElement(driver, getElement(valueDependentJson, "single line textbox", null), EnumsCommon.TOCLICKABLE.getText());
+                break;
+        }
+        waitForPageToLoad(driver);
+        sleepInMilliSeconds(1000);
+    }
+
 
     public String setTestData(String valueDependentJson) {
         switch (JsonPath.read(valueDependentJson, "$.WizardControlTypes").toString().trim().toLowerCase()) {
@@ -1125,7 +1155,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                 error = clickRedBubble(valueJson);
                 onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, "Validation Rule -> Error message when " + dependentCondition + " is " + dependentResult + " and age is " + calculateAge(dob, todaysDate) + " and DOB is " + dob.format(formatWithSlash), error, requiredErrorMessage, calculateAge(dob, todaysDate) < Integer.parseInt(maxValue), testContext);
             } else if (Pattern.compile("(\\d+\\.\\s*)?If ([^\\s]+)\\s* (.*?) (.*?) (?i)AND ([^\\s]+)\\s* (.*?) (.*?) (?i)AND ([^\\s]+)\\s* (.*?) (.*?),? then (.*?): (.*)").matcher(distinctRule).find()) {
-                List<String> listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) (.*?) (.*?) (?i)AND (.*?) (.*?) (.*?) (?i)AND (.*?) (.*?) (.*?),? then (.*?): (.*)", "", distinctRule);
+                List<String> listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If ([^\\s]+)\\s* (.*?) (.*?) (?i)AND ([^\\s]+)\\s* (.*?) (.*?) (?i)AND ([^\\s]+)\\s* (.*?) (.*?),? then (.*?): (.*)", "", distinctRule);
                 String requiredErrorMessage = listConditions.get(11);
                 condition = listConditions.get(1);
                 expectedOperator = listConditions.get(2);
@@ -1171,7 +1201,9 @@ public class Rules_StepDefinitions extends FLUtilities {
                 expectedResult = listConditions.get(3).trim();
                 expectedOperator = listConditions.get(2).trim();
                 String requiredErrorMessage = listConditions.get(5).trim();
-                handleErrorMessage(condition, expectedOperator, expectedResult, valueJson, requiredErrorMessage, field, dependentCondition, dependentResult, distinctRule, order);
+                for (String result : expectedResult.split(", ")) {
+                    handleErrorMessage(condition, expectedOperator, result, valueJson, requiredErrorMessage, field, dependentCondition, dependentResult, distinctRule, order);
+                }
             } else {
                 System.out.println("Rule " + distinctRule + " does not match any criteria for field " + field);
                 onSoftAssertionHandlerPage.assertSkippedRules(driver, order, field, distinctRule, testContext);
@@ -1185,25 +1217,30 @@ public class Rules_StepDefinitions extends FLUtilities {
         String error;
         List<String> dateCondition = new ArrayList<>();
 
-        if (expectedResult.equalsIgnoreCase("Invalid")) {
-            switch (JsonPath.read(valueJson, "$.WizardControlTypes").toString()) {
-                case "TIN":
+        List<String> expectedValues = Arrays.asList("Invalid", "Yes","Husband", "Wife", "Spouse");
+        if (expectedValues.stream().anyMatch(expectedResult::contains)) {
+            switch (JsonPath.read(valueJson, "$.WizardControlTypes").toString().toLowerCase()) {
+                case "tin":
                     inputValue = testContext.getMapTestData().get("InvalidTin").trim();
                     break;
-                case "SSN":
+                case "ssn":
                     inputValue = testContext.getMapTestData().get("InvalidSSN").trim();
                     break;
-                case "Date":
-                case "DOB":
+                case "date":
+                case "dob":
                 case "mm/dd/yyyy":
                     inputValue = testContext.getMapTestData().get("InvalidDate").trim();
                     break;
-                case "Email":
-                case "Single Line Textbox":
+                case "email":
+                case "single line textbox":
                     inputValue = validateInvalidEmail(valueJson, field, requiredErrorMessage, distinctRule);
                     break;
+                case "radio button":
+                    inputValue = expectedResult;
+                    break;
             }
-            sendKeys(driver, getElement(valueJson, "single line textbox", null), inputValue);
+            setValue(valueJson,inputValue);
+            //sendKeys(driver, getElement(valueJson, "single line textbox", null), inputValue);
         } else if (expectedResult.equalsIgnoreCase("current date")) {
             switch (expectedOperator) {
                 case "=":
@@ -1254,11 +1291,20 @@ public class Rules_StepDefinitions extends FLUtilities {
                     break;
                 case "invalid":
                 case "current date":
+                case "yes":
+                case "husband":
+                case "wife":
+                case "spouse":
                     if (dependentCondition.isEmpty())
                         onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, "Validation Rule -> Invalid Value Validation when " + field + " is " + inputValue, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
                     else
                         onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), field, distinctRule, "Validation Rule -> Invalid Value Validation when " + field + " is " + inputValue + " and " + dependentCondition + " is " + dependentResult, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
-                    sendKeys(driver, getElement(valueJson, "single line textbox", null), "");
+                    if(JsonPath.read(valueJson, "$.WizardControlTypes").toString().equals("Radio Button"))
+                    {
+                        resetValue(valueJson,inputValue);
+                    }
+                    else
+                        resetValue(valueJson,"");
                     break;
                 default:
                     onSoftAssertionHandlerPage.assertSkippedRules(driver, order, field, distinctRule, testContext);

@@ -70,7 +70,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         int countFailed = 0;
 
         if (!assertions.isEmpty()) {
-            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>S.No</th>  <th>Order</th>  <th>Field</th> <th>Rule</th> <th>Validations</th> <th>Actual Value (UI)</th> <th>Expected Value (Excel Template)</th> <th>Result</th> </tr>";
+            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th style=\"white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;\">S.No.</th>  <th style=\"white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;\">Order</th>  <th>Field</th> <th>Rule</th> <th>Validations</th> <th>Actual Value (UI)</th> <th>Expected Value (Excel Template)</th> <th>Result</th> </tr>";
 
             for (List<String> assertion : assertions) {
                 if (assertion.get(7).contains("Passed")) {
