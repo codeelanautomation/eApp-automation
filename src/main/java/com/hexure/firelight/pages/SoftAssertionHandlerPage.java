@@ -39,8 +39,8 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         assertionsNoElement.add(Arrays.asList(field, message));
     }
 
-    public void assertSkippedElement(WebDriver driver, String order, String field, TestContext testContext) {
-        skippedElements.add(Arrays.asList(order, field));
+    public void assertSkippedElement(WebDriver driver, String order, String field, String reason,TestContext testContext) {
+        skippedElements.add(Arrays.asList(order, field, reason));
     }
 
     public void assertSkippedRules(WebDriver driver, String order, String field, String rule, TestContext testContext) {
@@ -109,10 +109,10 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         int count = 1;
         if (!assertions.isEmpty()) {
             testContext.getScenario().write("<div width='50%' style='font-size:1.3vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>List Of Fields Not Validated : </div>");
-            resultSet += "<div style='background-color: #C5D88A;'></div> <table border=\"1\" width=\"50%\"> <tr style='font-weight: bold; background-color: #C5D88A;'> <th style='white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>S.No.</th> <th style='white-space: pre-wrap; width: 5%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Order</th> <th style='white-space: pre-wrap; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Fields Not Validated</th> </tr>";
+            resultSet += "<div style='background-color: #C5D88A;'></div> <table border=\"1\" width=\"50%\"> <tr style='font-weight: bold; background-color: #C5D88A;'> <th style='white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>S.No.</th> <th style='white-space: pre-wrap; width: 5%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Order</th> <th style='white-space: pre-wrap; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Fields Not Validated</th> <th style='white-space: pre-wrap; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Reason</th> </tr>";
 
             for (List<String> assertion : assertions) {
-                resultSet += "<tr style='background-color: #C5D88A;'> <td style='white-space: pre-wrap;'>" + (count++) + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1)+ "</td> </tr>";
+                resultSet += "<tr style='background-color: #C5D88A;'> <td style='white-space: pre-wrap;'>" + (count++) + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> <td>" + assertion.get(2) + "</td> </tr>";
             }
             resultSet += "</table>";
             scenario.write(resultSet);
