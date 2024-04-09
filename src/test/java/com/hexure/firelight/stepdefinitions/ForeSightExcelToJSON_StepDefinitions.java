@@ -126,12 +126,12 @@ public class ForeSightExcelToJSON_StepDefinitions {
                 excelValue = newValue;
             }
             newValue = "";
-            if (excelValue.toLowerCase().contains("<>") & !(excelValue.toLowerCase().contains("skip for automation"))) {
+            if (excelValue.toLowerCase().contains("<>")) {
                 listRules = Arrays.asList(excelValue.split(";"));
                 for (String rule : listRules) {
                     JSONObject values = new JSONObject();
                     List<String> resultValue = new ArrayList<>();
-                    if (rule.toLowerCase().contains("<>")) {
+                    if (rule.toLowerCase().contains("<>") & !(rule.toLowerCase().contains("skip for automation"))) {
                         String conditionAnother = "";
                         String expectedResult = "";
                         if (Pattern.compile("(?i)([^<>\\s]+)\\s*<>(.*?)(?:,|AND|then|$)").matcher(rule).find())
@@ -150,7 +150,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
                                     resultValue.removeIf(valuesToRemove::contains);
 
                                     for (String value : resultValue) {
-                                        newValue += rule.replace(expectedResult, value).replace("<>", "=") + ";";
+                                        newValue += rule.replace(expectedResult + " ", value + " ").replace("<>", "=") + ";";
                                     }
                                 } else
                                     newValue += rule + ";";
