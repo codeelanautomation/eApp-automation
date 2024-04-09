@@ -25,13 +25,13 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         PageFactory.initElements(driver, this);
     }
 
-    public void assertTrue(WebDriver driver, String countValidation, String order, String field, String distinctRule, String rule, Object actualValue, Object expectedValue, boolean condition, TestContext testContext) {
+    public void assertTrue(WebDriver driver, String countValidation, String order, String moduleName, String field, String distinctRule, String rule, Object actualValue, Object expectedValue, boolean condition, TestContext testContext) {
         String result = "Passed";
         if (!condition) {
             captureScreenshot(driver, testContext, condition);
             result = "Failed";
         }
-        assertions.add(Arrays.asList(countValidation, order, field, distinctRule, rule, actualValue.toString(), expectedValue.toString(), result));
+        assertions.add(Arrays.asList(countValidation, order, moduleName, field, distinctRule, rule, actualValue.toString(), expectedValue.toString(), result));
         fieldCount = Integer.parseInt(order);
     }
 
@@ -39,12 +39,12 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         assertionsNoElement.add(Arrays.asList(field, message));
     }
 
-    public void assertSkippedElement(WebDriver driver, String order, String field, String reason,TestContext testContext) {
-        skippedElements.add(Arrays.asList(order, field, reason));
+    public void assertSkippedElement(WebDriver driver, String order, String moduleName,String field, String reason,TestContext testContext) {
+        skippedElements.add(Arrays.asList(order, moduleName,field, reason));
     }
 
-    public void assertSkippedRules(WebDriver driver, String order, String field, String rule, TestContext testContext) {
-        skippedRules.add(Arrays.asList(order, field, rule));
+    public void assertSkippedRules(WebDriver driver, String order, String moduleName, String field, String rule, String reason, TestContext testContext) {
+        skippedRules.add(Arrays.asList(order,moduleName,field, rule, reason));
     }
 
 //    public void assertEquals(String message, Object actual, Object expected, TestContext testContext) {
@@ -124,11 +124,11 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         String resultSet = "";
         if (!assertions.isEmpty()) {
             testContext.getScenario().write("<div width='100%' style='font-size:1.3vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>List Of Rules Skipped : </div>");
-            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>S.No.</th> <th>Order</th> <th>Field</th>  <th>Skipped Rule</th></tr>";
+            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>S.No.</th> <th>Order</th> <th>Field</th>  <th>Skipped Rule</th>  <th>Reason for skip</th></tr>";
 
             int serialNumber = 1; // Start with 1
             for (List<String> assertion : assertions) {
-                resultSet += "<tr style='color: black; background-color: #C5D88A;'> <td>" + serialNumber++ + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) +"</td> <td>" + assertion.get(2) + "</td> </tr>";
+                resultSet += "<tr style='color: black; background-color: #C5D88A;'> <td>" + serialNumber++ + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) +"</td> <td>" + assertion.get(2) + "</td> <td>" + assertion.get(3) +"</td> </tr>";
             }
             resultSet += "</table> <div> </div><div style=\"text-align: center; font-weight: bold; font-size: 24px;\">End of the cucumber report</div>\n";
             scenario.write(resultSet);
