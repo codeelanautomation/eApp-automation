@@ -1240,9 +1240,16 @@ public class Rules_StepDefinitions extends FLUtilities {
                 condition = listConditions.get(1).trim();
                 expectedResult = listConditions.get(3).trim();
                 expectedOperator = listConditions.get(2).trim();
+                boolean flag = true;
                 String requiredErrorMessage = listConditions.get(5).trim();
                 for (String result : expectedResult.split(", ")) {
-                    handleErrorMessage(expectedOperator, result, valueJson, requiredErrorMessage, field, dependentCondition, dependentResult, distinctRule, order);
+                    if(JsonPath.read(testContext.getMapTestData().get(condition).trim(), "$.WizardControlTypes").toString().trim().toLowerCase().equals("dropdown"))
+                        if(!getOptions(testContext.getMapTestData().get(condition).trim(), JsonPath.read(testContext.getMapTestData().get(condition).trim(), "$.WizardControlTypes").toString().trim()).contains(result))
+                            flag = false;
+                    if (flag)
+                        handleErrorMessage(expectedOperator, result, valueJson, requiredErrorMessage, field, dependentCondition, dependentResult, distinctRule, order);
+                    else
+                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order,moduleName, field, distinctRule, "Value " + result + " does not exist for field " + condition, testContext);
                 }
             } else {
                 System.out.println("Rule " + distinctRule + " does not match any criteria for field " + field);

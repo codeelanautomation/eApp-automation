@@ -142,7 +142,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
                             expectedResult = matcher.group(2).trim();
                             if (jsonRows.containsKey(conditionAnother)) {
                                 values = (JSONObject) jsonRows.get(conditionAnother);
-                                if (values.containsKey("ListOptions")) {
+                                if (values.containsKey("ListOptions") && !(values.get("ListOptions").toString().trim().contains("Number"))) {
                                     resultValue = new ArrayList<>(Arrays.asList(jsonRows.get(values.get("ListOptions").toString().trim().replaceAll(" ", "")).toString().trim().split(", ")));
 
                                     Set<String> valuesToRemove = new HashSet<>(Arrays.asList("Blank", expectedResult));
@@ -150,7 +150,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
                                     resultValue.removeIf(valuesToRemove::contains);
 
                                     for (String value : resultValue) {
-                                        newValue += rule.replace(expectedResult + " ", value + " ").replace("<>", "=") + ";";
+                                        newValue += rule.replace(expectedResult, value).replace("<>", "=") + ";";
                                     }
                                 } else
                                     newValue += rule + ";";

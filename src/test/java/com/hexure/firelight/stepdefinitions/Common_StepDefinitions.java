@@ -13,6 +13,8 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.*;
 
+import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.util.List;
 
 public class Common_StepDefinitions extends FLUtilities {
@@ -34,11 +36,11 @@ public class Common_StepDefinitions extends FLUtilities {
     }
 
     @Given("User is on FireLight login page for TestCase {string}")
-    public void userIsOnFLLoginPage(String testCaseID) {
+    public void userIsOnFLLoginPage(String testCaseID) throws AWTException {
         commonSetup(testCaseID);
     }
 
-    private void commonSetup(String testCaseID) {
+    private void commonSetup(String testCaseID) throws AWTException {
         testContext.setTestCaseID(testCaseID.split("_")[1]);
         testContext.setModuleName(testCaseID.split("_")[0]);
         System.out.println("Environment = " + testContext.getEnvironment());
@@ -49,6 +51,14 @@ public class Common_StepDefinitions extends FLUtilities {
         openLoginPage(driver, testContext);
         testContext.setUiType(testContext.getMapTestData().get("uiType"));
         System.out.println("UI TYPE is = " + testContext.getMapTestData().get("uiType"));
+        Robot robot = new Robot();
+        System.out.println("About to zoom in");
+        for (int i = 0; i < 4; i++) {
+            robot.keyPress(KeyEvent.VK_CONTROL);
+            robot.keyPress(KeyEvent.VK_SUBTRACT);
+            robot.keyRelease(KeyEvent.VK_SUBTRACT);
+            robot.keyRelease(KeyEvent.VK_CONTROL);
+        }
         testContext.getScenario().write("<div style='width: 10%; position: absolute; top: 5px; font-size: 2vw; border: none; color: green; text-align: center; font-weight: bold; background-color: #C5D88A; left: 50%; transform: translateX(-50%);'>" + testContext.getTestCaseID() + "</div>");
         Log.info("TEST CASE " + testCaseID + " STARTED");
     }
