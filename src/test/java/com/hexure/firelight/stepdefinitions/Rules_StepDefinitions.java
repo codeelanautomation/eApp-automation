@@ -223,7 +223,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                             moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
                                                         verifyOptions(valueJson, field, expectedOptions, displayedText, "List Options");
                                                     } else
-                                                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order,moduleName, field, "ListOptions", "Key " + listConditionkeys + " does not exists in JSON", false, "true", false, testContext);
+                                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order,moduleName, field, "List Options", "Key " + listConditionkeys + " does not exists in JSON", testContext);
                                                 }
                                                 combinationConditions.clear();
                                                 howManyOperator.clear();
@@ -288,7 +288,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                         break;
                                                                 }
                                                             } else
-                                                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order,moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", false, "true", false, testContext);
+                                                                onSoftAssertionHandlerPage.assertSkippedRules(driver, order,moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
                                                         }
                                                         combinationConditions.clear();
                                                         howManyOperator.clear();
@@ -343,7 +343,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                 } else
                                                                     onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order,moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, hidden, hidden, testContext);
                                                             } else
-                                                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order,moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", false, "true", false, testContext);
+                                                                onSoftAssertionHandlerPage.assertSkippedRules(driver, order,moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
                                                         }
                                                         combinationConditions.clear();
                                                         howManyOperator.clear();
@@ -437,7 +437,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                     } else
                                                                         onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order,moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, "true", true, testContext);
                                                                 } else
-                                                                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order,moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", false, "true", false, testContext);
+                                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order,moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
                                                             }
                                                             combinationConditions.clear();
                                                             howManyOperator.clear();
@@ -479,7 +479,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                         sendKeys(driver, getElement(valueJson, wizardControlType, null), birthDateFutureMonth.format(format));
                                                                         onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order,moduleName, field, distinctRule, "Age" + displayedText + " and birth date is " + birthDateFutureMonth.format(formatWithSlash), "24", String.valueOf(calculateAge(birthDateFutureMonth, todaysDate)), String.valueOf(calculateAge(birthDateFutureMonth, todaysDate)).equalsIgnoreCase("24"), testContext);
                                                                     } else
-                                                                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order,moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", false, "true", false, testContext);
+                                                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order,moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
                                                                 }
                                                                 combinationConditions.clear();
                                                                 howManyOperator.clear();
@@ -1045,7 +1045,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                     } else
                         onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order,moduleName, field, distinctRule, rule + " Validations -> Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, false, false, testContext);
                 } else
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order,moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", false, "true", false, testContext);
+                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order,moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
             }
             combinationConditions.clear();
             howManyOperator.clear();
@@ -1162,6 +1162,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             String expectedResult;
             String condition;
             String expectedOperator = "";
+            String listConditionkeys = "";
 
             if(!dependentCondition.isEmpty())
                 setConditions1(dependentCondition, valueJson, dependentResult, howManyOperator.get(dependentCondition));
@@ -1173,17 +1174,23 @@ public class Rules_StepDefinitions extends FLUtilities {
                 String minValue = listConditions.get(2);
                 String maxValue = listConditions.get(3);
                 String requiredErrorMessage = listConditions.get(5);
+                condition = listConditions.get(1);
+
                 String error;
                 LocalDate dob = todaysDate.minusYears(Long.parseLong(minValue)).minusMonths(8);
 
-                sendKeys(driver, getElement(valueJson, "single line textbox", null), dob.format(format));
-                error = clickRedBubble(valueJson);
-                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"),moduleName, field, distinctRule, "Validation Rule -> Error message when " + dependentCondition + " is " + dependentResult + " and age is " + calculateAge(dob, todaysDate) + " and DOB is " + dob.format(formatWithSlash), error, requiredErrorMessage, calculateAge(dob, todaysDate) > Integer.parseInt(minValue), testContext);
+                listConditionkeys = findKeyExistsJSON(condition);
+                if (!listConditionkeys.equalsIgnoreCase("")) {
+                    sendKeys(driver, getElement(valueJson, "single line textbox", null), dob.format(format));
+                    error = clickRedBubble(valueJson);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), moduleName, field, distinctRule, "Validation Rule -> Error message when " + dependentCondition + " is " + dependentResult + " and age is " + calculateAge(dob, todaysDate) + " and DOB is " + dob.format(formatWithSlash), error, requiredErrorMessage, calculateAge(dob, todaysDate) > Integer.parseInt(minValue), testContext);
 
-                dob = todaysDate.minusYears(Long.parseLong(maxValue) + 1).minusMonths(1);
-                sendKeys(driver, getElement(valueJson, "single line textbox", null), dob.format(format));
-                error = clickRedBubble(valueJson);
-                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"),moduleName, field, distinctRule, "Validation Rule -> Error message when " + dependentCondition + " is " + dependentResult + " and age is " + calculateAge(dob, todaysDate) + " and DOB is " + dob.format(formatWithSlash), error, requiredErrorMessage, calculateAge(dob, todaysDate) < Integer.parseInt(maxValue), testContext);
+                    dob = todaysDate.minusYears(Long.parseLong(maxValue) + 1).minusMonths(1);
+                    sendKeys(driver, getElement(valueJson, "single line textbox", null), dob.format(format));
+                    error = clickRedBubble(valueJson);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), moduleName, field, distinctRule, "Validation Rule -> Error message when " + dependentCondition + " is " + dependentResult + " and age is " + calculateAge(dob, todaysDate) + " and DOB is " + dob.format(formatWithSlash), error, requiredErrorMessage, calculateAge(dob, todaysDate) < Integer.parseInt(maxValue), testContext);
+                } else
+                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order,moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
             } else if (Pattern.compile("(\\d+\\.\\s*)?If ([^\\s]+)\\s* (.*?) (.*?) (?i)AND ([^\\s]+)\\s* (.*?) (.*?) (?i)AND ([^\\s]+)\\s* (.*?) (.*?),? then (.*?): (.*)").matcher(distinctRule).find()) {
                 List<String> listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If ([^\\s]+)\\s* (.*?) (.*?) (?i)AND ([^\\s]+)\\s* (.*?) (.*?) (?i)AND ([^\\s]+)\\s* (.*?) (.*?),? then (.*?): (.*)", "", distinctRule);
                 String requiredErrorMessage = listConditions.get(11);
@@ -1204,19 +1211,28 @@ public class Rules_StepDefinitions extends FLUtilities {
                     expectedRangeValues.add(String.valueOf(Integer.parseInt(expectedResultAnother) + 1));
                     expectedOperatorAnother = "<";
                 }
-                for (String result : expectedResult.split(", ")) {
-                    setConditions(condition, valueJson, result, conditionAnother, expectedResultAnother, expectedOperator, expectedOperatorAnother);
-                    if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
-                        moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
-                        if (expectedRangeValues.isEmpty())
-                            handleErrorMessage(expectedOperatorAnother, expectedResultAnother, valueJson, requiredErrorMessage, field, condition, result, distinctRule, order);
-                        else {
-                            for (String expectedValue : expectedRangeValues)
-                                handleErrorMessage("=", expectedValue, valueJson, requiredErrorMessage, field, condition, result, distinctRule, order);
-                        }
-                    } else
-                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order").toString().trim(),moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists when " + condition + " is " + result, true, false, false, testContext);
-                }
+                listConditionkeys = findKeyExistsJSON(condition);
+                if(listConditionkeys.isEmpty())
+                    listConditionkeys = findKeyExistsJSON(conditionAnother);
+                if(listConditionkeys.isEmpty())
+                    listConditionkeys = findKeyExistsJSON(conditionThird);
+
+                if (!listConditionkeys.equalsIgnoreCase("")) {
+                    for (String result : expectedResult.split(", ")) {
+                        setConditions(condition, valueJson, result, conditionAnother, expectedResultAnother, expectedOperator, expectedOperatorAnother);
+                        if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
+                            moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
+                            if (expectedRangeValues.isEmpty())
+                                handleErrorMessage(expectedOperatorAnother, expectedResultAnother, valueJson, requiredErrorMessage, field, condition, result, distinctRule, order);
+                            else {
+                                for (String expectedValue : expectedRangeValues)
+                                    handleErrorMessage("=", expectedValue, valueJson, requiredErrorMessage, field, condition, result, distinctRule, order);
+                            }
+                        } else
+                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order").toString().trim(), moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists when " + condition + " is " + result, true, false, false, testContext);
+                    }
+                } else
+                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order,moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
             } else if (Pattern.compile("(\\d+\\.\\s*)?If ([^\\s]+)\\s* (=|>|<) (.*?) (?i)AND ([^\\s]+)\\s* (.*?) (.*?),? then (.*?): (.*)").matcher(distinctRule).find()) {
                 List<String> listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If ([^\\s]+)\\s* (=|>|<) (.*?) (?i)AND (.*?) (.*?) (.*?),? then (.*?): (.*)", "", distinctRule);
                 String requiredErrorMessage = listConditions.get(8);
@@ -1227,14 +1243,21 @@ public class Rules_StepDefinitions extends FLUtilities {
                 String expectedOperatorAnother = listConditions.get(5);
                 String expectedResultAnother = listConditions.get(6);
 
-                for (String result : expectedResult.split(", ")) {
-                    setConditions(condition, valueJson, result, "", "", "=", "=");
-                    if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
-                        moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
-                        handleErrorMessage(expectedOperatorAnother, expectedResultAnother, valueJson, requiredErrorMessage, field, condition, result, distinctRule, order);
-                    } else
-                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order").toString().trim(),moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists when " + condition + " is " + result, true, false, false, testContext);
-                }
+                listConditionkeys = findKeyExistsJSON(condition);
+                if(listConditionkeys.isEmpty())
+                    listConditionkeys = findKeyExistsJSON(conditionAnother);
+
+                if (listConditionkeys.equalsIgnoreCase("")) {
+                    for (String result : expectedResult.split(", ")) {
+                        setConditions(condition, valueJson, result, "", "", "=", "=");
+                        if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
+                            moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
+                            handleErrorMessage(expectedOperatorAnother, expectedResultAnother, valueJson, requiredErrorMessage, field, condition, result, distinctRule, order);
+                        } else
+                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order").toString().trim(), moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists when " + condition + " is " + result, true, false, false, testContext);
+                    }
+                } else
+                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order,moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
             } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) (<|=|>)(.*?),? then (.*?): (.*)").matcher(distinctRule).find()) {
                 List<String> listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) (<|=|>)(.*?),? then (.*?): (.*)", "", distinctRule);
                 condition = listConditions.get(1).trim();
@@ -1242,15 +1265,20 @@ public class Rules_StepDefinitions extends FLUtilities {
                 expectedOperator = listConditions.get(2).trim();
                 boolean flag = true;
                 String requiredErrorMessage = listConditions.get(5).trim();
-                for (String result : expectedResult.split(", ")) {
-                    if(JsonPath.read(testContext.getMapTestData().get(condition).trim(), "$.WizardControlTypes").toString().trim().toLowerCase().equals("dropdown"))
-                        if(!getOptions(testContext.getMapTestData().get(condition).trim(), JsonPath.read(testContext.getMapTestData().get(condition).trim(), "$.WizardControlTypes").toString().trim()).contains(result))
-                            flag = false;
-                    if (flag)
-                        handleErrorMessage(expectedOperator, result, valueJson, requiredErrorMessage, field, dependentCondition, dependentResult, distinctRule, order);
-                    else
-                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order,moduleName, field, distinctRule, "Value " + result + " does not exist for field " + condition, testContext);
-                }
+                listConditionkeys = findKeyExistsJSON(condition);
+
+                if (listConditionkeys.equalsIgnoreCase("")) {
+                    for (String result : expectedResult.split(", ")) {
+                        if (JsonPath.read(testContext.getMapTestData().get(condition).trim(), "$.WizardControlTypes").toString().trim().toLowerCase().equals("dropdown"))
+                            if (!getOptions(testContext.getMapTestData().get(condition).trim(), JsonPath.read(testContext.getMapTestData().get(condition).trim(), "$.WizardControlTypes").toString().trim()).contains(result))
+                                flag = false;
+                        if (flag)
+                            handleErrorMessage(expectedOperator, result, valueJson, requiredErrorMessage, field, dependentCondition, dependentResult, distinctRule, order);
+                        else
+                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, moduleName, field, distinctRule, "Value " + result + " does not exist for field " + condition, testContext);
+                    }
+                } else
+                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order,moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
             } else {
                 System.out.println("Rule " + distinctRule + " does not match any criteria for field " + field);
                 onSoftAssertionHandlerPage.assertSkippedRules(driver, order,moduleName, field, distinctRule, "Validation rules does not match any criteria", testContext);
