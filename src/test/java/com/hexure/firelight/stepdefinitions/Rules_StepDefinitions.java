@@ -215,12 +215,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                         listConditionkeys = findKeyExistsJSON(key);
                                                         if (!listConditionkeys.equalsIgnoreCase(""))
                                                             break;
-                                                        String conditionalWizard = JsonPath.read(testContext.getMapTestData().get(key), "$.WizardControlTypes").toString().trim();
-                                                        if (!getElements(testContext.getMapTestData().get(key), conditionalWizard).isEmpty())
-                                                            setConditions1(key, valueJson, values, "=");
-                                                        else {
+                                                        if(!setDependentCondition(key, "=", valueJson, values, "List Options")) {
                                                             conditionFlag = false;
-                                                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, moduleName, field, "List Options", "Key " + key + " from display rules does not exists in JSON", testContext);
                                                         }
                                                     }
                                                     if (displayedText.trim().endsWith("and"))
@@ -282,12 +278,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                 displayedText += key + " is " + values + " and ";
                                                                 if (!listConditionkeys.equalsIgnoreCase(""))
                                                                     break;
-                                                                String conditionalWizard = JsonPath.read(testContext.getMapTestData().get(key), "$.WizardControlTypes").toString().trim();
-                                                                if (!getElements(testContext.getMapTestData().get(key), conditionalWizard).isEmpty())
-                                                                    setConditions1(key, valueJson, values, "=");
-                                                                else {
+                                                                if(!setDependentCondition(key, "=", valueJson, values, distinctRule)) {
                                                                     conditionFlag = false;
-                                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, moduleName, field, distinctRule, "Key " + key + " from display rules does not exists in JSON", testContext);
                                                                 }
                                                             }
                                                             if (displayedText.trim().endsWith("and"))
@@ -348,15 +340,12 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                 key = listFieldValueConditions.get(0).trim();
                                                                 values = listFieldValueConditions.get(1).trim();
                                                                 displayedText += key + " is " + values + " and ";
-                                                                listConditionkeys = findKeyExistsJSON(key);
+                                                                listConditionkeys = findKeyExistsJSON(key);  // This listConditionkeys is verifying whether key exists in JSON
                                                                 if (!listConditionkeys.equalsIgnoreCase(""))
                                                                     break;
-                                                                String conditionalWizard = JsonPath.read(testContext.getMapTestData().get(key), "$.WizardControlTypes").toString().trim();
-                                                                if (!getElements(testContext.getMapTestData().get(key), conditionalWizard).isEmpty())
-                                                                    setConditions1(key, valueJson, values, howManyOperator.get(key));
-                                                                else {
+
+                                                                if(!setDependentCondition(key, howManyOperator.get(key), valueJson, values, distinctRule)) {
                                                                     conditionFlag = false;
-                                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, moduleName, field, distinctRule, "Key " + key + " from display rules does not exists in JSON", testContext);
                                                                 }
                                                             }
                                                             if (conditionFlag) {
@@ -387,10 +376,10 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                         String[] requiredPrefilledAttribute = listConditions.get(6).split(", ");
 
                                                         for (String result : expectedResult.split(", ")) {
-                                                            setConditions(condition, valueJson, result, conditionAnother, expectedResultAnother, "=", "=");
+                                                            setConditions(condition, valueJson, result, conditionAnother, expectedResultAnother, "=", "=", distinctRule);
                                                             for (String prefilledAttribute : requiredPrefilledAttribute) {
                                                                 testData = setTestData(testContext.getMapTestData().get(prefilledAttribute.split(" = ")[1]).trim());
-                                                                setDependentCondition(prefilledAttribute.split(" = ")[1], "=", valueJson, testData);
+                                                                setDependentCondition(prefilledAttribute.split(" = ")[1], "=", valueJson, testData, distinctRule);
                                                                 verifyData(testContext.getMapTestData().get(prefilledAttribute.split(" = ")[0]).trim(), prefilledAttribute.split(" = ")[0], condition, result, testData, "", distinctRule);
                                                             }
                                                         }
@@ -434,12 +423,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                     displayedText += key + " is " + values + " and ";
                                                                     if (!listConditionkeys.equalsIgnoreCase(""))
                                                                         break;
-                                                                    String conditionalWizard = JsonPath.read(testContext.getMapTestData().get(key), "$.WizardControlTypes").toString().trim();
-                                                                    if (!getElements(testContext.getMapTestData().get(key), conditionalWizard).isEmpty())
-                                                                        setConditions1(key, valueJson, values, howManyOperator.get(key));
-                                                                    else {
+                                                                    if(!setDependentCondition(key, howManyOperator.get(key), valueJson, values, distinctRule)) {
                                                                         conditionFlag = false;
-                                                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, moduleName, field, distinctRule, "Key " + key + " from display rules does not exists in JSON", testContext);
                                                                     }
                                                                 }
                                                                 if (displayedText.trim().endsWith("and"))
@@ -506,12 +491,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                         displayedText += key + " is " + values + " and ";
                                                                         if (!listConditionkeys.equalsIgnoreCase(""))
                                                                             break;
-                                                                        String conditionalWizard = JsonPath.read(testContext.getMapTestData().get(key), "$.WizardControlTypes").toString().trim();
-                                                                        if (!getElements(testContext.getMapTestData().get(key), conditionalWizard).isEmpty())
-                                                                            setConditions1(key, valueJson, values, "=");
-                                                                        else {
+                                                                        if(!setDependentCondition(key,"=", valueJson, values, distinctRule)) {
                                                                             conditionFlag = false;
-                                                                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, moduleName, field, distinctRule, "Key " + key + " from display rules does not exists in JSON", testContext);
                                                                         }
                                                                     }
                                                                     if (displayedText.trim().endsWith("and"))
@@ -600,14 +581,10 @@ public class Rules_StepDefinitions extends FLUtilities {
         return "";
     }
 
-    public void setConditions(String condition, String valueJson, String result, String conditionAnother, String expectedResultAnother, String expectedOperator, String expectedOperatorAnother) {
-        setDependentCondition(condition, expectedOperator, valueJson, result);
+    public void setConditions(String condition, String valueJson, String result, String conditionAnother, String expectedResultAnother, String expectedOperator, String expectedOperatorAnother, String distinctRule) {
+        setDependentCondition(condition, expectedOperator, valueJson, result, distinctRule);
         if (!conditionAnother.isEmpty())
-            setDependentCondition(conditionAnother, expectedOperatorAnother, valueJson, expectedResultAnother);
-    }
-
-    public void setConditions1(String condition, String valueJson, String result, String expectedOperator) {
-        setDependentCondition(condition, expectedOperator, valueJson, result);
+            setDependentCondition(conditionAnother, expectedOperatorAnother, valueJson, expectedResultAnother, distinctRule);
     }
 
     public void setVisibilityRules(String requiredAttribute, String valueJson, String wizardControlType, String order, String field, String secondAttribute, String distinctRule, List<String> result) {
@@ -629,9 +606,9 @@ public class Rules_StepDefinitions extends FLUtilities {
                 if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
                     moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
                     if (!getElements(valueJson, wizardControlType).isEmpty()) {
-                        setDependentCondition(expectedResultFirst, "=", valueJson, testData);
+                        setDependentCondition(expectedResultFirst, "=", valueJson, testData, distinctRule);
                         verifyData(testContext.getMapTestData().get(conditionFirst).trim(), field, result.get(0).split(":")[0].trim(), result.get(0).split(":")[1].trim(), prefilledValue, testData, distinctRule);
-                        setDependentCondition(expectedResultFirst, "=", valueJson, "");
+                        setDependentCondition(expectedResultFirst, "=", valueJson, "", distinctRule);
                     } else
                         onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, moduleName, field, distinctRule, "Field " + conditionFirst + " does not exists" + displayedText, true, "true", true, testContext);
                 } else
@@ -753,10 +730,15 @@ public class Rules_StepDefinitions extends FLUtilities {
             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), moduleName, field, distinctRule, dataType + " Options" + displayedText, actualOptions, expectedOptions, actualOptions.containsAll(expectedOptions), testContext);
     }
 
-    public void setDependentCondition(String condition, String expectedOperator, String valueJson, String result) {
+    public boolean setDependentCondition(String condition, String expectedOperator, String valueJson, String result, String distinctRule) {
         String valueDependentJson = testContext.getMapTestData().get(condition).trim();
         if (verifyPage(JsonPath.read(valueDependentJson, "$.Page").toString().trim(), JsonPath.read(valueDependentJson, "$.ModuleSectionName").toString().trim())) {
             moveToPage(JsonPath.read(valueDependentJson, "$.Page").toString().trim(), JsonPath.read(valueDependentJson, "$.ModuleSectionName").toString().trim());
+            String conditionalWizard = JsonPath.read(testContext.getMapTestData().get(condition), "$.WizardControlTypes").toString().trim();
+            if (getElements(testContext.getMapTestData().get(condition), conditionalWizard).isEmpty()) {
+                onSoftAssertionHandlerPage.assertSkippedRules(driver, JsonPath.read(valueDependentJson, "$.Order").toString().trim(), moduleName, JsonPath.read(valueDependentJson, "$.CommonTag").toString().trim(), distinctRule, "Key " + condition + " does not exists in UI", testContext);
+                return false;
+            }
             if (expectedOperator.equalsIgnoreCase("=")) {
                 setValue(valueDependentJson, result);
             } else if (expectedOperator.equalsIgnoreCase("<>")) {
@@ -764,8 +746,11 @@ public class Rules_StepDefinitions extends FLUtilities {
             }
             waitForPageToLoad(driver);
             sleepInMilliSeconds(2000);
-        } else
+        } else {
             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueDependentJson, "$.Order").toString().trim(), moduleName, JsonPath.read(valueDependentJson, "$.CommonTag").toString().trim(), "", "Page " + JsonPath.read(valueDependentJson, "$.Page").toString().trim() + " does not exists when " + condition + " is " + result, true, false, false, testContext);
+            return false;
+        }
+        return true;
     }
 
     public void setValue(String valueDependentJson, String result) {
@@ -1079,12 +1064,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                     displayedText += key + " is " + values + " and ";
                     if (!listConditionkeys.equalsIgnoreCase(""))
                         break;
-                    String conditionalWizard = JsonPath.read(testContext.getMapTestData().get(key), "$.WizardControlTypes").toString().trim();
-                    if (!getElements(testContext.getMapTestData().get(key), conditionalWizard).isEmpty())
-                        setConditions1(key, valueJson, values, "=");
-                    else {
+                    if(!setDependentCondition(key, "=", valueJson, values, distinctRule)) {
                         conditionFlag = false;
-                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, moduleName, field, distinctRule, "Key " + key + " from display rules does not exists in JSON", testContext);
                     }
                 }
                 if (displayedText.trim().endsWith("and"))
@@ -1221,7 +1202,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             String listConditionkeys = "";
 
             if (!dependentCondition.isEmpty())
-                setConditions1(dependentCondition, valueJson, dependentResult, howManyOperator.get(dependentCondition));
+                setDependentCondition(dependentCondition, howManyOperator.get(dependentCondition), valueJson, dependentResult, distinctRule);
             if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim()))
                 moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
 
@@ -1263,7 +1244,6 @@ public class Rules_StepDefinitions extends FLUtilities {
 
                 if (conditionAnother.equalsIgnoreCase(conditionThird)) {
                     expectedRangeValues.add(String.valueOf(Integer.parseInt(expectedResultThird) - Integer.parseInt(expectedResultAnother) - 1));
-                    expectedRangeValues.add(String.valueOf(Integer.parseInt(expectedResultThird)));
                     expectedRangeValues.add(String.valueOf(Integer.parseInt(expectedResultAnother) + 1));
                     expectedOperatorAnother = "<";
                 }
@@ -1273,9 +1253,9 @@ public class Rules_StepDefinitions extends FLUtilities {
                 if (listConditionkeys.isEmpty())
                     listConditionkeys = findKeyExistsJSON(conditionThird);
 
-                if (!listConditionkeys.equalsIgnoreCase("")) {
+                if (listConditionkeys.equalsIgnoreCase("")) {
                     for (String result : expectedResult.split(", ")) {
-                        setConditions(condition, valueJson, result, conditionAnother, expectedResultAnother, expectedOperator, expectedOperatorAnother);
+                        setConditions(condition, valueJson, result, conditionAnother, expectedResultAnother, expectedOperator, expectedOperatorAnother, distinctRule);
                         if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
                             moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
                             if (expectedRangeValues.isEmpty())
@@ -1305,7 +1285,7 @@ public class Rules_StepDefinitions extends FLUtilities {
 
                 if (listConditionkeys.equalsIgnoreCase("")) {
                     for (String result : expectedResult.split(", ")) {
-                        setConditions(condition, valueJson, result, "", "", "=", "=");
+                        setConditions(condition, valueJson, result, "", "", "=", "=", distinctRule);
                         if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
                             moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
                             handleErrorMessage(expectedOperatorAnother, expectedResultAnother, valueJson, requiredErrorMessage, field, condition, result, distinctRule, order);
@@ -1540,7 +1520,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                     listConditionkeys = findKeyExistsJSON(key);
                     if (!listConditionkeys.equalsIgnoreCase(""))
                         break;
-                    setConditions1(key, valueJson, values, howManyOperator.get(key));
+                    setDependentCondition(key, howManyOperator.get(key), valueJson, values, "");
                 }
                 if (listConditionkeys.equalsIgnoreCase("")) {
                     if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {

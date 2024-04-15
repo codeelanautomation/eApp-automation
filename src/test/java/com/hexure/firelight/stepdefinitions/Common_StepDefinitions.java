@@ -53,7 +53,7 @@ public class Common_StepDefinitions extends FLUtilities {
         System.out.println("UI TYPE is = " + testContext.getMapTestData().get("uiType"));
         Robot robot = new Robot();
         System.out.println("About to zoom in");
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 2; i++) {
             robot.keyPress(KeyEvent.VK_CONTROL);
             robot.keyPress(KeyEvent.VK_SUBTRACT);
             robot.keyRelease(KeyEvent.VK_SUBTRACT);
