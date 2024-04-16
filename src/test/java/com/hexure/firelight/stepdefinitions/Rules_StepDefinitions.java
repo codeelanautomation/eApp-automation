@@ -155,7 +155,6 @@ public class Rules_StepDefinitions extends FLUtilities {
                 field = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, fieldColumnIndex);
                 section = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, sectionColumnIndex);
                 String valueJson = testContext.getMapTestData().get(field).trim();
-                wizardControlType = JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim();
                 order = JsonPath.read(valueJson, "$.Order").toString().trim();
                 moduleName = JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim();
                 String commonTag = JsonPath.read(valueJson, "$.CommonTag").toString().trim();
@@ -168,7 +167,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                 if (rowIndex > 192)
                     break;
 
-                if (!(field.toLowerCase().contains("lookup") | valueJson.toLowerCase().contains("hide for day") | commonTag.equalsIgnoreCase("No Tag"))) {
+                if (valueJson.contains("WizardControlTypes") & !(field.toLowerCase().contains("lookup") | valueJson.toLowerCase().contains("hide for day") | commonTag.equalsIgnoreCase("No Tag"))) {
+                    wizardControlType = JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim();
                     moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
                     if (verifyElementExists(valueJson, skippedInvalidElements, order, field)) {
                         combinationConditions.clear();
@@ -410,7 +410,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                         verifyData(valueJson, field, "", "", requiredAttributeValue, "", distinctRule);
                                                                         if (valueJson.contains("ValidationRules"))
                                                                             handleValidationRules(valueJson, "", "", field, order);
-                                                                        handleSectionRules(valueJson, wizardControlType, section, order, field, distinctRule);
+                                                                        handleSectionRules(valueJson, wizardControlType, section, order, field, distinctRule, "");
                                                                     }
                                                                 } else
                                                                     onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, moduleName, field, distinctRule, "Field " + field + " does not exists", true, "true", true, testContext);
@@ -458,7 +458,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                                     }
                                                                                     if (valueJson.contains("ValidationRules"))
                                                                                         handleValidationRules(valueJson, key, values, field, order);
-                                                                                    handleSectionRules(valueJson, wizardControlType, section, order, field, distinctRule);
+                                                                                    handleSectionRules(valueJson, wizardControlType, section, order, field, distinctRule, displayedText);
                                                                                 } else
                                                                                     onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, moduleName, field, distinctRule, "Field does not exists" + displayedText, true, "true", true, testContext);
                                                                             }
@@ -568,7 +568,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                     }
                 } else {
                     skippedInvalidElements.add(field);
-                    onSoftAssertionHandlerPage.assertSkippedElement(driver, order, moduleName, field, "Either field is Lookup, hide for day 1 or has No Tag", testContext);
+                    onSoftAssertionHandlerPage.assertSkippedElement(driver, order, moduleName, field, "Either field is Lookup, hide for day 1 or has No Tag or has no wizard control type", testContext);
                 }
             }
             printFinalResults();
@@ -716,9 +716,9 @@ public class Rules_StepDefinitions extends FLUtilities {
         generateCombinations(allKeys, new ArrayList<>(), mapConditions);
     }
 
-    public void handleSectionRules(String valueJson, String wizardControlType, String section, String order, String field, String distinctRule) {
+    public void handleSectionRules(String valueJson, String wizardControlType, String section, String order, String field, String distinctRule, String displayedText) {
         boolean expectedFlag = getElementSection(valueJson, wizardControlType, section);
-        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, moduleName, field, "Section Information", "Field is displayed under section " + section, expectedFlag, "true", expectedFlag, testContext);
+        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, moduleName, field, "Section Information", "Field is displayed under section " + section + displayedText, expectedFlag, "true", expectedFlag, testContext);
     }
 
     public int calculateAge(LocalDate dob, LocalDate currentDate) {
