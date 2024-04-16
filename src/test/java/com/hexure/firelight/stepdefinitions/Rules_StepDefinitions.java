@@ -168,7 +168,6 @@ public class Rules_StepDefinitions extends FLUtilities {
                 if (rowIndex > 192)
                     break;
 
-                expectedResult = "";
                 if (!(field.toLowerCase().contains("lookup") | valueJson.toLowerCase().contains("hide for day") | commonTag.equalsIgnoreCase("No Tag"))) {
                     moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
                     if (verifyElementExists(valueJson, skippedInvalidElements, order, field)) {

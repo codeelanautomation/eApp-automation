@@ -54,7 +54,25 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     }
                 }
             }
-            int count = 0;
+            sheet = workbook.getSheet("ModulesJurisdictionMapping"); // Assuming data is in the first sheet
+            iterator = sheet.iterator();
+
+            // Assuming the first row contains headers
+            headerRow = iterator.next().getSheet().getRow(0);
+            while (iterator.hasNext()) {
+                Row currentRow = iterator.next();
+                JSONObject tempJson = new JSONObject();
+
+                // Create input file in json format
+                for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+                    Cell cell = currentRow.getCell(i);
+                    String excelValue = getCellValue(cell, jsonRows);
+                    if (!excelValue.isEmpty())
+                        tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "").replaceAll("\n", ""), excelValue);
+                }
+                jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.JURISDICTION.getText())).getStringCellValue().trim(), tempJson);
+            }
+
             sheet = workbook.getSheet("E-App Wizard Spec"); // Assuming data is in the first sheet
             iterator = sheet.iterator();
 
@@ -99,7 +117,8 @@ public class ForeSightExcelToJSON_StepDefinitions {
     private static String getCellValue(Cell cell, JSONObject jsonRows) {
         String excelValue = "";
         String newValue = "";
-        Pattern pattern = null;
+        Pattern pattern = Pattern.compile("");
+
         List<String> listRules = new ArrayList<>();
         if (cell != null && cell.getCellType() == CellType.STRING && !(cell.getStringCellValue().trim().equalsIgnoreCase("None"))) {
             excelValue = cell.getStringCellValue().trim();
@@ -112,20 +131,26 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     if (rule.toLowerCase().contains(" or ")) {
                         if(rule.toLowerCase().contains("("))
                             pattern = Pattern.compile("(.*?)\\((.*?)\\)(.*)");
-                        else
+                        else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?)(?:,)? then (.*)\\.?").matcher(rule).find())
                             pattern = Pattern.compile("(\\d+\\.\\s*)?If (.*?)(?:,)? then (.*)\\.?");
-                        Matcher matcher = pattern.matcher(rule);
-                        while (matcher.find()) {
-                            List<String> orConditions = Arrays.asList(matcher.group(2).split(" OR "));
-                            for (String condition : orConditions)
-                                newValue += rule.replaceAll(matcher.group(2), condition).replaceAll("\\(", "").replaceAll("\\)", "") + ";";
+
+                        if(!pattern.toString().equals("")) {
+                            Matcher matcher = pattern.matcher(rule);
+                            while (matcher.find()) {
+                                List<String> orConditions = Arrays.asList(matcher.group(2).split(" OR "));
+                                for (String condition : orConditions)
+                                    newValue += rule.replaceAll(matcher.group(2), condition).replaceAll("\\(", "").replaceAll("\\)", "") + ";";
+                            }
                         }
+                        else
+                            newValue += rule + ";";
                     } else
                         newValue += rule + ";";
                 }
-                excelValue = newValue;
+                excelValue = newValue.substring(0, newValue.length()-1);
             }
             newValue = "";
+            pattern = null;
             if (excelValue.toLowerCase().contains("<>")) {
                 listRules = Arrays.asList(excelValue.split(";"));
                 for (String rule : listRules) {
@@ -134,33 +159,32 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     if (rule.toLowerCase().contains("<>") & !(rule.toLowerCase().contains("skip for automation"))) {
                         String conditionAnother = "";
                         String expectedResult = "";
-                        if (Pattern.compile("(?i)([^<>\\s]+)\\s*<>(.*?)(?:,|AND|then|$)").matcher(rule).find())
+                        if (Pattern.compile("(?i)([^<>\\s]+)\\s*<>(.*?)(?:,|AND|then|$)").matcher(rule).find()) {
                             pattern = Pattern.compile("(?i)([^<>\\s]+)\\s*<>(.*?)(?:,|AND|then|$)");
-                        Matcher matcher = pattern.matcher(rule);
-                        while (matcher.find()) {
-                            conditionAnother = matcher.group(1).trim();
-                            expectedResult = matcher.group(2).trim();
-                            if (jsonRows.containsKey(conditionAnother)) {
-                                values = (JSONObject) jsonRows.get(conditionAnother);
-                                if (values.containsKey("ListOptions") && !(values.get("ListOptions").toString().trim().contains("Number"))) {
-                                    resultValue = new ArrayList<>(Arrays.asList(jsonRows.get(values.get("ListOptions").toString().trim().replaceAll(" ", "")).toString().trim().split(", ")));
+                            Matcher matcher = pattern.matcher(rule);
+                            while (matcher.find()) {
+                                conditionAnother = matcher.group(1).trim();
+                                expectedResult = matcher.group(2).trim();
+                                if (jsonRows.containsKey(conditionAnother)) {
+                                    values = (JSONObject) jsonRows.get(conditionAnother);
+                                    if (values.containsKey("ListOptions") && !(values.get("ListOptions").toString().trim().contains("Number"))) {
+                                        resultValue = new ArrayList<>(Arrays.asList(jsonRows.get(values.get("ListOptions").toString().trim().replaceAll(" ", "")).toString().trim().split(", ")));
 
-                                    Set<String> valuesToRemove = new HashSet<>(Arrays.asList("Blank", expectedResult));
-                                    // Remove elements that match the given condition
-                                    resultValue.removeIf(valuesToRemove::contains);
+                                        Set<String> valuesToRemove = new HashSet<>(Arrays.asList("Blank", expectedResult));
+                                        // Remove elements that match the given condition
+                                        resultValue.removeIf(valuesToRemove::contains);
 
-                                    for (String value : resultValue) {
-                                        newValue += rule.replace(expectedResult, value).replace("<>", "=") + ";";
-                                    }
-                                } else
-                                    newValue += rule + ";";
+                                        newValue += rule.replace(expectedResult, String.join(", ", resultValue)).replace("<>", "=") + ";";
+                                    } else
+                                        newValue += rule + ";";
+                                }
                             }
-                        }
-
+                        } else
+                            newValue += rule + ";";
                     } else
                         newValue += rule + ";";
                 }
-                excelValue = newValue;
+                excelValue = newValue.substring(0, newValue.length()-1);
             }
         } else if (cell != null && cell.getCellType() == CellType.NUMERIC)
             excelValue = String.valueOf(((XSSFCell) cell).getRawValue()).trim();
