@@ -126,7 +126,7 @@ public class Rules_StepDefinitions extends FLUtilities {
         String dependentPrefilledCondition;
         boolean expectedFlag;
         List<String> actualOptions;
-        List<String> expectedOptions;
+        List<String> expectedOptions = new ArrayList<>();
         List<String> listConditions;
         List<String> expectedResults;
         List<String> listFieldValueConditions;
@@ -193,47 +193,52 @@ public class Rules_StepDefinitions extends FLUtilities {
                                         String options = JsonPath.read(valueJson, "$.ListOptions").toString().trim();
                                         if (options.contains(";"))
                                             expectedOptions = Arrays.asList(options.split(";"));
-                                        else
+                                        else if (testContext.getMapTestData().containsKey(options))
                                             expectedOptions = Arrays.asList(testContext.getMapTestData().get(options.replaceAll(" ", "")).split(", "));
+                                        else
+                                            conditionFlag = false;
 
-                                        if (valueJson.contains("DisplayRules")) {
-                                            invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim());
-                                            setCombinationConditions(valueJson, "([^\\s]+)\\s* (=|<>) (.*)");
-                                        }
-                                        if (invalidTag.isEmpty()) {
-                                            if (combinationConditions.isEmpty()) {
-                                                verifyOptions(valueJson, field, expectedOptions, "", "List Options");
-                                            } else {
-                                                for (List<String> result : combinationConditions) {
-                                                    displayedText = " when ";
-                                                    for (String condition1 : result) {
-                                                        listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*: (.*)", "", condition1.trim());
-                                                        key = listFieldValueConditions.get(0).trim();
-                                                        values = listFieldValueConditions.get(1).trim();
-                                                        displayedText += key + " is " + values + " and ";
-                                                        listConditionkeys = findKeyExistsJSON(key);
-                                                        if (!listConditionkeys.equalsIgnoreCase(""))
-                                                            break;
-                                                        if(!setDependentCondition(key, "=", valueJson, values, "List Options")) {
-                                                            conditionFlag = false;
+                                        if (conditionFlag) {
+                                            if (valueJson.contains("DisplayRules")) {
+                                                invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim());
+                                                setCombinationConditions(valueJson, "([^\\s]+)\\s* (=|<>) (.*)");
+                                            }
+                                            if (invalidTag.isEmpty()) {
+                                                if (combinationConditions.isEmpty()) {
+                                                    verifyOptions(valueJson, field, expectedOptions, "", "List Options");
+                                                } else {
+                                                    for (List<String> result : combinationConditions) {
+                                                        displayedText = " when ";
+                                                        for (String condition1 : result) {
+                                                            listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*: (.*)", "", condition1.trim());
+                                                            key = listFieldValueConditions.get(0).trim();
+                                                            values = listFieldValueConditions.get(1).trim();
+                                                            displayedText += key + " is " + values + " and ";
+                                                            listConditionkeys = findKeyExistsJSON(key);
+                                                            if (!listConditionkeys.equalsIgnoreCase(""))
+                                                                break;
+                                                            if (!setDependentCondition(key, "=", valueJson, values, "List Options")) {
+                                                                conditionFlag = false;
+                                                            }
+                                                        }
+                                                        if (displayedText.trim().endsWith("and"))
+                                                            displayedText = displayedText.substring(0, displayedText.length() - 4);
+                                                        if (conditionFlag) {
+                                                            if (listConditionkeys.equalsIgnoreCase("")) {
+                                                                if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim()))
+                                                                    moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
+                                                                verifyOptions(valueJson, field, expectedOptions, displayedText, "List Options");
+                                                            } else
+                                                                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, moduleName, field, "List Options", "Key " + listConditionkeys + " does not exists in JSON", testContext);
                                                         }
                                                     }
-                                                    if (displayedText.trim().endsWith("and"))
-                                                        displayedText = displayedText.substring(0, displayedText.length() - 4);
-                                                    if (conditionFlag) {
-                                                        if (listConditionkeys.equalsIgnoreCase("")) {
-                                                            if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim()))
-                                                                moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
-                                                            verifyOptions(valueJson, field, expectedOptions, displayedText, "List Options");
-                                                        } else
-                                                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, moduleName, field, "List Options", "Key " + listConditionkeys + " does not exists in JSON", testContext);
-                                                    }
+                                                    combinationConditions.clear();
+                                                    howManyOperator.clear();
                                                 }
-                                                combinationConditions.clear();
-                                                howManyOperator.clear();
-                                            }
+                                            } else
+                                                onSoftAssertionHandlerPage.assertSkippedElement(driver, order, moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
                                         } else
-                                            onSoftAssertionHandlerPage.assertSkippedElement(driver, order, moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
+                                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, moduleName, field, "List Options", "Data list does not contain \"" + options + "\"", testContext);
                                         break;
                                     case "RulesWizard":
                                         conditionAnother = "";
