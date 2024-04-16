@@ -173,11 +173,11 @@ public class ForeSightExcelToJSON_StepDefinitions {
                                         Set<String> valuesToRemove = new HashSet<>(Arrays.asList("Blank", expectedResult));
                                         // Remove elements that match the given condition
                                         resultValue.removeIf(valuesToRemove::contains);
-
                                         newValue += rule.replace(expectedResult, String.join(", ", resultValue)).replace("<>", "=") + ";";
                                     } else
                                         newValue += rule + ";";
-                                }
+                                } else
+                                    newValue += rule + ";";
                             }
                         } else
                             newValue += rule + ";";
