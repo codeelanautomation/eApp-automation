@@ -646,27 +646,31 @@ public class Rules_StepDefinitions extends FLUtilities {
             List<String> listConditions = getDisplayRuleConditions(valueJson, "SET ([^\\s]+)\\s* = (.*)", "", requiredAttribute);
             String conditionFirst = listConditions.get(0);
             String expectedResultFirst = listConditions.get(1);
-            if (testContext.getMapTestData().containsKey(expectedResultFirst)) {
-                String testData = setTestData(testContext.getMapTestData().get(expectedResultFirst).trim());
-                if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
-                    moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
-                    if (!getElements(valueJson, wizardControlType).isEmpty()) {
-                        setDependentCondition(expectedResultFirst, "=", valueJson, testData, distinctRule);
-                        verifyData(testContext.getMapTestData().get(conditionFirst).trim(), field, result.get(0).split(":")[0].trim(), result.get(0).split(":")[1].trim(), prefilledValue, testData, distinctRule);
-                        setDependentCondition(expectedResultFirst, "=", valueJson, "", distinctRule);
+            String listConditionkeys = findKeyExistsJSON(conditionFirst);
+            if (listConditionkeys.equalsIgnoreCase("")) {
+                if (testContext.getMapTestData().containsKey(expectedResultFirst)) {
+                    String testData = setTestData(testContext.getMapTestData().get(expectedResultFirst).trim());
+                    if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
+                        moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
+                        if (!getElements(valueJson, wizardControlType).isEmpty()) {
+                            setDependentCondition(expectedResultFirst, "=", valueJson, testData, distinctRule);
+                            verifyData(testContext.getMapTestData().get(conditionFirst).trim(), field, result.get(0).split(":")[0].trim(), result.get(0).split(":")[1].trim(), prefilledValue, testData, distinctRule);
+                            setDependentCondition(expectedResultFirst, "=", valueJson, "", distinctRule);
+                        } else
+                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, moduleName, field, distinctRule, "Field " + conditionFirst + " does not exists" + displayedText, true, "true", true, testContext);
                     } else
-                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, moduleName, field, distinctRule, "Field " + conditionFirst + " does not exists" + displayedText, true, "true", true, testContext);
-                } else
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, "true", true, testContext);
-            } else {
-                if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
-                    if (!getElements(valueJson, wizardControlType).isEmpty()) {
-                        verifyData(testContext.getMapTestData().get(conditionFirst).trim(), field, result.get(0).split(":")[0].trim(), result.get(0).split(":")[1].trim(), expectedResultFirst, "", distinctRule);
+                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, "true", true, testContext);
+                } else {
+                    if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
+                        if (!getElements(valueJson, wizardControlType).isEmpty()) {
+                            verifyData(testContext.getMapTestData().get(conditionFirst).trim(), field, result.get(0).split(":")[0].trim(), result.get(0).split(":")[1].trim(), expectedResultFirst, "", distinctRule);
+                        } else
+                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, moduleName, field, distinctRule, "Field " + conditionFirst + " does not exists" + displayedText, true, "true", true, testContext);
                     } else
-                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, moduleName, field, distinctRule, "Field " + conditionFirst + " does not exists" + displayedText, true, "true", true, testContext);
-                } else
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, "true", true, testContext);
-            }
+                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, "true", true, testContext);
+                }
+            } else
+                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
         } else {
             switch (requiredAttribute.toLowerCase()) {
                 case "show":
