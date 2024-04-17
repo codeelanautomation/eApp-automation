@@ -129,6 +129,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     JSONObject values = new JSONObject();
                     List<String> resultValue = new ArrayList<>();
                     if (rule.toLowerCase().contains(" or ")) {
+                        rule = rule.replaceAll("\\[","").replaceAll("]","");
                         if(rule.toLowerCase().contains("("))
                             pattern = Pattern.compile("(.*?)\\((.*?)\\)(.*)");
                         else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?)(?:,)? then (.*)\\.?").matcher(rule).find())
