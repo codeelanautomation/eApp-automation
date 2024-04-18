@@ -59,7 +59,7 @@ public class Common_StepDefinitions extends FLUtilities {
             robot.keyRelease(KeyEvent.VK_SUBTRACT);
             robot.keyRelease(KeyEvent.VK_CONTROL);
         }
-        testContext.getScenario().write("<div style='width: 10%; position: absolute; top: 5px; font-size: 2vw; border: none; color: green; text-align: center; font-weight: bold; background-color: #C5D88A; left: 50%; transform: translateX(-50%);'>" + testContext.getTestCaseID() + "</div>");
+        testContext.getScenario().write("<div style='width: 5%; position: absolute; top: 5px; font-size: 2vw; border: none; color: green; text-align: center; font-weight: bold; background-color: #C5D88A; left: 50%; transform: translateX(-50%);'>" + testContext.getTestCaseID() + "</div>");
         Log.info("TEST CASE " + testCaseID + " STARTED");
     }
 
@@ -128,14 +128,6 @@ public class Common_StepDefinitions extends FLUtilities {
         waitForPageToLoad(driver);
         clickElement(driver, findElement(driver, onCreateApplicationPage.getWizardPageNameExpandmvc()));
         sleepInMilliSeconds(3000);
-//        if (findElements(driver, String.format(onCommonMethods_reactPage.expandMandetoryFormList, formName)).isEmpty()) {
-//            if (findElement(driver, String.format(onCommonMethods_reactPage.expandMandetoryFormList, formName)).getText().equalsIgnoreCase("▼"))
-//                clickElement(driver, findElement(driver, String.format(onCommonMethods_reactPage.expandMandetoryFormList, formName)));
-//            sleepInMilliSeconds(2000);
-//            syncElement(driver, findElement(driver, String.format(onDataEntryPage.getFormMenu(), formMenu, formName)), EnumsCommon.TOCLICKABLE.getText());
-//            clickElement(driver, findElement(driver, String.format(onDataEntryPage.getFormMenu(), formMenu, formName)));
-//        } else
-//        {
         List<WebElement> mandetoryFormList = findElements(driver, String.format(onCreateApplicationPage.optionalFormList, formMenu));
         for (WebElement element : mandetoryFormList) {
             String form = element.getAttribute("innerText");

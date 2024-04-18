@@ -162,7 +162,7 @@ public class BaseClass {
         ChromeOptions chromeOptions = new ChromeOptions();
         chromeOptions.setExperimentalOption("prefs", preferences);
         if (Boolean.valueOf(configProperties.getProperty("headlessExecution.switch")))
-            chromeOptions.addArguments("headless", "--disable-gpu", "--window-size=1300,650", "--ignore-certificate-errors");
+            chromeOptions.addArguments("headless", "--disable-gpu", "--window-size=1920,1080","--zoom=0.8","--ignore-certificate-errors");
 
         chromeOptions.addArguments("disable-infobars");
         chromeOptions.addArguments("--start-maximized");
