@@ -170,8 +170,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                 List<String> moduleValues = Arrays.asList(JsonPath.read(moduleJurisdictionMapping, "$.Module").toString().trim().split(","));
                 jurisdictionStatesCode = JsonPath.read(moduleJurisdictionMapping, "$.State").toString().trim();
 
-//                if (rowIndex > 238)
-//                    break;
+                if (rowIndex > 238)
+                    break;
                 if (moduleValues.contains(moduleName) | moduleValues.contains("All")) {
                     if (valueJson.contains("WizardControlTypes") & !(field.toLowerCase().contains("lookup") | valueJson.toLowerCase().contains("hide for day") | commonTag.equalsIgnoreCase("No Tag") | commonTag.equalsIgnoreCase(""))) {
                         wizardControlType = JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim();

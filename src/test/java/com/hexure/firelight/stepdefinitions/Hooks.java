@@ -22,8 +22,6 @@ public class Hooks extends FLUtilities {
         testContext = context;
     }
 
-    private long startTime;
-
     @Before
     public void setUp(Scenario scenario) {
         loadConfigData(testContext);
@@ -33,7 +31,6 @@ public class Hooks extends FLUtilities {
         }
         testContext.setPageObjectManager(new PageObjectManager(testContext.getDriver()));
         testContext.setScenario(scenario);
-        startTime = System.currentTimeMillis();
     }
 
     @After
