@@ -17,6 +17,10 @@ public class CreateApplicationPage extends FLUtilities {
     public String optionalFormList = "//*[@class=\"navDrawer__bundleName\" and text()=\"%s\"]/..//*[@class=\"far fa-file navDrawer__pageGraphic \" or @class=\"fas fa-file-alt navDrawer__pageGraphic \"]/../..";
     public String list_OfProducts = "//div[@id='divProducts']/a//div[contains(text(),'%s')]";
 
+
+    @FindBy(xpath = "//td[@class='top']//span[text()='Application']")
+    private WebElement btnApplication;
+
     @FindBy(id = "buildNew")
     private WebElement btn_Create;
 
@@ -37,6 +41,12 @@ public class CreateApplicationPage extends FLUtilities {
 
     @FindBy(id = "Jurisdiction")
     private WebElement dd_Jurisdiction;
+
+    @FindBy(id = "toolbar__home")
+    private WebElement btnHome;
+
+    @FindBy(id = "popup_ok")
+    private WebElement btnPopupOK;
 
     @FindBy(id = "ProductType")
     private WebElement dd_ProductType;

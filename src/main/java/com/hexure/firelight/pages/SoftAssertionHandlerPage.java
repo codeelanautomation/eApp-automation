@@ -25,13 +25,13 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         PageFactory.initElements(driver, this);
     }
 
-    public void assertTrue(WebDriver driver, String countValidation, String order, String moduleName, String field, String distinctRule, String rule, Object actualValue, Object expectedValue, boolean condition, TestContext testContext) {
+    public void assertTrue(WebDriver driver, String countValidation, String order, String jurisdictionApplication, String moduleName, String field, String distinctRule, String rule, Object actualValue, Object expectedValue, boolean condition, TestContext testContext) {
         String result = "Passed";
         if (!condition) {
             captureScreenshot(driver, testContext, condition);
             result = "Failed";
         }
-        assertions.add(Arrays.asList(countValidation, order, moduleName, field, distinctRule, rule, actualValue.toString(), expectedValue.toString(), result));
+        assertions.add(Arrays.asList(countValidation, order, jurisdictionApplication, moduleName, field, distinctRule, rule, actualValue.toString(), expectedValue.toString(), result));
         fieldCount = Integer.parseInt(order);
     }
 
@@ -39,12 +39,12 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         assertionsNoElement.add(Arrays.asList(field, message));
     }
 
-    public void assertSkippedElement(WebDriver driver, String order, String moduleName,String field, String reason,TestContext testContext) {
-        skippedElements.add(Arrays.asList(order, moduleName,field, reason));
+    public void assertSkippedElement(WebDriver driver, String order, String jurisdictionApplication, String moduleName,String field, String reason,TestContext testContext) {
+        skippedElements.add(Arrays.asList(order, jurisdictionApplication, moduleName,field, reason));
     }
 
-    public void assertSkippedRules(WebDriver driver, String order, String moduleName, String field, String rule, String reason, TestContext testContext) {
-        skippedRules.add(Arrays.asList(order,moduleName,field, rule, reason));
+    public void assertSkippedRules(WebDriver driver, String order, String jurisdictionApplication, String moduleName, String field, String rule, String reason, TestContext testContext) {
+        skippedRules.add(Arrays.asList(order,jurisdictionApplication, moduleName,field, rule, reason));
     }
 
 //    public void assertEquals(String message, Object actual, Object expected, TestContext testContext) {
@@ -58,7 +58,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
 
     public void assertAll(TestContext testContext) {
         printResults(assertions, testContext);
-        printNoElementResults(assertionsNoElement, testContext);
+//        printNoElementResults(assertionsNoElement, testContext);
         printSkippedElements(skippedElements, testContext);
         printSkippedRules(skippedRules, testContext);
     }
@@ -70,16 +70,16 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         int countFailed = 0;
 
         if (!assertions.isEmpty()) {
-            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th style=\"white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;\">S.No.</th>  <th style=\"white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;\">Order</th> <th style=\"white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;\">Module Name</th> <th>Field</th> <th>Rule</th> <th>Validations</th> <th>Actual Value (UI)</th> <th>Expected Value (Excel Template)</th> <th>Result</th> </tr>";
+            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th style=\"white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;\">S.No.</th>  <th style=\"white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;\">Order</th> <th style=\"white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;\">Jurisdiction</th> <th style=\"white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;\">Module Name</th> <th>Field</th> <th>Rule</th> <th>Validations</th> <th>Actual Value (UI)</th> <th>Expected Value (Excel Template)</th> <th>Result</th> </tr>";
 
             for (List<String> assertion : assertions) {
-                if (assertion.get(8).contains("Passed")) {
+                if (assertion.get(9).contains("Passed")) {
                     countPassed++;
-                    resultSet += "<tr style='color: green; font-weight: bold; background-color: #C5D88A;'> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(0) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(1) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(2) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(3) +"</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(4) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(5).trim() + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(6).trim() + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(7) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(8)+ "</td> </tr>";
+                    resultSet += "<tr style='color: green; font-weight: bold; background-color: #C5D88A;'> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(0) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(1) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(2) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(3) +"</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(4) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(5).trim() + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(6).trim() + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(7) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(8)+ "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(9)+ "</td> </tr>";
                 }
                 else {
                     countFailed++;
-                    resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(0) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(1) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(2) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(3) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(4) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(5).trim() + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(6).trim() + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(7) +"</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(8) + "</td> </tr>";
+                    resultSet += "<tr style='color: red; font-weight: bold; background-color: #C5D88A;'> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(0) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(1) + "</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(2) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(3) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(4) + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(5).trim() + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(6).trim() + "</td> <td style='white-space: pre-wrap; min-width: 250px; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(7) +"</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(8) +"</td> <td style='vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>" + assertion.get(9) + "</td> </tr>";
                 }
             }
             testContext.getScenario().write("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>Execution Summary : </div>");
@@ -109,10 +109,10 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         int count = 1;
         if (!assertions.isEmpty()) {
             testContext.getScenario().write("<div width='50%' style='font-size:1.3vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>List Of Fields Not Validated : </div>");
-            resultSet += "<div style='background-color: #C5D88A;'></div> <table border=\"1\" width=\"50%\"> <tr style='font-weight: bold; background-color: #C5D88A;'> <th style='white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>S.No.</th> <th style='white-space: pre-wrap; width: 5%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Order</th> <th style='white-space: pre-wrap; width: 5%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Module Name</th> <th style='white-space: pre-wrap; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Fields Not Validated</th> <th style='white-space: pre-wrap; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Reason</th> </tr>";
+            resultSet += "<div style='background-color: #C5D88A;'></div> <table border=\"1\" width=\"50%\"> <tr style='font-weight: bold; background-color: #C5D88A;'> <th style='white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>S.No.</th> <th style='white-space: pre-wrap; width: 5%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Order</th> <th style='white-space: pre-wrap; width: 5%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Jurisdiction</th> <th style='white-space: pre-wrap; width: 5%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Module Name</th> <th style='white-space: pre-wrap; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Fields Not Validated</th> <th style='white-space: pre-wrap; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Reason</th> </tr>";
 
             for (List<String> assertion : assertions) {
-                resultSet += "<tr style='background-color: #C5D88A;'> <td style='white-space: pre-wrap;'>" + (count++) + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> <td>" + assertion.get(2) +"</td> <td>" + assertion.get(3) + "</td> </tr>";
+                resultSet += "<tr style='background-color: #C5D88A;'> <td style='white-space: pre-wrap;'>" + (count++) + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) + "</td> <td>" + assertion.get(2) +"</td> <td>" + assertion.get(3) +"</td> <td>" + assertion.get(4) + "</td> </tr>";
             }
             resultSet += "</table>";
             scenario.write(resultSet);
@@ -124,11 +124,11 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         String resultSet = "";
         if (!assertions.isEmpty()) {
             testContext.getScenario().write("<div width='100%' style='font-size:1.3vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>List Of Rules Skipped : </div>");
-            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>S.No.</th> <th>Order</th> <th>Module Name</th> <th>Field</th>  <th>Skipped Rule</th>  <th>Reason for skip</th></tr>";
+            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>S.No.</th> <th>Order</th> <th>Jurisdiction</th> <th>Module Name</th> <th>Field</th>  <th>Skipped Rule</th>  <th>Reason for skip</th></tr>";
 
             int serialNumber = 1; // Start with 1
             for (List<String> assertion : assertions) {
-                resultSet += "<tr style='color: black; background-color: #C5D88A;'> <td>" + serialNumber++ + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) +"</td> <td>" + assertion.get(2) + "</td> <td>" + assertion.get(3) +"</td> <td>" + assertion.get(4) +"</td> </tr>";
+                resultSet += "<tr style='color: black; background-color: #C5D88A;'> <td>" + serialNumber++ + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) +"</td> <td>" + assertion.get(2) + "</td> <td>" + assertion.get(3) +"</td> <td>" + assertion.get(4) +"</td> <td>" + assertion.get(5) +"</td> </tr>";
             }
             resultSet += "</table> <div> </div><div style=\"text-align: center; font-weight: bold; font-size: 24px;\">End of the cucumber report</div>\n";
             scenario.write(resultSet);

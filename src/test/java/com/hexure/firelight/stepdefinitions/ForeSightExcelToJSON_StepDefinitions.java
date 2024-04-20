@@ -31,6 +31,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
         String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + excelFile;
         try (FileInputStream file = new FileInputStream(filePath);
             XSSFWorkbook workbook = new XSSFWorkbook(file)) {
+            String states = "";
 
             Sheet sheet = workbook.getSheet("Data List"); // Assuming data is in the first sheet
             Iterator<Row> iterator = sheet.iterator();
@@ -54,6 +55,29 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     }
                 }
             }
+
+            sheet = workbook.getSheet("Ceding Carrier Custom List"); // Assuming data is in the first sheet
+            iterator = sheet.iterator();
+
+            // Assuming the first row contains headers
+            headerRow = iterator.next().getSheet().getRow(0);
+
+            while (iterator.hasNext()) {
+                Row currentRow = iterator.next();
+
+                // Create input file in json format
+                for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+                    Cell cell = currentRow.getCell(i);
+                    String excelValue = getCellValue(cell, jsonRows);
+                    if (!excelValue.isEmpty()) {
+                        if(jsonRows.containsKey(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")))
+                            jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), jsonRows.get(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")).toString() + ", " + excelValue);
+                        else
+                            jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), excelValue);
+                    }
+                }
+            }
+
             sheet = workbook.getSheet("ModulesJurisdictionMapping"); // Assuming data is in the first sheet
             iterator = sheet.iterator();
 
@@ -71,7 +95,9 @@ public class ForeSightExcelToJSON_StepDefinitions {
                         tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "").replaceAll("\n", ""), excelValue);
                 }
                 jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.JURISDICTION.getText())).getStringCellValue().trim(), tempJson);
+                states +=  "," + tempJson.get("Jurisdiction").toString().trim();
             }
+            jsonRows.put("JurisdictionRules", states.replaceFirst(",", ""));
 
             sheet = workbook.getSheet("E-App Wizard Spec"); // Assuming data is in the first sheet
             iterator = sheet.iterator();
@@ -88,8 +114,12 @@ public class ForeSightExcelToJSON_StepDefinitions {
 
                         Cell cell = currentRow.getCell(i);
                         String excelValue = getCellValue(cell, jsonRows);
-                        if (!excelValue.isEmpty())
+                        if(excelValue.equals("372"))
+                            System.out.println(1);
+                        if (!excelValue.isEmpty()) {
+                            System.out.println(excelValue);
                             tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "").replaceAll("\n", ""), excelValue);
+                        }
                     }
                 }
                 jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim(), tempJson);
@@ -186,6 +216,37 @@ public class ForeSightExcelToJSON_StepDefinitions {
                         newValue += rule + ";";
                 }
                 excelValue = newValue.substring(0, newValue.length()-1);
+            }
+            newValue = "";
+            if (excelValue.toLowerCase().contains("+")) {
+                String conditionAnother = "";
+                String expectedResult = "";
+                String expectedOperator = "";
+                float value;
+                for (String rule : excelValue.split(";")) {
+                    String temp = "";
+                    if (Pattern.compile("(?i)\\((.*?)\\)\\s*(<|>|<>|=)(.*?)(?:,|AND|then|$)").matcher(rule).find()) {
+                        pattern = Pattern.compile("(?i)\\((.*?)\\)\\s*(<|>|<>|=)(.*?)(?:,|AND|then|$)");
+                        Matcher matcher = pattern.matcher(rule);
+                        while (matcher.find()) {
+                            conditionAnother = matcher.group(1).trim();
+                            expectedOperator = matcher.group(2).trim();
+                            expectedResult = matcher.group(3).trim();
+                        }
+                        listRules = Arrays.asList(conditionAnother.split("\\+"));
+                        value = Float.parseFloat(expectedResult);
+                        if (expectedOperator.equals(">"))
+                            value = value + 1;
+                        else if (expectedOperator.equals("<"))
+                            value = value - 1;
+                        value = value / listRules.size();
+                        for (String eachCondition : listRules)
+                            temp += " AND " + eachCondition.trim() + " = " + value;
+                        newValue += rule.replaceAll("(?i)\\((.*?)\\)\\s*(<|>|<>|=)(.*?)", temp.replaceFirst(" AND ", "")).replaceAll(" " + expectedResult, "") + ";";
+                    } else
+                        newValue += rule + ";";
+                }
+                excelValue = newValue.substring(0, newValue.length() - 1);
             }
         } else if (cell != null && cell.getCellType() == CellType.NUMERIC)
             excelValue = String.valueOf(((XSSFCell) cell).getRawValue()).trim();
