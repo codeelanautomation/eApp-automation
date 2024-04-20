@@ -202,8 +202,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             for (int rowIndex = 195; rowIndex < sheet.getLastRowNum(); rowIndex++) {
                 field = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, fieldColumnIndex);
                 section = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, sectionColumnIndex);
-                if(field.equalsIgnoreCase("ContingentBeneficiary_Percentage_Total"))
-                    System.out.println(1);
+
                 String valueJson = testContext.getMapTestData().get(field).trim();
                 if (valueJson.contains("CommonTag")) {
                     order = JsonPath.read(valueJson, "$.Order").toString().trim();
