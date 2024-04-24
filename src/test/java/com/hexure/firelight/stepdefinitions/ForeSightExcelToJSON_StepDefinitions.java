@@ -107,6 +107,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
             while (iterator.hasNext()) {
                 Row currentRow = iterator.next();
                 JSONObject tempJson = new JSONObject();
+                JSONObject tempJsonReplacement ;
 
                 // Create input file in json format
                 for (int i = 0; i < headerRow.getLastCellNum(); i++) {
@@ -114,15 +115,22 @@ public class ForeSightExcelToJSON_StepDefinitions {
 
                         Cell cell = currentRow.getCell(i);
                         String excelValue = getCellValue(cell, jsonRows);
-                        if(excelValue.equals("372"))
-                            System.out.println(1);
-                        if (!excelValue.isEmpty()) {
-                            System.out.println(excelValue);
+                        if (!excelValue.isEmpty())
                             tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "").replaceAll("\n", ""), excelValue);
-                        }
                     }
                 }
-                jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim(), tempJson);
+                tempJsonReplacement = new JSONObject(tempJson);
+                if(tempJson.get("ModuleSectionName").equals("Replacement Module")) {
+                    List<String> numberExchanges = new ArrayList<>(Arrays.asList(jsonRows.get("NumberofExchange/Transfer/Rollovers").toString().trim().split(", ")));
+                    numberExchanges.removeAll(Arrays.asList("Blank"));
+                    for(String exchange : numberExchanges) {
+                        tempJson.replaceAll((key, value) -> value.toString().replaceAll("X", exchange));
+                        jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim().replaceAll("X", exchange), tempJson);
+                        tempJson = new JSONObject(tempJsonReplacement);
+                    }
+                }
+                else
+                    jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim(), tempJson);
             }
 
             JSONObject masterJson = new JSONObject();

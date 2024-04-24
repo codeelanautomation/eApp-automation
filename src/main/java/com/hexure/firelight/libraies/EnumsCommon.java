@@ -4,6 +4,7 @@ public enum EnumsCommon {
     TOVISIBLE("ToVisible"),
     ABSOLUTE_CLIENTFILES_PATH(System.getProperty("user.dir") + "\\src\\test\\resources\\testdata\\Client\\"),
     FIELD("Common Tag"),
+    MODULESECTION("Module Section Name"),
     JURISDICTION("Jurisdiction"),
     E2EDATAITEMID("Data Item ID"),
     E2ETITLE("Title"),
