@@ -1070,26 +1070,22 @@ public class Rules_StepDefinitions extends FLUtilities {
     }
 
     public String setTestData(String valueDependentJson) {
-        switch (JsonPath.read(valueDependentJson, "$.WizardControlTypes").toString().trim().toLowerCase()) {
+        String wizardControlType = JsonPath.read(valueDependentJson, "$.WizardControlTypes").toString().trim().toLowerCase();
+        switch (wizardControlType) {
             case "dropdown":
             case "state dropdown":
-                prefilledValue = "1";
-                break;
+                return "1";
             case "zip":
-                prefilledValue = "12345";
-                break;
+                return "12345";
             case "tin":
             case "ssn":
-                prefilledValue = "1234567890";
-                break;
+                return "1234567890";
             case "dob":
             case "mm/dd/yyyy":
-                prefilledValue = todaysDate.format(format);
-                break;
+                return todaysDate.format(format);
             default:
-                prefilledValue = "TestValue";
+                return "TestValue";
         }
-        return prefilledValue;
     }
 
     public void moveToPage(String pageHeader, String formHeader) {
@@ -1734,8 +1730,11 @@ public class Rules_StepDefinitions extends FLUtilities {
             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Validation Rule -> " + displayedText, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
             if (JsonPath.read(valueJson, "$.WizardControlTypes").toString().equals("Radio Button")) {
                 resetValue(valueJson, inputValue);
-            } else
-                resetValue(valueJson, "");
+            } else {
+                WebElement elem = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes").toString(), "");
+                if (!(isAttribtuePresent(elem, "readonly") | isAttribtuePresent(elem, "disabled")))
+                    resetValue(valueJson, "");
+            }
         }
     }
 
