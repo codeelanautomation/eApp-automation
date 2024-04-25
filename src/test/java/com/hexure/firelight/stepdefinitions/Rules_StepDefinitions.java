@@ -171,7 +171,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             int fieldColumnIndex = findColumnIndex(headerRow, EnumsCommon.FIELD.getText());
             //int sectionColumnIndex = findColumnIndex(headerRow, EnumsCommon.SECTION.getText());
             int moduleNameIndex = findColumnIndex(headerRow, EnumsCommon.MODULESECTION.getText());
-            for (int rowIndex = 325; rowIndex < sheet.getLastRowNum(); rowIndex++) {
+            for (int rowIndex = 0; rowIndex < sheet.getLastRowNum(); rowIndex++) {
                 field = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, fieldColumnIndex);
                 //section = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, sectionColumnIndex);
                 moduleNameValue = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, moduleNameIndex);
@@ -184,8 +184,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                     }
                 } else
                     wizardTesting(field);
-                if (rowIndex > 327)
-                    break;
+//                if (rowIndex > 327)
+//                    break;
             }
             workbook.close();
             fileInputStream.close();
