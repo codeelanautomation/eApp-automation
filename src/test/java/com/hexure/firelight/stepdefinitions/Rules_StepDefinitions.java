@@ -14,6 +14,7 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.hexure.firelight.libraies.*;
+import org.openqa.selenium.By;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -341,11 +342,11 @@ public class Rules_StepDefinitions extends FLUtilities {
                                             if (!(distinctRule.toLowerCase().contains("lookup") | distinctRule.toLowerCase().contains("not required to use") | distinctRule.toLowerCase().contains("implemented then specify") | distinctRule.toLowerCase().contains("skip for automation"))) {
                                                 invalidTag = getInvalidTags(skippedInvalidElements, distinctRule);
                                                 if (invalidTag.isEmpty()) {
-                                                    if (Pattern.compile("(\\d+\\.\\s*)?If (.*?),? then (?i)(SHOW|HIDE) Options (.*)\\.?").matcher(distinctRule).find()) {
-                                                        listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?),? then (?i)(SHOW|HIDE) Options (.*)\\.?", "", distinctRule);
+                                                    if (Pattern.compile("(\\d+\\.\\s*)?If (.*?),? then (?i)(SHOW|HIDE) (Options|Label as) (.*)\\.?").matcher(distinctRule).find()) {
+                                                        listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?),? then (?i)(SHOW|HIDE) (Options|Label as) (.*)\\.?", "", distinctRule);
                                                         condition = listConditions.get(1);
                                                         expectedResult = listConditions.get(2);
-                                                        requiredSecondAttribute = listConditions.get(3);
+                                                        requiredSecondAttribute = listConditions.get(4);
                                                         key = values = "";
                                                         mapConditions.clear();
                                                         listConditionkeys = "";
@@ -417,6 +418,9 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                             else
                                                                                 onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, dataType + " Options" + displayedText, actualOptions, expectedOptions, !(actualOptions.containsAll(expectedOptions)), testContext);
                                                                             break;
+                                                                        default:
+                                                                            String expectedValue = getElementLabel(valueJson, wizardControlType).getText();
+                                                                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Label Information", "Field is displayed under label" + displayedText, expectedValue, requiredSecondAttribute, expectedValue.replaceAll("’","").equals(requiredSecondAttribute), testContext);
                                                                     }
                                                                 } else
                                                                     onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
@@ -1172,6 +1176,20 @@ public class Rules_StepDefinitions extends FLUtilities {
                 return findElements(driver, String.format(onCommonMethodsPage.getSectionRadio(), section, commonTag)).size() > 0;
             default:
                 return findElements(driver, String.format(onCommonMethodsPage.getSectionInput(), section, commonTag)).size() > 0;
+        }
+    }
+
+    public WebElement getElementLabel(String valueJson, String datatype) {
+        String commonTag = JsonPath.read(valueJson, "$.CommonTag").toString().trim();
+        switch (datatype.toLowerCase()) {
+            case "dropdown":
+            case "state dropdown":
+                return findElement(driver, String.format(onCommonMethodsPage.getLabelSelect(),commonTag));
+//            case "checkbox":
+//            case "radio button":
+//                return findElements(driver, String.format(onCommonMethodsPage.getLabelRadio(), commonTag)).size() > 0;
+            default:
+                return findElement(driver, String.format(onCommonMethodsPage.getLabelInput(), commonTag));
         }
     }
 

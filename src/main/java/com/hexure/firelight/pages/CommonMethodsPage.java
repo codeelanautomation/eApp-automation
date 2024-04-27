@@ -21,6 +21,8 @@ public class CommonMethodsPage extends FLUtilities {
     public String sectionSelect = "//div[text()='%s']//ancestor::body//select[@data-dataitemid='%s']";
     public String sectionInput = "//div[text()='%s']//ancestor::body//input[@data-dataitemid='%s']";
     public String sectionRadio = "//div[text()='%s']//ancestor::body//div[@data-dataitemid='%s']";
+    public String labelInput = "//input[@data-dataitemid='%s']/ancestor::div[@class='row baselineAlign']//p";
+    public String labelSelect = "//select[@data-dataitemid='%s']/ancestor::div[@class='row baselineAlign']//label";
     public String radioFieldWithOption = "//div[@data-dataitemid='%s']//div[@role='checkbox' and @title='%s']";
     public String radioErrorField = "//div[@data-dataitemid='%s']//ancestor::div[@class='ITComponent']//span[@class='validationText']";
     public String inputErrorField = "//input[@data-dataitemid='%s']//ancestor::div[@class='ITComponent']//span[@class='validationText']";
