@@ -127,7 +127,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     List<String> numberExchanges = new ArrayList<>(Arrays.asList(jsonRows.get("NumberofExchanges/Transfers/Rollovers").toString().trim().split(", ")));
                     numberExchanges.removeAll(Arrays.asList("Blank"));
                     for(String exchange : numberExchanges) {
-                        tempJson.replaceAll((key, value) -> value.toString().replaceAll("X", exchange));
+                        tempJson.replaceAll((key, value) -> value.toString().replaceAll("X", exchange).replaceAll("Number_Transfers > 1","Number_Transfers = " + exchange));
                         jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim().replaceAll("X", exchange), tempJson);
                         tempJson = new JSONObject(tempJsonReplacement);
                     }
