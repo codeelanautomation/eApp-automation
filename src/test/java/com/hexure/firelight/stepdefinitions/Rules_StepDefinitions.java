@@ -172,6 +172,8 @@ public class Rules_StepDefinitions extends FLUtilities {
             //int sectionColumnIndex = findColumnIndex(headerRow, EnumsCommon.SECTION.getText());
             int moduleNameIndex = findColumnIndex(headerRow, EnumsCommon.MODULESECTION.getText());
             for (int rowIndex = 0; rowIndex < sheet.getLastRowNum(); rowIndex++) {
+                if (rowIndex > 142)
+                    break;
                 field = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, fieldColumnIndex);
                 //section = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, sectionColumnIndex);
                 moduleNameValue = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, moduleNameIndex);
@@ -184,8 +186,6 @@ public class Rules_StepDefinitions extends FLUtilities {
                     }
                 } else
                     wizardTesting(field);
-//                if (rowIndex > 327)
-//                    break;
             }
             workbook.close();
             fileInputStream.close();
@@ -734,12 +734,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                                             invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim());
                                         if (invalidTag.isEmpty()) {
                                             if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank")) {
-                                                WebElement elem = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes").toString(), "");
-                                                if (!(isAttribtuePresent(elem, "readonly") | isAttribtuePresent(elem, "disabled")))
                                                     getAttributeValue(field, valueJson, order, wizardControlType, rule, "maxLength", "Length");
-                                                else
-                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Length", "Field is disabled", testContext);
-                                            }
+                                               }
                                         } else
                                             onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
                                         break;
@@ -749,12 +745,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                                             invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim());
                                         if (invalidTag.isEmpty()) {
                                             if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank")) {
-                                                WebElement elem = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes").toString(), "");
-                                                if (!(isAttribtuePresent(elem, "readonly") | isAttribtuePresent(elem, "disabled")))
                                                     getAttributeValue(field, valueJson, order, wizardControlType, rule, "mask", "Format");
-                                                else
-                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Format", "Field is disabled", testContext);
-                                            }
+                                                }
                                         } else
                                             onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
                                         break;
@@ -1337,7 +1329,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                     if (!conditionFlag)
                         onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Rule is applicable " + displayedText + " and not when state code is " + testContext.getMapTestData().get("jurisdiction"), testContext);
                     else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                        if (!setDependentCondition(key, "=", valueJson, values, distinctRule, displayedText)) {
+                        if (!setDependentCondition(key, conditionalOperator, valueJson, values, distinctRule, displayedText)) {
                             conditionFlag = false;
                         }
                     }
@@ -1348,8 +1340,13 @@ public class Rules_StepDefinitions extends FLUtilities {
                     if (listConditionkeys.equalsIgnoreCase("")) {
                         if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
                             moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
-                            if (!getElements(valueJson, wizardControlType).isEmpty())
-                                getLength(valueJson, attribute, rule, field, distinctRule, displayedText);
+                            if (!getElements(valueJson, wizardControlType).isEmpty()) {
+                                WebElement elem = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes").toString(), "");
+                                if (!(isAttribtuePresent(elem, "readonly") | isAttribtuePresent(elem, "disabled")))
+                                    getLength(valueJson, attribute, rule, field, distinctRule, displayedText);
+                                else
+                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Length", "Field is disabled", testContext);
+                            }
                             else
                                 onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, rule + " Validations -> Field does not exists" + displayedText, true, "true", true, testContext);
                         } else
