@@ -115,13 +115,16 @@ public class ForeSightExcelToJSON_StepDefinitions {
 
                         Cell cell = currentRow.getCell(i);
                         String excelValue = getCellValue(cell, jsonRows);
+                        System.out.println(excelValue);
+                        if(excelValue.equalsIgnoreCase("1. If Replacement_CompanyX_Method = Blank, then ISSUE ERROR MESSAGE: Replacement Method is required."))
+                            System.out.println(1);
                         if (!excelValue.isEmpty())
                             tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "").replaceAll("\n", ""), excelValue);
                     }
                 }
                 tempJsonReplacement = new JSONObject(tempJson);
-                if(tempJson.get("ModuleSectionName").equals("Replacement Module")) {
-                    List<String> numberExchanges = new ArrayList<>(Arrays.asList(jsonRows.get("NumberofExchange/Transfer/Rollovers").toString().trim().split(", ")));
+                if(tempJson.get("ModuleSectionName").equals("Replacements Module")) {
+                    List<String> numberExchanges = new ArrayList<>(Arrays.asList(jsonRows.get("NumberofExchanges/Transfers/Rollovers").toString().trim().split(", ")));
                     numberExchanges.removeAll(Arrays.asList("Blank"));
                     for(String exchange : numberExchanges) {
                         tempJson.replaceAll((key, value) -> value.toString().replaceAll("X", exchange));
