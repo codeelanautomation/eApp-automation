@@ -172,6 +172,8 @@ public class Rules_StepDefinitions extends FLUtilities {
             //int sectionColumnIndex = findColumnIndex(headerRow, EnumsCommon.SECTION.getText());
             int moduleNameIndex = findColumnIndex(headerRow, EnumsCommon.MODULESECTION.getText());
             for (int rowIndex = 0; rowIndex < sheet.getLastRowNum(); rowIndex++) {
+                if (rowIndex > 312)
+                    break;
                 field = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, fieldColumnIndex);
                 //section = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, sectionColumnIndex);
                 moduleNameValue = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, moduleNameIndex);
@@ -184,8 +186,6 @@ public class Rules_StepDefinitions extends FLUtilities {
                     }
                 } else
                     wizardTesting(field);
-//                if (rowIndex > 327)
-//                    break;
             }
             workbook.close();
             fileInputStream.close();
@@ -251,10 +251,6 @@ public class Rules_StepDefinitions extends FLUtilities {
                             try {
                                 switch (rule) {
                                     case "ListOptions":
-                                        conditionAnother = "";
-                                        condition = "";
-                                        expectedResultAnother = "";
-                                        expectedResult = "";
                                         String displayedText = "";
                                         String key = "";
                                         String values = "";
@@ -274,7 +270,7 @@ public class Rules_StepDefinitions extends FLUtilities {
 
                                         if (conditionFlag) {
                                             if (valueJson.contains("DisplayRules")) {
-                                                invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim());
+                                                invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0].split(";")[0]);
                                                 setCombinationConditions(valueJson, "([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)");
                                             }
                                             if (invalidTag.isEmpty()) {
@@ -352,7 +348,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                         displayedText = "";
                                                         conditionFlag = true;
 
-                                                        for (String eachCondition : condition.trim().split(("AND"))) {
+                                                        for (String eachCondition : condition.trim().split(("(?i)(AND)"))) {
                                                             listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)", "", eachCondition.trim());
                                                             key = listFieldValueConditions.get(0).trim();
                                                             expectedOperator = listFieldValueConditions.get(1).trim();
@@ -731,7 +727,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                     case "Length":
                                         invalidTag = new ArrayList<>();
                                         if (valueJson.contains("DisplayRules"))
-                                            invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim());
+                                            invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0]);
                                         if (invalidTag.isEmpty()) {
                                             if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank")) {
                                                 WebElement elem = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes").toString(), "");
@@ -746,7 +742,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                     case "Format":
                                         invalidTag = new ArrayList<>();
                                         if (valueJson.contains("DisplayRules"))
-                                            invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim());
+                                            invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0]);
                                         if (invalidTag.isEmpty()) {
                                             if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank")) {
                                                 WebElement elem = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes").toString(), "");
@@ -760,8 +756,18 @@ public class Rules_StepDefinitions extends FLUtilities {
                                         break;
                                 }
                                 if (!displayEnableConditions.isEmpty()) {
-                                    if (!displayEnableConditions.get(0).equalsIgnoreCase("FLI_ISSUED_STATE_CODE"))
+                                    if (!displayEnableConditions.get(0).equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
+                                        if (displayEnableConditions.get(1).equals(">") & (displayEnableConditions.get(3).matches("[0-9]+"))) {
+                                            displayEnableConditions.set(3, String.valueOf(Integer.parseInt(displayEnableConditions.get(3)) + 1));
+                                            displayEnableConditions.set(1, "=");
+                                        } else if (displayEnableConditions.get(1).equals("<") & (displayEnableConditions.get(3).matches("[0-9]+"))) {
+                                            displayEnableConditions.set(3, String.valueOf(Integer.parseInt(displayEnableConditions.get(3)) - 1));
+                                            displayEnableConditions.set(1, "=");
+                                        }
+                                        if (!(onCommonMethodsPage.getListErrors().isEmpty()))
+                                            clickElement(driver, onCommonMethodsPage.getRedColorErrorValidationBubble());
                                         setDependentCondition(displayEnableConditions.get(0), displayEnableConditions.get(1), displayEnableConditions.get(2), displayEnableConditions.get(3), displayEnableConditions.get(4), "");
+                                    }
                                 }
                             } catch (PathNotFoundException e) {
                                 System.out.println("Field " + field + " does not have rule \"" + rule + "\"");
@@ -909,7 +915,7 @@ public class Rules_StepDefinitions extends FLUtilities {
 
         LinkedHashMap<String, List<String>> mapConditions = new LinkedHashMap<>();
         List<String> allKeys = new ArrayList<>();
-        for (String eachCondition : JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(("AND"))) {
+        for (String eachCondition : JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0].split(("AND"))) {
             listFieldValueConditions = getDisplayRuleConditions(valueJson, pattern, "", eachCondition.trim());
             key = listFieldValueConditions.get(0).trim();
             expectedOperator = listFieldValueConditions.get(1).trim();
@@ -927,6 +933,7 @@ public class Rules_StepDefinitions extends FLUtilities {
     }
 
     public void handleSectionRules(String valueJson, String wizardControlType, String section, String order, String field, String distinctRule, String displayedText) {
+        section = section.replaceAll("X", "1");
         boolean expectedFlag = getElementSection(valueJson, wizardControlType, section);
         onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Section Information", "Field is displayed under section " + section + displayedText, expectedFlag, "true", expectedFlag, testContext);
     }
@@ -1084,6 +1091,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             case "ssn":
                 return "1234567890";
             case "dob":
+            case "date":
             case "mm/dd/yyyy":
                 return todaysDate.format(format);
             default:
@@ -1138,6 +1146,8 @@ public class Rules_StepDefinitions extends FLUtilities {
             case "dropdown":
             case "state dropdown":
                 return findElements(driver, String.format(onCommonMethodsPage.getSelectField(), commonTag));
+            case "label":
+                return findElements(driver, String.format(onCommonMethodsPage.getLabelField(), commonTag));
             default:
                 return findElements(driver, String.format(onCommonMethodsPage.getInputField(), commonTag));
         }
@@ -1151,6 +1161,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                 return findElement(driver, String.format(onCommonMethodsPage.getSelectField(), commonTag));
             case "checkbox":
                 return findElement(driver, String.format(onCommonMethodsPage.getRadioFieldCheckbox(), commonTag));
+            case "label":
+                return findElement(driver, String.format(onCommonMethodsPage.getLabelField(), commonTag));
             case "radiofield":
             case "radio button":
                 return findElement(driver, String.format(onCommonMethodsPage.getRadioFieldWithOption(), commonTag, optionalValue));
@@ -1177,6 +1189,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                 return findElements(driver, String.format(onCommonMethodsPage.getSectionSelect(), section, commonTag)).size() > 0;
             case "checkbox":
             case "radio button":
+            case "label":
                 return findElements(driver, String.format(onCommonMethodsPage.getSectionRadio(), section, commonTag)).size() > 0;
             default:
                 return findElements(driver, String.format(onCommonMethodsPage.getSectionInput(), section, commonTag)).size() > 0;
@@ -1885,7 +1898,7 @@ public class Rules_StepDefinitions extends FLUtilities {
         String displayedText = "";
 
         if (valueJson.contains("DisplayRules")) {
-            invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim());
+            invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0]);
             setCombinationConditions(valueJson, "([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)");
         }
 

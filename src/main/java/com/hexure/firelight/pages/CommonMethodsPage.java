@@ -13,9 +13,10 @@ import java.util.List;
 @Data
 public class CommonMethodsPage extends FLUtilities {
     public String selectField = "//select[@data-dataitemid='%s']";
+    public String labelField = "//div[@data-dataitemid='%s']";
     public String inputField = "//input[@data-dataitemid='%s']";
     public String radioField = "//div[@data-dataitemid='%s']//div[@title='%s']";
-    private String chkBoxField = "//div[@data-dataitemid='%s']//div[@role]";
+    public String chkBoxField = "//div[@data-dataitemid='%s']//div[@role]";
     public String txtField = "//div[@title='%s']//ancestor::div[@class='dataGrid__row']//input";
     public String radioFieldCheckbox = "//div[@data-dataitemid='%s']//div[@role='checkbox']";
     public String sectionSelect = "//div[text()='%s']//ancestor::body//select[@data-dataitemid='%s']";

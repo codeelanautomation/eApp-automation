@@ -161,12 +161,12 @@ public class ForeSightExcelToJSON_StepDefinitions {
         if (cell != null && cell.getCellType() == CellType.STRING && !(cell.getStringCellValue().trim().equalsIgnoreCase("None"))) {
             excelValue = cell.getStringCellValue().trim();
             excelValue = excelValue.replaceAll("//", "/").replaceAll("[^\\x00-\\x7F]", "").replaceAll("\n", ";").replaceAll("=", " = ").replaceAll("<>", " <> ").replaceAll("“", "").replaceAll("\"", "").replaceAll("[\\s]+[.]+", ".").replaceAll("[\\s]+", " ").trim();
-            if (excelValue.toLowerCase().contains(" or ") & !(excelValue.toLowerCase().contains("skip for automation"))) {
+            if (excelValue.toLowerCase().contains(" or ")) {
                 listRules = Arrays.asList(excelValue.split(";"));
                 for (String rule : listRules) {
                     JSONObject values = new JSONObject();
                     List<String> resultValue = new ArrayList<>();
-                    if (rule.toLowerCase().contains(" or ")) {
+                    if (rule.toLowerCase().contains(" or ")  & !(rule.toLowerCase().contains("skip for automation"))) {
                         rule = rule.replaceAll("\\[","").replaceAll("]","");
                         if(rule.toLowerCase().contains("("))
                             pattern = Pattern.compile("(.*?)\\((.*?)\\)(.*)");
