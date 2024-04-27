@@ -171,14 +171,14 @@ public class Rules_StepDefinitions extends FLUtilities {
             int fieldColumnIndex = findColumnIndex(headerRow, EnumsCommon.FIELD.getText());
             //int sectionColumnIndex = findColumnIndex(headerRow, EnumsCommon.SECTION.getText());
             int moduleNameIndex = findColumnIndex(headerRow, EnumsCommon.MODULESECTION.getText());
-            for (int rowIndex = 0; rowIndex < sheet.getLastRowNum(); rowIndex++) {
-                if (rowIndex > 142)
-                    break;
+            for (int rowIndex = 324; rowIndex < sheet.getLastRowNum(); rowIndex++) {
+//                if (rowIndex > 142)
+//                    break;
                 field = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, fieldColumnIndex);
                 //section = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, sectionColumnIndex);
                 moduleNameValue = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, moduleNameIndex);
                 if (moduleNameValue.equals("Replacements Module")) {
-                    List<String> numberExchanges = new ArrayList<>(Arrays.asList(testContext.getMapTestData().get("NumberofExchange/Transfer/Rollovers").toString().trim().split(", ")));
+                    List<String> numberExchanges = new ArrayList<>(Arrays.asList(testContext.getMapTestData().get("NumberofExchanges/Transfers/Rollovers").toString().trim().split(", ")));
                     numberExchanges.removeAll(Arrays.asList("Blank"));
                     for (String exchange : numberExchanges) {
                         String fieldReplacement = field.replaceAll("X", exchange);
