@@ -437,6 +437,18 @@ public class FLUtilities extends BaseClass {
         }
     }
 
+    protected boolean verifyCheckBoxSelectYesNO(String userAction, WebElement element) {
+        boolean flag = true;
+        if (getCheckBoxAction(userAction)) {
+            if (element.getAttribute("aria-checked").equals("false"))
+                flag = false;
+        } else {
+            if (element.getAttribute("aria-checked").equals("true"))
+                flag = false;
+        }
+        return flag;
+    }
+
     private boolean getCheckBoxAction(String action) {
         return action.equalsIgnoreCase("yes") | action.equalsIgnoreCase("check") | action.equalsIgnoreCase("checked") | action.equalsIgnoreCase("selected");
     }
