@@ -270,7 +270,7 @@ public class Rules_StepDefinitions extends FLUtilities {
 
                                         if (conditionFlag) {
                                             if (valueJson.contains("DisplayRules")) {
-                                                invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0].split(";")[0]);
+                                                invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0]);
                                                 setCombinationConditions(valueJson, "([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)");
                                             }
                                             if (invalidTag.isEmpty()) {
@@ -1925,7 +1925,8 @@ public class Rules_StepDefinitions extends FLUtilities {
 
         if (valueJson.contains("DisplayRules")) {
             invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0]);
-            setCombinationConditions(valueJson, "([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)");
+            if (Pattern.compile("([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)").matcher(JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0]).find())
+                setCombinationConditions(valueJson, "([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)");
         }
 
         if (invalidTag.isEmpty()) {
