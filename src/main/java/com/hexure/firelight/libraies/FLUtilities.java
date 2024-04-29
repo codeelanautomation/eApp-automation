@@ -439,6 +439,7 @@ public class FLUtilities extends BaseClass {
 
     protected boolean verifyCheckBoxSelectYesNO(String userAction, WebElement element) {
         boolean flag = true;
+        checkBoxSelectYesNO(userAction, element);
         if (getCheckBoxAction(userAction)) {
             if (element.getAttribute("aria-checked").equals("false"))
                 flag = false;

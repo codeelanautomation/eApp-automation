@@ -29,7 +29,7 @@ public class CommonMethodsPage extends FLUtilities {
     public String inputErrorField = "//input[@data-dataitemid='%s']//ancestor::div[@class='ITComponent']//span[@class='validationText']";
     public String selectErrorField = "//select[@data-dataitemid='%s']//ancestor::div[@class='ITComponent']//span[@class='validationText']";
     public String fieldWithTitleAttribute = "//*[@title=\"%s\"]|//*[@aria-label=\"%s\"]";
-    public String mandatoryFormElement = "//*[@class=\"navDrawer__bundleName\" and text()=\"%s\"]/..//*[@class=\"far fa-exclamation-triangle navDrawer__pageGraphic validation-summary-errors\"]/../..";
+    public String mandatoryFormElement = "//*[@class='navDrawer__bundleName' and text()=\"%s\"]//..//a";
 
     @FindBy(xpath = "//*[@id='ToggleMessagesLink']")
     private WebElement redColorErrorValidationBubble;
