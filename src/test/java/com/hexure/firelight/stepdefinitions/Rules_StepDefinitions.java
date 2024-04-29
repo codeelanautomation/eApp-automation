@@ -58,6 +58,7 @@ public class Rules_StepDefinitions extends FLUtilities {
     List<String> skippedInvalidElements = new ArrayList<>();
     private long endTime;
     private LocalTime endLocalTime;
+    int fieldsEvaluated = 0;
 
     public Rules_StepDefinitions(TestContext context) {
         testContext = context;
@@ -171,7 +172,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             int fieldColumnIndex = findColumnIndex(headerRow, EnumsCommon.FIELD.getText());
             //int sectionColumnIndex = findColumnIndex(headerRow, EnumsCommon.SECTION.getText());
             int moduleNameIndex = findColumnIndex(headerRow, EnumsCommon.MODULESECTION.getText());
-            for (int rowIndex = 323; rowIndex < sheet.getLastRowNum(); rowIndex++) {
+            for (int rowIndex = 0; rowIndex < sheet.getLastRowNum(); rowIndex++) {
                 if (rowIndex > 558)
                     break;
                 field = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, fieldColumnIndex);
@@ -244,6 +245,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                     wizardControlType = JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim();
                     moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
                     if (verifyElementExists(valueJson, skippedInvalidElements, order, field)) {
+                        fieldsEvaluated++;
                         combinationConditions.clear();
                         howManyOperator.clear();
                         for (String rule : rulesList) {
@@ -1888,7 +1890,7 @@ public class Rules_StepDefinitions extends FLUtilities {
         difference = String.format("%dh %dm %ds", hours, minutes, seconds);
         testContext.getScenario().write("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>Cucumber Report : " + LocalDate.now() + "</div>");
         testContext.getScenario().write("<div width='100%' style='font-size:1.2vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>" + timeFormat.format(onLoginPage.getStartLocalTime()) + " - " + timeFormat.format(endLocalTime) + "(" + difference + ")</div>");
-        onSoftAssertionHandlerPage.afterScenario(testContext);
+        onSoftAssertionHandlerPage.afterScenario(testContext, fieldsEvaluated);
     }
 
     private void generateCombinations(List<String> keys, List<String> combination, Map<String, List<String>> keyValuesMap, String conditionCombination) {

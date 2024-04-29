@@ -16,6 +16,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
     private final List<List<String>> skippedRules = new ArrayList<>();
     private final List<List<String>> skippedElements = new ArrayList<>();
     private int fieldCount = 0;
+    private String  resultSetSkippedRules = "";
 
     public SoftAssertionHandlerPage(WebDriver driver) {
         initElements(driver);
@@ -51,23 +52,24 @@ public class SoftAssertionHandlerPage extends FLUtilities {
 //        assertTrue(message, actual.equals(expected), testContext);
 //    }
 
-    public void afterScenario(TestContext testContext) {
+    public void afterScenario(TestContext testContext, int fieldsEvaluated) {
         // Print all assertions in the report at the end of the scenario
-        assertAll(testContext);
+        assertAll(testContext,fieldsEvaluated);
     }
 
-    public void assertAll(TestContext testContext) {
-        printResults(assertions, testContext);
+    public void assertAll(TestContext testContext, int fieldsEvaluated) {
+        printResults(assertions, testContext,fieldsEvaluated);
 //        printNoElementResults(assertionsNoElement, testContext);
         printSkippedElements(skippedElements, testContext);
-        printSkippedRules(skippedRules, testContext);
+        printSkippedRules(testContext);
     }
 
-    private void printResults(List<List<String>> assertions, TestContext testContext) {
+    private void printResults(List<List<String>> assertions, TestContext testContext, int fieldsEvaluated) {
         Scenario scenario = testContext.getScenario();
         String resultSet = "";
         int countPassed = 0;
         int countFailed = 0;
+        int skippedRulesCount = countSkippedRules(skippedRules, testContext);
 
         if (!assertions.isEmpty()) {
             resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th style=\"white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;\">S.No.</th>  <th style=\"white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;\">Order</th> <th style=\"white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;\">Jurisdiction</th> <th style=\"white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;\">Module Name</th> <th>Field</th> <th>Rule</th> <th>Validations</th> <th>Actual Value (UI)</th> <th>Expected Value (Excel Template)</th> <th>Result</th> </tr>";
@@ -83,7 +85,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
                 }
             }
             testContext.getScenario().write("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>Execution Summary : </div>");
-            scenario.write("<table border=\"1\" width=\"400\"> <tr style='font-weight: bold; background-color: #C5D88A;'> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Fields Evaluated</td> <td>" + fieldCount + "</td></tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Total Rules Evaluated </td> <td>" + (countFailed + countPassed) + "</td> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Rules Validation Passed</td> <td><font color=\"green\">" + countPassed + "</font></td> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Rules Validation Failed</td> <td><font color=\"red\">" + countFailed + "</font></td></tr><table>");
+            scenario.write("<table border=\"1\" width=\"400\"> <tr style='font-weight: bold; background-color: #C5D88A;'> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Fields Evaluated</td> <td>" + fieldsEvaluated + "</td></tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Total Rules Evaluated </td> <td>" + (countFailed + countPassed + skippedRulesCount) + "</td> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Rules Validation Passed</td> <td><font color=\"green\">" + countPassed + "</font></td> </tr> <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Rules Validation Failed</td> <td><font color=\"red\">" + countFailed + "</font></td></tr>   <tr style='font-weight: bold; background-color: #C5D88A;'> <td>Rules Validation Skipped</td> <td><font color=\"yellow\">" + skippedRulesCount +"</font></td></tr><table>");
             resultSet += "</table>";
             scenario.write(resultSet);
         }
@@ -119,20 +121,26 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         }
     }
 
-    private void printSkippedRules(List<List<String>> assertions, TestContext testContext) {
+    private int countSkippedRules(List<List<String>> assertions, TestContext testContext) {
         Scenario scenario = testContext.getScenario();
         String resultSet = "";
+        int serialNumber = 1; // Start with 1
         if (!assertions.isEmpty()) {
-            testContext.getScenario().write("<div width='100%' style='font-size:1.3vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>List Of Rules Skipped : </div>");
-            resultSet += "<table border=\"1\" width=\"100%\"> <tr> <th>S.No.</th> <th>Order</th> <th>Jurisdiction</th> <th>Module Name</th> <th>Field</th>  <th>Skipped Rule</th>  <th>Reason for skip</th></tr>";
+            resultSetSkippedRules += "<table border=\"1\" width=\"100%\"> <tr> <th>S.No.</th> <th>Order</th> <th>Jurisdiction</th> <th>Module Name</th> <th>Field</th>  <th>Skipped Rule</th>  <th>Reason for skip</th></tr>";
 
-            int serialNumber = 1; // Start with 1
             for (List<String> assertion : assertions) {
-                resultSet += "<tr style='color: black; background-color: #C5D88A;'> <td>" + serialNumber++ + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) +"</td> <td>" + assertion.get(2) + "</td> <td>" + assertion.get(3) +"</td> <td>" + assertion.get(4) +"</td> <td>" + assertion.get(5) +"</td> </tr>";
+                resultSetSkippedRules += "<tr style='color: black; background-color: #C5D88A;'> <td>" + serialNumber++ + "</td> <td>" + assertion.get(0) + "</td> <td>" + assertion.get(1) +"</td> <td>" + assertion.get(2) + "</td> <td>" + assertion.get(3) +"</td> <td>" + assertion.get(4) +"</td> <td>" + assertion.get(5) +"</td> </tr>";
             }
-            resultSet += "</table> <div> </div><div style=\"text-align: center; font-weight: bold; font-size: 24px;\">End of the cucumber report</div>\n";
-            scenario.write(resultSet);
+            resultSetSkippedRules += "</table> <div> </div><div style=\"text-align: center; font-weight: bold; font-size: 24px;\">End of the cucumber report</div>\n";
         }
+        return serialNumber-1;
+    }
+
+    private void printSkippedRules(TestContext testContext) {
+        Scenario scenario = testContext.getScenario();
+        testContext.getScenario().write("<div width='100%' style='font-size:1.3vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>List Of Rules Skipped : </div>");
+        scenario.write(resultSetSkippedRules);
+
     }
 
     private String formatAssertion(boolean condition, String message) {
