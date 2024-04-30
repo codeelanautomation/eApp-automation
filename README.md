@@ -5,4 +5,5 @@ environment=qanext
 execution.type=local
 execution.mode=local
 
-mvn clean test
+1. Run runner file "RunIntegrationTest"
+2. mvn clean test
