@@ -73,7 +73,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
             BufferedWriter writer = new BufferedWriter(jsonTestData);
             writer.write(gson.toJson(jsonObject));
             writer.close();
-
+            createUniqueCounter();
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -375,8 +375,8 @@ public class ForeSightExcelToJSON_StepDefinitions {
         try {
             BufferedReader reader = new BufferedReader(new FileReader(EnumsCommon.FEATUREFILESPATH.getText() + "End2End/E2EWizardTestFlow.feature"));
             while ((line = reader.readLine()) != null) {
-                line = line.replaceAll("@Module", "\t@" + module.replaceAll(" ", "")).replaceAll("Client", client);
-                line = line.replaceAll("ModuleName", module).replaceAll("productName", product).replaceAll("fileName", fileName);
+                line = line.replaceAll("ModuleName", module).replaceAll("ModuleTag", module.replaceAll(" ", "")).replaceAll("Client", client);
+                line = line.replaceAll("productName", product).replaceAll("fileName", fileName);
                 lines.add(line);
             }  //end if
             reader.close();
@@ -398,7 +398,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
         try {
             BufferedReader reader = new BufferedReader(new FileReader(EnumsCommon.RUNNERFILESPATH.getText() + "RunFireLightTest.java"));
             while ((line = reader.readLine()) != null) {
-                line = replaceLine(line, "package com.hexure.firelight.runner;", "package com.hexure.firelight.runner.ForeSightTest;");
+                line = line.replaceAll("com.hexure.firelight.runner", "com.hexure.firelight.runner.ForeSightTest");
                 line = replaceLine(line, "\"json:target/cucumber-html-report\",", "\t\t\"json:target/cucumber" + client + module.replaceAll(" ", "") + "-html-report\",");
                 line = replaceLine(line, "\"json:target/cucumber-reports/cucumber.xml\",", "\t\t\"json:target/cucumber-reports/cucumber" + client + module.replaceAll(" ", "") + ".xml\",");
                 line = replaceLine(line, "\"html:target/cucumber-reports/cucumber.html\",", "\t\t\"html:target/cucumber-reports/cucumber" + client + module.replaceAll(" ", "") + ".html\",");

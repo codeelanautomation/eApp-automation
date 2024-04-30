@@ -1,6 +1,5 @@
 package com.hexure.firelight.runner;
 
-import com.hexure.firelight.runner.UniqueTestCounter;
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
 import org.junit.AfterClass;

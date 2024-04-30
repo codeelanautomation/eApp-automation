@@ -16,6 +16,7 @@ public class TestContext {
     private Scenario scenario = null;
     private String testCaseID = null;
     private String moduleName = null;
+    private String screenshotFolderName = null;
     private String captureScreenshot = null;
     private String appType = null;
     private HashMap<String, String> mapTestData = null;

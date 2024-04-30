@@ -120,11 +120,10 @@ public class Rules_StepDefinitions extends FLUtilities {
     public void createAppAndValidateWizard(String product, String productType, String module, String excelFile) {
         captureScreenshot(driver, testContext, false);
         String[] States = testContext.getMapTestData().get("JurisdictionRules").split(",");
-//        String allowedChars = "12345";
-        for (String jurisdiction : States) {
 
+        for (String jurisdiction : States) {
             String moduleJurisdictionMapping = testContext.getMapTestData().get(jurisdiction).trim();
-            List<String> moduleValues = Arrays.asList(JsonPath.read(moduleJurisdictionMapping, "$.Module").toString().trim().split(","));
+            List<String> moduleValues = Arrays.asList(JsonPath.read(moduleJurisdictionMapping, "$.Module").toString().trim().split(", "));
             jurisdictionStatesCode = JsonPath.read(moduleJurisdictionMapping, "$.State").toString().trim();
 
             if (moduleValues.contains(module) | moduleValues.contains("All")) {
@@ -132,7 +131,6 @@ public class Rules_StepDefinitions extends FLUtilities {
 
                 clickElement(driver, onCreateApplicationPage.getBtnApplication());
                 new Select(onCreateApplicationPage.getDd_Jurisdiction()).selectByVisibleText(jurisdiction);
-//                addPropertyValueInJSON(testContext.getTestCaseID(), testContext, module.replaceAll(" ", "") + "_" + executedJurisdiction + "_jurisdiction" , jurisdiction);
                 waitForPageToLoad(driver);
                 sleepInMilliSeconds(2000);
                 waitUntilDropDownListPopulated(driver, new Select(onCreateApplicationPage.getDd_ProductType()));
@@ -145,13 +143,11 @@ public class Rules_StepDefinitions extends FLUtilities {
                 } catch (StaleElementReferenceException e) {
                     clickElement(driver, findElement(driver, String.format(onCreateApplicationPage.list_OfProducts, product)));
                 }
-//            addPropertyValueInJSON(testContext.getTestCaseID(), testContext, EnumsJSONProp.PRODUCT.getText(), product);
                 waitForPageToLoad(driver);
                 clickElement(driver, onCreateApplicationPage.getBtn_Create());
                 String newAppName = "AT " + testContext.getMapTestData().get("product") + " " + getDate("newAppName");
                 onCreateApplicationPage.getTxtBox_newAppName().clear();
                 onCreateApplicationPage.getTxtBox_newAppName().sendKeys(newAppName);
-//            addPropertyValueInJSON(testContext.getTestCaseID(), testContext, EnumsJSONProp.NEWPRODUCTNAME.getText(), newAppName);
                 onCreateApplicationPage.getBtn_CreateActivity().click();
                 waitForPageToLoad(driver);
                 if (!onCreateApplicationPage.getLstBtnClose().isEmpty())
@@ -161,15 +157,13 @@ public class Rules_StepDefinitions extends FLUtilities {
                 clickElement(driver, onCreateApplicationPage.getBtnHome());
                 clickElement(driver, onCreateApplicationPage.getBtnPopupOK());
                 waitForPageToLoad(driver);
-                printFinalResults();
             }
         }
+        printFinalResults();
     }
 
     public void verify_form_data_with_inbound_XML_from_Excel_and_Xml(String excelFileName, String module) {
         String moduleNameValue;
-//        String modules = Arrays.asList(module.split(", "));
-        int count = 0;
         List<String> fieldList = Arrays.asList(testContext.getMapTestData().get("fieldList").split(", "));
         for (String fieldName : fieldList) {
             moduleNameValue = JsonPath.read(testContext.getMapTestData().get(fieldName).trim(), "$.ModuleSectionName").toString().trim();

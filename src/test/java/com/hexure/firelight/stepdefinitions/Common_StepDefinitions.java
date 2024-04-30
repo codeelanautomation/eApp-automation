@@ -41,13 +41,15 @@ public class Common_StepDefinitions extends FLUtilities {
     }
 
     private void commonSetup(String testCaseID) throws AWTException {
-        testContext.setTestCaseID(testCaseID.split("_")[1]);
+        testContext.setTestCaseID(testCaseID.split("_")[2]);
         testContext.setModuleName(testCaseID.split("_")[0]);
+        testContext.setScreenshotFolderName(testCaseID.split("_")[1]);
         System.out.println("Environment = " + testContext.getEnvironment());
         System.out.println("ApplicationType = " + testContext.getAppType());
         System.out.println("TestCaseID = " + testContext.getTestCaseID());
         System.out.println("ModuleName = " + testContext.getModuleName());
         System.out.println("CaptureScreenshot = " + testContext.getCaptureScreenshot());
+        System.out.println("ScreenshotFolder = " + testContext.getScreenshotFolderName());
         openLoginPage(driver, testContext);
         testContext.setUiType(testContext.getMapTestData().get("uiType"));
         System.out.println("UI TYPE is = " + testContext.getMapTestData().get("uiType"));

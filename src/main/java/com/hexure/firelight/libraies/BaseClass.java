@@ -356,7 +356,7 @@ public class BaseClass {
             }
 
             String fileName = truncateScenarioName(testContext.getScenario().getName()) + "_" + getDate("forFileName") + "_" + tcStatus;
-            File destination = new File(configProperties.get("screenshotFolder.path") + testContext.getModuleName() + "/" + testContext.getTestCaseID() + "/" + fileName + ".png");
+            File destination = new File(configProperties.get("screenshotFolder.path") + testContext.getScreenshotFolderName() + "/" + fileName + ".png");
             FileUtils.copyFile(source, destination);
         } catch (IOException e) {
             Log.error("Copy File From Source To Destination Failed ", e);
