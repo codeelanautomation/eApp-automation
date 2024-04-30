@@ -352,9 +352,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
         try {
             BufferedReader reader = new BufferedReader(new FileReader(EnumsCommon.FEATUREFILESPATH.getText() + "End2End/E2EWizardTestFlow.feature"));
             while ((line = reader.readLine()) != null) {
-                line = replaceLine(line, "@Module", "\t@" + module.replaceAll(" ", ""));
-                line = replaceLine(line, "Given User is on FireLight login page for TestCase", "\tGiven User is on FireLight login page for TestCase " + "\"End2End_" + client + "\"");
-                line = replaceLine(line, "Then User on Login Page enters valid username as", "\tThen User on Login Page enters valid username as \"" + client + "_User\" and password and clicks Login button");
+                line = line.replaceAll("@Module", "\t@" + module.replaceAll(" ", "")).replaceAll("Client", client);
                 line = line.replaceAll("ModuleName", module).replaceAll("productName", product).replaceAll("fileName", fileName);
                 lines.add(line);
             }  //end if
