@@ -42,7 +42,7 @@ public class Flow_StepDefinitions extends FLUtilities {
         onSoftAssertionHandlerPage = testContext.getPageObjectManager().getSoftAssertionHandlerPage();
     }
 
-    private static int findColumnIndex(Row headerRow, String columnName) {
+    private int findColumnIndex(Row headerRow, String columnName) {
         Iterator<Cell> cellIterator = headerRow.cellIterator();
         while (cellIterator.hasNext()) {
             Cell cell = cellIterator.next();
@@ -53,11 +53,11 @@ public class Flow_StepDefinitions extends FLUtilities {
         return -1; // Column not found
     }
 
-    private static String getCellValue(Cell cell) {
+    private String getCellValue(Cell cell) {
         return cell == null ? "" : cell.toString().trim();
     }
 
-    public static String getExcelColumnValue(String excelFilePath, String sheetName, int rowIndex, int columnIndex) {
+    public String getExcelColumnValue(String excelFilePath, String sheetName, int rowIndex, int columnIndex) {
         try {
             Workbook workbook = WorkbookFactory.create(new File(excelFilePath));
             Sheet sheet = workbook.getSheet(sheetName);

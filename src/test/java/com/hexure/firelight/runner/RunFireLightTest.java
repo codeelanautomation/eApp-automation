@@ -20,9 +20,9 @@ import java.io.*;
                 "io.qameta.allure.cucumber4jvm.AllureCucumber4Jvm"
         },
         features = {"classpath:"},
-        tags = {"@E2EWizardTestFlow"},
+        tags = {""},
         glue = {"com.hexure.firelight.stepdefinitions"},
-        dryRun = false
+        monochrome = true
 )
 public class RunFireLightTest {
 

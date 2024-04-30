@@ -167,6 +167,8 @@ public class BaseClass {
         chromeOptions.addArguments("disable-infobars");
         chromeOptions.addArguments("--start-maximized");
         chromeOptions.addArguments("--disable-notifications");
+        chromeOptions.addArguments("force-device-scale-factor=0.80");
+        chromeOptions.addArguments("high-dpi-support=0.80");
 
         DesiredCapabilities capabilities = DesiredCapabilities.chrome();
         capabilities.setCapability("applicationCacheEnabled", false);

@@ -17,7 +17,10 @@ public enum EnumsCommon {
     UITYPE_MVC("mvc"),
     RELATIVE_DOWNLOADFILES_PATH("./src/test/resources/testdata/downloadedFiles/"),
     ABSOLUTE_FILES_PATH(System.getProperty("user.dir") + "\\src\\test\\resources\\testdata\\"),
-    FIREFOXBROWSER("Firefox");
+    FIREFOXBROWSER("Firefox"),
+    FEATUREFILESPATH(System.getProperty("user.dir") + "/src/test/resources/features/"),
+    RUNNERFILESPATH(System.getProperty("user.dir") + "/src/test/java/com/hexure/firelight/runner/")
+    ;
 
     private final String text;
 

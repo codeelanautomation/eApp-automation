@@ -56,9 +56,10 @@ public class Rules_StepDefinitions extends FLUtilities {
     String jurisdictionStatesCode = "";
     List<String> displayEnableConditions = new ArrayList<>();
     List<String> skippedInvalidElements = new ArrayList<>();
+    int fieldsEvaluated = 0;
+    String executedJurisdiction = "";
     private long endTime;
     private LocalTime endLocalTime;
-    int fieldsEvaluated = 0;
 
     public Rules_StepDefinitions(TestContext context) {
         testContext = context;
@@ -69,7 +70,7 @@ public class Rules_StepDefinitions extends FLUtilities {
         onCreateApplicationPage = testContext.getPageObjectManager().getCreateApplicationPage();
     }
 
-    private static int findColumnIndex(Row headerRow, String columnName) {
+    private int findColumnIndex(Row headerRow, String columnName) {
         Iterator<Cell> cellIterator = headerRow.cellIterator();
         while (cellIterator.hasNext()) {
             Cell cell = cellIterator.next();
@@ -80,11 +81,11 @@ public class Rules_StepDefinitions extends FLUtilities {
         return -1; // Column not found
     }
 
-    private static String getCellValue(Cell cell) {
+    private String getCellValue(Cell cell) {
         return cell == null ? "" : cell.toString().trim();
     }
 
-    public static String getExcelColumnValue(String excelFilePath, String sheetName, int rowIndex, int columnIndex) {
+    public String getExcelColumnValue(String excelFilePath, String sheetName, int rowIndex, int columnIndex) {
         try {
             Workbook workbook = WorkbookFactory.create(new File(excelFilePath));
             Sheet sheet = workbook.getSheet(sheetName);
@@ -115,14 +116,15 @@ public class Rules_StepDefinitions extends FLUtilities {
         return null;
     }
 
-    @Given("User clicks application for Product {string} and Product Type {string} and validate wizard fields for workbook {string}")
-    public void createAppAndValidateWizard(String product, String productType, String excelFile) {
+    @Given("User clicks application for Product {string} and Product Type {string} and validate wizard fields for module {string} for workbook {string}")
+    public void createAppAndValidateWizard(String product, String productType, String module, String excelFile) {
         captureScreenshot(driver, testContext, false);
         String[] States = testContext.getMapTestData().get("JurisdictionRules").split(",");
         for (String jurisdiction : States) {
+            executedJurisdiction = jurisdiction;
             clickElement(driver, onCreateApplicationPage.getBtnApplication());
             new Select(onCreateApplicationPage.getDd_Jurisdiction()).selectByVisibleText(jurisdiction);
-            addPropertyValueInJSON(testContext.getTestCaseID(), testContext, EnumsJSONProp.JURISDICTION.getText(), jurisdiction);
+            addPropertyValueInJSON(testContext.getTestCaseID(), testContext, executedJurisdiction + "_" + EnumsJSONProp.JURISDICTION.getText(), jurisdiction);
             waitForPageToLoad(driver);
             sleepInMilliSeconds(2000);
             waitUntilDropDownListPopulated(driver, new Select(onCreateApplicationPage.getDd_ProductType()));
@@ -135,18 +137,18 @@ public class Rules_StepDefinitions extends FLUtilities {
             } catch (StaleElementReferenceException e) {
                 clickElement(driver, findElement(driver, String.format(onCreateApplicationPage.list_OfProducts, product)));
             }
-            addPropertyValueInJSON(testContext.getTestCaseID(), testContext, EnumsJSONProp.PRODUCT.getText(), product);
+//            addPropertyValueInJSON(testContext.getTestCaseID(), testContext, EnumsJSONProp.PRODUCT.getText(), product);
             waitForPageToLoad(driver);
             clickElement(driver, onCreateApplicationPage.getBtn_Create());
             String newAppName = "AT " + testContext.getMapTestData().get("product") + " " + getDate("newAppName");
             onCreateApplicationPage.getTxtBox_newAppName().clear();
             onCreateApplicationPage.getTxtBox_newAppName().sendKeys(newAppName);
-            addPropertyValueInJSON(testContext.getTestCaseID(), testContext, EnumsJSONProp.NEWPRODUCTNAME.getText(), newAppName);
+//            addPropertyValueInJSON(testContext.getTestCaseID(), testContext, EnumsJSONProp.NEWPRODUCTNAME.getText(), newAppName);
             onCreateApplicationPage.getBtn_CreateActivity().click();
             waitForPageToLoad(driver);
             if (!onCreateApplicationPage.getLstBtnClose().isEmpty())
                 clickElement(driver, onCreateApplicationPage.getBtnClose());
-            verify_form_data_with_inbound_XML_from_Excel_and_Xml(excelFile);
+            verify_form_data_with_inbound_XML_from_Excel_and_Xml(excelFile, module);
             waitForPageToLoad(driver);
             clickElement(driver, onCreateApplicationPage.getBtnHome());
             clickElement(driver, onCreateApplicationPage.getBtnPopupOK());
@@ -155,44 +157,38 @@ public class Rules_StepDefinitions extends FLUtilities {
         printFinalResults();
     }
 
-    public void verify_form_data_with_inbound_XML_from_Excel_and_Xml(String excelFileName) {
-        String excelFilePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + excelFileName;
-        String sheetName = "E-App Wizard Spec";
-        String field;
+    public void verify_form_data_with_inbound_XML_from_Excel_and_Xml(String excelFileName, String module) {
         String moduleNameValue;
+        List<String> modules = Arrays.asList(module.split(", "));
 
-        try {
-            FileInputStream fileInputStream = new FileInputStream(excelFilePath);
-            Workbook workbook = new XSSFWorkbook(fileInputStream);
-            Sheet sheet = workbook.getSheet(sheetName);
-            Iterator<Row> iterator = sheet.iterator();
-            // Assuming the fifth row contains headers
-            Row headerRow = iterator.next();
-
-            int fieldColumnIndex = findColumnIndex(headerRow, EnumsCommon.FIELD.getText());
-            //int sectionColumnIndex = findColumnIndex(headerRow, EnumsCommon.SECTION.getText());
-            int moduleNameIndex = findColumnIndex(headerRow, EnumsCommon.MODULESECTION.getText());
-            for (int rowIndex = 0; rowIndex < sheet.getLastRowNum(); rowIndex++) {
-                if (rowIndex > 558)
-                    break;
-                field = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, fieldColumnIndex);
-                //section = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, sectionColumnIndex);
-                moduleNameValue = getExcelColumnValue(excelFilePath, sheetName, rowIndex + 1, moduleNameIndex);
-                if (moduleNameValue.equals("Replacements Module")) {
-                    List<String> numberExchanges = new ArrayList<>(Arrays.asList(testContext.getMapTestData().get("NumberofExchanges/Transfers/Rollovers").toString().trim().split(", ")));
-                    numberExchanges.removeAll(Arrays.asList("Blank"));
-                    for (String exchange : numberExchanges) {
-                        String fieldReplacement = field.replaceAll("X", exchange);
-                        wizardTesting(fieldReplacement);
-                    }
-                } else
-                    wizardTesting(field);
+            List<String> fieldList = Arrays.asList(testContext.getMapTestData().get("fieldList").split(", "));
+            for (String fieldName : fieldList) {
+                moduleNameValue = JsonPath.read(testContext.getMapTestData().get(fieldName).trim(), "$.ModuleSectionName").toString().trim();
+                if (modules.contains(moduleNameValue)) {
+                        wizardTesting(fieldName);
+                }
             }
-            workbook.close();
-            fileInputStream.close();
-        } catch (IOException e) {
-            System.out.println(excelFileName + " could not be opened due to some reason");
-        }
+    }
+
+
+    public boolean verifyValueExists(String condition, String result) {
+        boolean flag = true;
+        if (JsonPath.read(testContext.getMapTestData().get(condition).trim(), "$.WizardControlTypes").toString().trim().equalsIgnoreCase("dropdown"))
+            if (!getOptions(testContext.getMapTestData().get(condition).trim(), JsonPath.read(testContext.getMapTestData().get(condition).trim(), "$.WizardControlTypes").toString().trim()).contains(result))
+                flag = false;
+        return flag;
+    }
+
+    public String findKeyExistsJSON(String condition) {
+        if (!testContext.getMapTestData().containsKey(condition))
+            return condition;
+        return "";
+    }
+
+    public void setConditions(String condition, String valueJson, String result, String conditionAnother, String expectedResultAnother, String expectedOperator, String expectedOperatorAnother, String distinctRule, String displayedText) {
+        setDependentCondition(condition, expectedOperator, valueJson, result, distinctRule, displayedText);
+        if (!conditionAnother.isEmpty())
+            setDependentCondition(conditionAnother, expectedOperatorAnother, valueJson, expectedResultAnother, distinctRule, displayedText);
     }
 
     //    @Given("User validate wizard fields for workbook {string}")
@@ -234,13 +230,13 @@ public class Rules_StepDefinitions extends FLUtilities {
                 reason = JsonPath.read(valueJson, "$.Reason:Skipforautomation").toString().trim();
             combinationConditions = new ArrayList<>();
             howManyOperator = new HashMap<>();
-            String moduleJurisdictionMapping = testContext.getMapTestData().get(testContext.getMapTestData().get("jurisdiction")).trim();
+            String moduleJurisdictionMapping = testContext.getMapTestData().get(testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction")).trim();
             List<String> moduleValues = Arrays.asList(JsonPath.read(moduleJurisdictionMapping, "$.Module").toString().trim().split(","));
             jurisdictionStatesCode = JsonPath.read(moduleJurisdictionMapping, "$.State").toString().trim();
 
             if (moduleValues.contains(moduleName) | moduleValues.contains("All")) {
-             if (valueJson.contains("WizardControlTypes") & !(field.toLowerCase().contains("lookup") | valueJson.toLowerCase().contains("hide for day") | commonTag.equalsIgnoreCase("No Tag") | commonTag.equalsIgnoreCase(""))) {
-                 if (valueJson.contains("Section\""))
+                if (valueJson.contains("WizardControlTypes") & !(field.toLowerCase().contains("lookup") | valueJson.toLowerCase().contains("hide for day") | commonTag.equalsIgnoreCase("No Tag") | commonTag.equalsIgnoreCase(""))) {
+                    if (valueJson.contains("Section\""))
                         section = JsonPath.read(valueJson, "$.Section").toString().trim();
                     wizardControlType = JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim();
                     moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
@@ -305,7 +301,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                     conditionFlag = false;
                                                             }
                                                             if (!conditionFlag)
-                                                                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "List Options", "Rule is applicable " + displayedText + " and not when state code is " + testContext.getMapTestData().get("jurisdiction"), testContext);
+                                                                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "List Options", "Rule is applicable " + displayedText + " and not when state code is " + testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), testContext);
                                                             else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
                                                                 if (!setDependentCondition(key, "=", valueJson, values, "List Options", displayedText)) {
                                                                     conditionFlag = false;
@@ -320,16 +316,16 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                     moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
                                                                 verifyOptions(valueJson, field, expectedOptions, displayedText, "List Options");
                                                             } else
-                                                                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "List Options", "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                                                                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "List Options", "Key " + listConditionkeys + " does not exists in JSON", testContext);
                                                         }
                                                     }
                                                     combinationConditions.clear();
                                                     howManyOperator.clear();
                                                 }
                                             } else
-                                                onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
+                                                onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
                                         } else
-                                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "List Options", "Data list does not contain \"" + options + "\"", testContext);
+                                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "List Options", "Data list does not contain \"" + options + "\"", testContext);
                                         break;
                                     case "RulesWizard":
                                         conditionAnother = "";
@@ -392,7 +388,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                         conditionFlag = false;
                                                                 }
                                                                 if (!conditionFlag)
-                                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Rule is applicable " + displayedText + " and not when state code is " + testContext.getMapTestData().get("jurisdiction"), testContext);
+                                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Rule is applicable " + displayedText + " and not when state code is " + testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), testContext);
                                                                 else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
                                                                     if (!setDependentCondition(key, "=", valueJson, values, distinctRule, displayedText)) {
                                                                         conditionFlag = false;
@@ -411,16 +407,16 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                             expectedOptions = Arrays.asList(requiredSecondAttribute.split(", "));
                                                                             actualOptions = getOptions(valueJson, wizardControlType);
                                                                             if (expectedResult.equalsIgnoreCase("show"))
-                                                                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, dataType + " Options" + displayedText, actualOptions, expectedOptions, actualOptions.equals(expectedOptions), testContext);
+                                                                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, dataType + " Options" + displayedText, actualOptions, expectedOptions, actualOptions.equals(expectedOptions), testContext);
                                                                             else
-                                                                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, dataType + " Options" + displayedText, actualOptions, expectedOptions, !(actualOptions.containsAll(expectedOptions)), testContext);
+                                                                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, dataType + " Options" + displayedText, actualOptions, expectedOptions, !(actualOptions.containsAll(expectedOptions)), testContext);
                                                                             break;
                                                                         default:
                                                                             String expectedValue = getElementLabel(valueJson, wizardControlType).getText();
-                                                                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Label Information", "Field is displayed under label" + displayedText, expectedValue, requiredSecondAttribute, expectedValue.replaceAll("’","").equals(requiredSecondAttribute), testContext);
+                                                                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "Label Information", "Field is displayed under label" + displayedText, expectedValue, requiredSecondAttribute, expectedValue.replaceAll("’", "").equals(requiredSecondAttribute), testContext);
                                                                     }
                                                                 } else
-                                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
                                                             }
                                                         }
                                                         combinationConditions.clear();
@@ -484,7 +480,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                         conditionFlag = false;
                                                                 }
                                                                 if (!conditionFlag)
-                                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Rule is applicable " + displayedText + " and not when state code is " + testContext.getMapTestData().get("jurisdiction"), testContext);
+                                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Rule is applicable " + displayedText + " and not when state code is " + testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), testContext);
                                                                 else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
                                                                     if (!setDependentCondition(key, conditionalOperator, valueJson, values, distinctRule, displayedText)) {
                                                                         conditionFlag = false;
@@ -502,11 +498,11 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                             if (!secondParamter.equals(""))
                                                                                 setVisibilityRules(secondParamter.trim(), valueJson, wizardControlType, order, field, "", distinctRule, result, displayedText);
                                                                         } else
-                                                                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Field does not exists" + displayedText, true, "true", true, testContext);
+                                                                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Field does not exists" + displayedText, true, "true", true, testContext);
                                                                     } else
-                                                                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, hidden, hidden, testContext);
+                                                                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, hidden, hidden, testContext);
                                                                 } else
-                                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
                                                             }
                                                         }
                                                         combinationConditions.clear();
@@ -553,9 +549,9 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                         handleSectionRules(valueJson, wizardControlType, section, order, field, distinctRule, "");
                                                                     }
                                                                 } else
-                                                                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Field " + field + " does not exists", true, "true", true, testContext);
+                                                                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Field " + field + " does not exists", true, "true", true, testContext);
                                                             } else
-                                                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists", true, "true", true, testContext);
+                                                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists", true, "true", true, testContext);
                                                         } else {
                                                             for (List<String> result : combinationConditions) {
                                                                 displayedText = " when ";
@@ -583,7 +579,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                             conditionFlag = false;
                                                                     }
                                                                     if (!conditionFlag)
-                                                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Rule is applicable " + displayedText + " not when state code is " + testContext.getMapTestData().get("jurisdiction"), testContext);
+                                                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Rule is applicable " + displayedText + " not when state code is " + testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), testContext);
                                                                     else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
                                                                         if (!setDependentCondition(key, conditionalOperator, valueJson, values, distinctRule, displayedText)) {
                                                                             conditionFlag = false;
@@ -609,7 +605,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                                         case "unchecked":
                                                                                             for (WebElement element : getElements(valueJson, wizardControlType)) {
                                                                                                 expectedFlag = element.getAttribute("aria-checked").equalsIgnoreCase("false");
-                                                                                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Radio button \"" + element.getAttribute("title") + "\" " + requiredAttributeValue.toLowerCase().trim() + " by default" + displayedText, expectedFlag, "true", expectedFlag, testContext);
+                                                                                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Radio button \"" + element.getAttribute("title") + "\" " + requiredAttributeValue.toLowerCase().trim() + " by default" + displayedText, expectedFlag, "true", expectedFlag, testContext);
                                                                                             }
                                                                                             break;
                                                                                         default:
@@ -620,19 +616,19 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                                             conditionFlag = false;
                                                                                     }
                                                                                     if (!conditionFlag)
-                                                                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "List Options", "Rule is applicable " + displayedText + " and not when state code is " + testContext.getMapTestData().get("jurisdiction"), testContext);
+                                                                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "List Options", "Rule is applicable " + displayedText + " and not when state code is " + testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), testContext);
                                                                                     else {
                                                                                         if (valueJson.contains("ValidationRules"))
                                                                                             handleValidationRules(valueJson, key, values, field, order);
                                                                                         handleSectionRules(valueJson, wizardControlType, section, order, field, distinctRule, displayedText);
                                                                                     }
                                                                                 } else
-                                                                                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Field does not exists" + displayedText, true, "true", true, testContext);
+                                                                                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Field does not exists" + displayedText, true, "true", true, testContext);
                                                                             }
                                                                         } else
-                                                                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, "true", true, testContext);
+                                                                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, "true", true, testContext);
                                                                     } else
-                                                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                                                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
                                                                 }
                                                             }
                                                             combinationConditions.clear();
@@ -678,7 +674,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                                 conditionFlag = false;
                                                                         }
                                                                         if (!conditionFlag)
-                                                                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Rule is applicable " + displayedText + " and not when state code is " + testContext.getMapTestData().get("jurisdiction"), testContext);
+                                                                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Rule is applicable " + displayedText + " and not when state code is " + testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), testContext);
                                                                         else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
                                                                             if (!setDependentCondition(key, "=", valueJson, values, distinctRule, displayedText)) {
                                                                                 conditionFlag = false;
@@ -694,11 +690,11 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                             LocalDate birthDatePastMonth = todaysDate.minusYears(25).plusMonths(-1);
                                                                             LocalDate birthDateFutureMonth = todaysDate.minusYears(25).plusMonths(1);
                                                                             sendKeys(driver, getElement(valueJson, wizardControlType, null), birthDatePastMonth.format(format));
-                                                                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Age" + displayedText + " and birth date is " + birthDatePastMonth.format(formatWithSlash), "25", String.valueOf(calculateAge(birthDatePastMonth, todaysDate)), String.valueOf(calculateAge(birthDatePastMonth, todaysDate)).equalsIgnoreCase("25"), testContext);
+                                                                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Age" + displayedText + " and birth date is " + birthDatePastMonth.format(formatWithSlash), "25", String.valueOf(calculateAge(birthDatePastMonth, todaysDate)), String.valueOf(calculateAge(birthDatePastMonth, todaysDate)).equalsIgnoreCase("25"), testContext);
                                                                             sendKeys(driver, getElement(valueJson, wizardControlType, null), birthDateFutureMonth.format(format));
-                                                                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Age" + displayedText + " and birth date is " + birthDateFutureMonth.format(formatWithSlash), "24", String.valueOf(calculateAge(birthDateFutureMonth, todaysDate)), String.valueOf(calculateAge(birthDateFutureMonth, todaysDate)).equalsIgnoreCase("24"), testContext);
+                                                                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Age" + displayedText + " and birth date is " + birthDateFutureMonth.format(formatWithSlash), "24", String.valueOf(calculateAge(birthDateFutureMonth, todaysDate)), String.valueOf(calculateAge(birthDateFutureMonth, todaysDate)).equalsIgnoreCase("24"), testContext);
                                                                         } else
-                                                                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                                                                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
                                                                     }
                                                                 }
                                                                 combinationConditions.clear();
@@ -706,27 +702,27 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                 break;
                                                             case "always enabled":
                                                                 expectedFlag = getElement(valueJson, wizardControlType, null).isEnabled();
-                                                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Field is always enabled", expectedFlag, "true", expectedFlag, testContext);
+                                                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Field is always enabled", expectedFlag, "true", expectedFlag, testContext);
                                                                 break;
                                                             case "always disable":
                                                                 for (WebElement element : getElements(valueJson, wizardControlType)) {
                                                                     expectedFlag = element.getAttribute("class").contains("disabled") | element.getAttribute("class").contains("readOnlyInput");
-                                                                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Field is always disabled", expectedFlag, "true", expectedFlag, testContext);
+                                                                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Field is always disabled", expectedFlag, "true", expectedFlag, testContext);
                                                                 }
                                                                 break;
                                                             case "optional":
                                                                 String error = clickRedBubble(valueJson);
-                                                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Optional Field Validation", error, "", error.equalsIgnoreCase(""), testContext);
+                                                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Optional Field Validation", error, "", error.equalsIgnoreCase(""), testContext);
                                                                 break;
                                                         }
                                                     } else {
                                                         System.out.println("Rule " + distinctRule + " does not match any criteria for field " + field);
-                                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Rule does not match any criteria for field", testContext);
+                                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Rule does not match any criteria for field", testContext);
                                                     }
                                                 } else
-                                                    onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
+                                                    onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
                                             } else
-                                                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, reason, testContext);
+                                                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, reason, testContext);
                                         }
                                         break;
                                     case "Length":
@@ -735,10 +731,10 @@ public class Rules_StepDefinitions extends FLUtilities {
                                             invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0]);
                                         if (invalidTag.isEmpty()) {
                                             if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank")) {
-                                                    getAttributeValue(field, valueJson, order, wizardControlType, rule, "maxLength", "Length");
-                                               }
+                                                getAttributeValue(field, valueJson, order, wizardControlType, rule, "maxLength", "Length");
+                                            }
                                         } else
-                                            onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
+                                            onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
                                         break;
                                     case "Format":
                                         invalidTag = new ArrayList<>();
@@ -746,10 +742,10 @@ public class Rules_StepDefinitions extends FLUtilities {
                                             invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0]);
                                         if (invalidTag.isEmpty()) {
                                             if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank")) {
-                                                    getAttributeValue(field, valueJson, order, wizardControlType, rule, "mask", "Format");
-                                                }
+                                                getAttributeValue(field, valueJson, order, wizardControlType, rule, "mask", "Format");
+                                            }
                                         } else
-                                            onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
+                                            onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
                                         break;
                                 }
                                 if (!displayEnableConditions.isEmpty()) {
@@ -778,32 +774,11 @@ public class Rules_StepDefinitions extends FLUtilities {
                 } else {
                     if (!field.equals(""))
                         skippedInvalidElements.add(field);
-                    onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Either field is Lookup, hide for day 1 or has no wizard control type", testContext);
+                    onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "Either field is Lookup, hide for day 1 or has no wizard control type", testContext);
                 }
             }
         } else
-            onSoftAssertionHandlerPage.assertSkippedElement(driver, "", testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Field has No Tag", testContext);
-    }
-
-
-    public boolean verifyValueExists(String condition, String result) {
-        boolean flag = true;
-        if (JsonPath.read(testContext.getMapTestData().get(condition).trim(), "$.WizardControlTypes").toString().trim().equalsIgnoreCase("dropdown"))
-            if (!getOptions(testContext.getMapTestData().get(condition).trim(), JsonPath.read(testContext.getMapTestData().get(condition).trim(), "$.WizardControlTypes").toString().trim()).contains(result))
-                flag = false;
-        return flag;
-    }
-
-    public String findKeyExistsJSON(String condition) {
-        if (!testContext.getMapTestData().containsKey(condition))
-            return condition;
-        return "";
-    }
-
-    public void setConditions(String condition, String valueJson, String result, String conditionAnother, String expectedResultAnother, String expectedOperator, String expectedOperatorAnother, String distinctRule, String displayedText) {
-        setDependentCondition(condition, expectedOperator, valueJson, result, distinctRule, displayedText);
-        if (!conditionAnother.isEmpty())
-            setDependentCondition(conditionAnother, expectedOperatorAnother, valueJson, expectedResultAnother, distinctRule, displayedText);
+            onSoftAssertionHandlerPage.assertSkippedElement(driver, "", testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "Field has No Tag", testContext);
     }
 
     public void setVisibilityRules(String requiredAttribute, String valueJson, String wizardControlType, String order, String field, String secondAttribute, String distinctRule, List<String> result, String displayedText) {
@@ -825,50 +800,50 @@ public class Rules_StepDefinitions extends FLUtilities {
                             verifyData(testContext.getMapTestData().get(conditionFirst).trim(), field, result.get(0).split(":")[0].trim(), result.get(0).split(":")[1].trim(), prefilledValue, testData, distinctRule);
                             setDependentCondition(expectedResultFirst, "=", valueJson, "", distinctRule, displayedText);
                         } else
-                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Field " + conditionFirst + " does not exists" + displayedText, true, "true", true, testContext);
+                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Field " + conditionFirst + " does not exists" + displayedText, true, "true", true, testContext);
                     } else
-                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, "true", true, testContext);
+                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, "true", true, testContext);
                 } else {
                     if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
                         if (!getElements(valueJson, wizardControlType).isEmpty()) {
                             verifyData(testContext.getMapTestData().get(conditionFirst).trim(), field, result.get(0).split(":")[0].trim(), result.get(0).split(":")[1].trim(), expectedResultFirst, "", distinctRule);
                         } else
-                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Field " + conditionFirst + " does not exists" + displayedText, true, "true", true, testContext);
+                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Field " + conditionFirst + " does not exists" + displayedText, true, "true", true, testContext);
                     } else
-                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, "true", true, testContext);
+                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, "true", true, testContext);
                 }
             } else
-                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
         } else {
             switch (requiredAttribute.toLowerCase()) {
                 case "show":
                     expectedFlag = !getElements(valueJson, wizardControlType).isEmpty();
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Field is shown" + displayedText, expectedFlag, "true", expectedFlag, testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Field is shown" + displayedText, expectedFlag, "true", expectedFlag, testContext);
                     break;
                 case "enable":
                     if (!(wizardControlType.equals("Radio Button"))) {
                         expectedFlag = getElement(valueJson, wizardControlType, null).isEnabled();
-                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Field is enabled " + displayedText, expectedFlag, "true", expectedFlag, testContext);
+                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Field is enabled " + displayedText, expectedFlag, "true", expectedFlag, testContext);
                     } else {
                         for (WebElement element : getElements(valueJson, wizardControlType))
-                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Radio button " + element.getAttribute("title") + " is enabled " + displayedText, element.isEnabled(), "true", element.isEnabled(), testContext);
+                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Radio button " + element.getAttribute("title") + " is enabled " + displayedText, element.isEnabled(), "true", element.isEnabled(), testContext);
                     }
                     break;
                 case "disable":
                     if (!secondAttribute.equalsIgnoreCase("hide")) {
                         for (WebElement element : getElements(valueJson, wizardControlType)) {
                             expectedFlag = element.getAttribute("class").contains("disabled") | element.getAttribute("class").contains("readOnlyInput");
-                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Radio button \"" + element.getAttribute("title") + "\" disabled " + displayedText, expectedFlag, "true", expectedFlag, testContext);
+                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Radio button \"" + element.getAttribute("title") + "\" disabled " + displayedText, expectedFlag, "true", expectedFlag, testContext);
                         }
                     }
                     break;
                 case "set to no":
                     elem = getElement(valueJson, "radioField", "No");
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Radio button No is selected" + displayedText, elem.getAttribute("aria-checked"), "true", elem.getAttribute("aria-checked").equalsIgnoreCase("true"), testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Radio button No is selected" + displayedText, elem.getAttribute("aria-checked"), "true", elem.getAttribute("aria-checked").equalsIgnoreCase("true"), testContext);
                     break;
                 case "set to yes":
                     elem = getElement(valueJson, "radioField", "Yes");
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Radio button Yes is selected " + displayedText, elem.getAttribute("aria-checked"), "true", elem.getAttribute("aria-checked").equalsIgnoreCase("true"), testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Radio button Yes is selected " + displayedText, elem.getAttribute("aria-checked"), "true", elem.getAttribute("aria-checked").equalsIgnoreCase("true"), testContext);
                     break;
                 case "set to self":
                 case "set to united states":
@@ -890,16 +865,16 @@ public class Rules_StepDefinitions extends FLUtilities {
 //                    break;
                 case "hide":
                     expectedFlag = getElements(valueJson, wizardControlType).isEmpty();
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Hidden Rule " + displayedText, expectedFlag, "true", expectedFlag, testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Hidden Rule " + displayedText, expectedFlag, "true", expectedFlag, testContext);
                     break;
                 case "read only":
                     for (WebElement element : getElements(valueJson, wizardControlType)) {
                         expectedFlag = (element.getAttribute("class").contains("disabled") | element.getAttribute("class").contains("readOnlyInput"));
-                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Radio button \"" + element.getAttribute("title") + "\" read only" + displayedText, expectedFlag, "true", expectedFlag, testContext);
+                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Radio button \"" + element.getAttribute("title") + "\" read only" + displayedText, expectedFlag, "true", expectedFlag, testContext);
                     }
                     break;
                 default:
-                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Rule does not match any visibility condition", testContext);
+                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Rule does not match any visibility condition", testContext);
             }
         }
     }
@@ -932,7 +907,7 @@ public class Rules_StepDefinitions extends FLUtilities {
     public void handleSectionRules(String valueJson, String wizardControlType, String section, String order, String field, String distinctRule, String displayedText) {
         section = section.replaceAll("X", "1");
         boolean expectedFlag = getElementSection(valueJson, wizardControlType, section);
-        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Section Information", "Field is displayed under section " + section + displayedText, expectedFlag, "true", expectedFlag, testContext);
+        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "Section Information", "Field is displayed under section " + section + displayedText, expectedFlag, "true", expectedFlag, testContext);
     }
 
     public int calculateAge(LocalDate dob, LocalDate currentDate) {
@@ -943,9 +918,9 @@ public class Rules_StepDefinitions extends FLUtilities {
         String dataType = JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim();
         List<String> actualOptions = getOptions(valueJson, dataType);
         if (displayedText.isEmpty())
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, dataType + " Options", actualOptions, expectedOptions, actualOptions.containsAll(expectedOptions), testContext);
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, dataType + " Options", actualOptions, expectedOptions, actualOptions.containsAll(expectedOptions), testContext);
         else
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, dataType + " Options" + displayedText, actualOptions, expectedOptions, actualOptions.containsAll(expectedOptions), testContext);
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, dataType + " Options" + displayedText, actualOptions, expectedOptions, actualOptions.containsAll(expectedOptions), testContext);
     }
 
     public String removeUnsetCondition(String displayedText) {
@@ -971,7 +946,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             String conditionalWizard = JsonPath.read(testContext.getMapTestData().get(condition), "$.WizardControlTypes").toString().trim();
             if (getElements(testContext.getMapTestData().get(condition), conditionalWizard).isEmpty()) {
                 displayedText = removeUnsetCondition(displayedText);
-                onSoftAssertionHandlerPage.assertSkippedRules(driver, JsonPath.read(valueJson, "$.Order").toString().trim(), testContext.getMapTestData().get("jurisdiction"), moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), distinctRule, "Key " + condition + " does not exists in UI " + displayedText, testContext);
+                onSoftAssertionHandlerPage.assertSkippedRules(driver, JsonPath.read(valueJson, "$.Order").toString().trim(), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), distinctRule, "Key " + condition + " does not exists in UI " + displayedText, testContext);
                 return false;
             }
             String wizardControlType = JsonPath.read(testContext.getMapTestData().get(condition).trim(), "$.WizardControlTypes").toString().trim();
@@ -980,13 +955,13 @@ public class Rules_StepDefinitions extends FLUtilities {
                 if (wizardControlType.equalsIgnoreCase("dropdown")) {
                     result = "Blank";
                     if (!getOptions(testContext.getMapTestData().get(condition).trim(), JsonPath.read(testContext.getMapTestData().get(condition).trim(), "$.WizardControlTypes").toString().trim()).contains(result)) {
-                        onSoftAssertionHandlerPage.assertSkippedRules(driver, JsonPath.read(valueJson, "$.Order").toString().trim(), testContext.getMapTestData().get("jurisdiction"), moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), distinctRule, "Value " + result + " does not exist for field " + condition, testContext);
+                        onSoftAssertionHandlerPage.assertSkippedRules(driver, JsonPath.read(valueJson, "$.Order").toString().trim(), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), distinctRule, "Value " + result + " does not exist for field " + condition, testContext);
                         return false;
                     }
                 }
             } else if (wizardControlType.equalsIgnoreCase("dropdown") | wizardControlType.equalsIgnoreCase("radio button")) {
                 if (!getOptions(testContext.getMapTestData().get(condition).trim(), JsonPath.read(testContext.getMapTestData().get(condition).trim(), "$.WizardControlTypes").toString().trim()).contains(result)) {
-                    onSoftAssertionHandlerPage.assertSkippedRules(driver, JsonPath.read(valueJson, "$.Order").toString().trim(), testContext.getMapTestData().get("jurisdiction"), moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), distinctRule, "Value " + result + " does not exist for field " + condition, testContext);
+                    onSoftAssertionHandlerPage.assertSkippedRules(driver, JsonPath.read(valueJson, "$.Order").toString().trim(), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), distinctRule, "Value " + result + " does not exist for field " + condition, testContext);
                     return false;
                 }
             }
@@ -1006,7 +981,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             waitForPageToLoad(driver);
             sleepInMilliSeconds(2000);
         } else {
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueDependentJson, "$.Order").toString().trim(), testContext.getMapTestData().get("jurisdiction"), moduleName, JsonPath.read(valueDependentJson, "$.CommonTag").toString().trim(), "", "Page " + JsonPath.read(valueDependentJson, "$.Page").toString().trim() + " does not exists " + displayedText, true, false, false, testContext);
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueDependentJson, "$.Order").toString().trim(), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, JsonPath.read(valueDependentJson, "$.CommonTag").toString().trim(), "", "Page " + JsonPath.read(valueDependentJson, "$.Page").toString().trim() + " does not exists " + displayedText, true, false, false, testContext);
             return false;
         }
         return true;
@@ -1202,7 +1177,7 @@ public class Rules_StepDefinitions extends FLUtilities {
         switch (datatype.toLowerCase()) {
             case "dropdown":
             case "state dropdown":
-                return findElement(driver, String.format(onCommonMethodsPage.getLabelSelect(),commonTag));
+                return findElement(driver, String.format(onCommonMethodsPage.getLabelSelect(), commonTag));
 //            case "checkbox":
 //            case "radio button":
 //                return findElements(driver, String.format(onCommonMethodsPage.getLabelRadio(), commonTag)).size() > 0;
@@ -1301,11 +1276,11 @@ public class Rules_StepDefinitions extends FLUtilities {
 
     public void printResults(String condition, String valueJson, String field, String requiredAttributeValue, String expectedText, String result, String attribute, String distinctRule) {
         if (condition.isEmpty()) {
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Default Value ", expectedText.toLowerCase(), requiredAttributeValue.toLowerCase(), requiredAttributeValue.trim().equalsIgnoreCase(expectedText.trim()), testContext);
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Default Value ", expectedText.toLowerCase(), requiredAttributeValue.toLowerCase(), requiredAttributeValue.trim().equalsIgnoreCase(expectedText.trim()), testContext);
         } else if (attribute.equalsIgnoreCase("prefilled with"))
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Prefilled Value when " + condition + " is " + result, expectedText.toLowerCase(), requiredAttributeValue.toLowerCase(), requiredAttributeValue.trim().equalsIgnoreCase(expectedText.trim()), testContext);
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Prefilled Value when " + condition + " is " + result, expectedText.toLowerCase(), requiredAttributeValue.toLowerCase(), requiredAttributeValue.trim().equalsIgnoreCase(expectedText.trim()), testContext);
         else
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Default Value when " + condition + " is " + result, expectedText.toLowerCase(), requiredAttributeValue.toLowerCase(), requiredAttributeValue.trim().equalsIgnoreCase(expectedText.trim()), testContext);
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Default Value when " + condition + " is " + result, expectedText.toLowerCase(), requiredAttributeValue.toLowerCase(), requiredAttributeValue.trim().equalsIgnoreCase(expectedText.trim()), testContext);
     }
 
     public void getAttributeValue(String field, String valueJson, String order, String wizardControlType, String rule, String attribute, String distinctRule) {
@@ -1331,9 +1306,9 @@ public class Rules_StepDefinitions extends FLUtilities {
                 if (!getElements(valueJson, wizardControlType).isEmpty())
                     getLength(valueJson, attribute, rule, field, distinctRule, null);
                 else
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, rule + " Validations -> Field does not exists", true, "true", true, testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, rule + " Validations -> Field does not exists", true, "true", true, testContext);
             } else
-                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, rule + " Validations -> Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists", true, false, false, testContext);
+                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, rule + " Validations -> Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists", true, false, false, testContext);
         } else {
             setCombinationConditions(valueJson, "([^\\s]+)\\s* (=|<>|>|<) (.*)");
 
@@ -1363,7 +1338,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                             conditionFlag = false;
                     }
                     if (!conditionFlag)
-                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Rule is applicable " + displayedText + " and not when state code is " + testContext.getMapTestData().get("jurisdiction"), testContext);
+                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Rule is applicable " + displayedText + " and not when state code is " + testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), testContext);
                     else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
                         WebElement elem = getElement(testContext.getMapTestData().get(key), JsonPath.read(valueJson, "$.WizardControlTypes").toString(), "");
                         if (!(isAttribtuePresent(elem, "readonly") | isAttribtuePresent(elem, "disabled"))) {
@@ -1372,7 +1347,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                             }
                         } else {
                             conditionFlag = false;
-                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Length", "Field " + key + " is disabled", testContext);
+                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "Length", "Field " + key + " is disabled", testContext);
                         }
                     }
                 }
@@ -1387,14 +1362,13 @@ public class Rules_StepDefinitions extends FLUtilities {
                                 if (!(isAttribtuePresent(elem, "readonly") | isAttribtuePresent(elem, "disabled")))
                                     getLength(valueJson, attribute, rule, field, distinctRule, displayedText);
                                 else
-                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Length", "Field is disabled", testContext);
-                            }
-                            else
-                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, rule + " Validations -> Field does not exists" + displayedText, true, "true", true, testContext);
+                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "Length", "Field is disabled", testContext);
+                            } else
+                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, rule + " Validations -> Field does not exists" + displayedText, true, "true", true, testContext);
                         } else
-                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, rule + " Validations -> Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, false, false, testContext);
+                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, rule + " Validations -> Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, false, false, testContext);
                     } else
-                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
                 }
             }
             combinationConditions.clear();
@@ -1408,7 +1382,7 @@ public class Rules_StepDefinitions extends FLUtilities {
         if (JsonPath.read(valueJson, "$.WizardControlTypes").toString().equalsIgnoreCase("email")) {
             sendKeys(driver, getElement(valueJson, "input", null), JsonPath.read(valueJson, "$.Format").toString());
             expectedFlag = findElements(driver, String.format(onCommonMethodsPage.getInputErrorField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).isEmpty();
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Format of " + field + " is " + JsonPath.read(valueJson, "$.Format").toString(), expectedFlag, "true", expectedFlag, testContext);
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Format of " + field + " is " + JsonPath.read(valueJson, "$.Format").toString(), expectedFlag, "true", expectedFlag, testContext);
         } else {
             try {
                 String expectedText = getElement(valueJson, "input", null).getAttribute(attribute);
@@ -1419,15 +1393,15 @@ public class Rules_StepDefinitions extends FLUtilities {
                     expectedText = expectedText.replaceAll("9", "#");
 
                 if (combinationConditions.isEmpty())
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, rule, expectedText, JsonPath.read(valueJson, "$." + rule).toString().trim(), expectedText.equalsIgnoreCase(JsonPath.read(valueJson, "$." + rule).toString().trim()), testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, rule, expectedText, JsonPath.read(valueJson, "$." + rule).toString().trim(), expectedText.equalsIgnoreCase(JsonPath.read(valueJson, "$." + rule).toString().trim()), testContext);
                 else
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, rule + displayedText, expectedText, JsonPath.read(valueJson, "$." + rule).toString().trim(), expectedText.equalsIgnoreCase(JsonPath.read(valueJson, "$." + rule).toString().trim()), testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, rule + displayedText, expectedText, JsonPath.read(valueJson, "$." + rule).toString().trim(), expectedText.equalsIgnoreCase(JsonPath.read(valueJson, "$." + rule).toString().trim()), testContext);
 
                 WebElement elem = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes").toString(), "");
                 if (!(isAttribtuePresent(elem, "readonly") | isAttribtuePresent(elem, "disabled")))
                     handleTextLengthFields(valueJson, rule, field, distinctRule, displayedText, combinationConditions);
             } catch (NullPointerException e) {
-                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Field does not have attribute " + attribute, false, true, false, testContext);
+                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Field does not have attribute " + attribute, false, true, false, testContext);
             }
         }
     }
@@ -1461,25 +1435,25 @@ public class Rules_StepDefinitions extends FLUtilities {
                     if (length == attributeValue - 1) {
                         if (error.isEmpty() & expectedText.isEmpty()) {
                             if (combinationConditions.isEmpty())
-                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, rule + " validations when length is " + length, "Not a mandatory field or value less than given length", temp, true, testContext);
+                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, rule + " validations when length is " + length, "Not a mandatory field or value less than given length", temp, true, testContext);
                             else
-                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, rule + " validations " + displayedText + " and length is " + length, "Not a mandatory field or value less than given length", temp, true, testContext);
+                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, rule + " validations " + displayedText + " and length is " + length, "Not a mandatory field or value less than given length", temp, true, testContext);
                         } else if (error.isEmpty()) {
                             if (combinationConditions.isEmpty())
-                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, rule + " validations when length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
+                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, rule + " validations when length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
                             else
-                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, rule + " validations " + displayedText + " and length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
+                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, rule + " validations " + displayedText + " and length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
                         } else {
                             if (combinationConditions.isEmpty())
-                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, rule + " validations when length is " + length, error, error, true, testContext);
+                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, rule + " validations when length is " + length, error, error, true, testContext);
                             else
-                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, rule + " validations " + displayedText + " and length is " + length, error, error, true, testContext);
+                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, rule + " validations " + displayedText + " and length is " + length, error, error, true, testContext);
                         }
                     } else {
                         if (combinationConditions.isEmpty())
-                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, rule + " validations when length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
+                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, rule + " validations when length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
                         else
-                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, rule + " validations " + displayedText + " and length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
+                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, rule + " validations " + displayedText + " and length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
                     }
                 }
                 setValue(valueJson, "");
@@ -1489,9 +1463,9 @@ public class Rules_StepDefinitions extends FLUtilities {
                 expectedText = getElement(valueJson, "single line textbox", null).getAttribute("value");
                 expectedFormat = getElement(valueJson, "single line textbox", null).getAttribute("mask");
                 if (combinationConditions.isEmpty())
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, rule + "validations when length is " + attributeValue, expectedText, expectedFormat, expectedText.equalsIgnoreCase(expectedFormat), testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, rule + "validations when length is " + attributeValue, expectedText, expectedFormat, expectedText.equalsIgnoreCase(expectedFormat), testContext);
                 else
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, rule + " validations " + displayedText + " and length is " + attributeValue, expectedText, expectedFormat, expectedText.equalsIgnoreCase(expectedFormat), testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, rule + " validations " + displayedText + " and length is " + attributeValue, expectedText, expectedFormat, expectedText.equalsIgnoreCase(expectedFormat), testContext);
             }
         } catch (ParseException e) {
             throw new RuntimeException(e);
@@ -1501,9 +1475,9 @@ public class Rules_StepDefinitions extends FLUtilities {
     public void handlePlaceholderRules(String valueJson, String dependentCondition, String dependentResult, String field, String requiredAttributeValue, String distinctRule) {
         String expectedAttribute = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes"), "").getAttribute("placeholder");
         if (dependentCondition.isEmpty())
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Placeholder value", expectedAttribute, requiredAttributeValue, expectedAttribute.equalsIgnoreCase(requiredAttributeValue), testContext);
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Placeholder value", expectedAttribute, requiredAttributeValue, expectedAttribute.equalsIgnoreCase(requiredAttributeValue), testContext);
         else
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Placeholder value when " + dependentCondition + " is " + dependentResult, expectedAttribute, requiredAttributeValue, expectedAttribute.equalsIgnoreCase(requiredAttributeValue), testContext);
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Placeholder value when " + dependentCondition + " is " + dependentResult, expectedAttribute, requiredAttributeValue, expectedAttribute.equalsIgnoreCase(requiredAttributeValue), testContext);
 
     }
 
@@ -1545,14 +1519,14 @@ public class Rules_StepDefinitions extends FLUtilities {
                 if (!(listConditionkeys.equalsIgnoreCase("") | listConditionkeys.equalsIgnoreCase("FLI_ISSUED_STATE_CODE"))) {
                     sendKeys(driver, getElement(valueJson, "single line textbox", null), dob.format(format));
                     error = clickRedBubble(valueJson);
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Validation Rule -> Error message when " + dependentCondition + " is " + dependentResult + " and age is " + calculateAge(dob, todaysDate) + " and DOB is " + dob.format(formatWithSlash), error, requiredErrorMessage, calculateAge(dob, todaysDate) > Integer.parseInt(minValue), testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Validation Rule -> Error message when " + dependentCondition + " is " + dependentResult + " and age is " + calculateAge(dob, todaysDate) + " and DOB is " + dob.format(formatWithSlash), error, requiredErrorMessage, calculateAge(dob, todaysDate) > Integer.parseInt(minValue), testContext);
 
                     dob = todaysDate.minusYears(Long.parseLong(maxValue) + 1).minusMonths(1);
                     sendKeys(driver, getElement(valueJson, "single line textbox", null), dob.format(format));
                     error = clickRedBubble(valueJson);
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Validation Rule -> Error message when " + dependentCondition + " is " + dependentResult + " and age is " + calculateAge(dob, todaysDate) + " and DOB is " + dob.format(formatWithSlash), error, requiredErrorMessage, calculateAge(dob, todaysDate) < Integer.parseInt(maxValue), testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Validation Rule -> Error message when " + dependentCondition + " is " + dependentResult + " and age is " + calculateAge(dob, todaysDate) + " and DOB is " + dob.format(formatWithSlash), error, requiredErrorMessage, calculateAge(dob, todaysDate) < Integer.parseInt(maxValue), testContext);
                 } else
-                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
             } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?)(?:,)? then (.*?): (.*)\\.?").matcher(distinctRule).find()) {
                 List<String> listExpectedConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?)(?:,)? then (.*?): (.*)\\.?", "", distinctRule);
                 condition = listExpectedConditions.get(1).trim().replaceAll("FLI_EFFECTIVE_DATE - ", "");
@@ -1589,12 +1563,11 @@ public class Rules_StepDefinitions extends FLUtilities {
                                 mapConditions.put(key, valuesList);
                             }
                         }
-                    }
-                    else
+                    } else
                         conditionFlag = false;
                 }
 
-                if(conditionFlag) {
+                if (conditionFlag) {
                     allKeys = new ArrayList<>(mapConditions.keySet());
                     generateCombinations(allKeys, new ArrayList<>(), mapConditions, "ValidationRules");
 
@@ -1635,7 +1608,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                         conditionFlag = false;
                                 }
                                 if (!conditionFlag)
-                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Rule is applicable " + displayedText + " and not when state code is " + testContext.getMapTestData().get("jurisdiction"), testContext);
+                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Rule is applicable " + displayedText + " and not when state code is " + testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), testContext);
                                 else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
                                     List<String> dateFields = Arrays.asList("dob", "date", "mm/dd/yyyy");
                                     List<String> dateCondition = new ArrayList<>();
@@ -1653,7 +1626,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                         inputValue = values;
                                     if (inputValue.equalsIgnoreCase("fail")) {
                                         conditionFlag = false;
-                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "No value found for " + values + displayedText, testContext);
+                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "No value found for " + values + displayedText, testContext);
                                     } else if (!setDependentCondition(key, conditionalOperator, valueJson, inputValue, distinctRule, displayedText))
                                         conditionFlag = false;
                                 }
@@ -1670,22 +1643,21 @@ public class Rules_StepDefinitions extends FLUtilities {
                                     if (!getElements(valueJson, wizardControlType).isEmpty()) {
                                         handleErrorMessage(valueJson, requiredErrorMessage, field, distinctRule, order, displayedText, conditionFlagCompare);
                                     } else
-                                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Field does not exists" + displayedText, true, "true", true, testContext);
+                                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Field does not exists" + displayedText, true, "true", true, testContext);
                                 } else
-                                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, hidden, hidden, testContext);
+                                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, hidden, hidden, testContext);
                             } else
-                                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
                         }
                     }
                     combinationConditionsValidations.clear();
                     mapConditions.clear();
                     howManyOperatorValidations.clear();
-                }
-                else
-                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Condition " + condition + " does not match expected criteria", testContext);
+                } else
+                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Condition " + condition + " does not match expected criteria", testContext);
             } else {
                 System.out.println("Rule " + distinctRule + " does not match any criteria for field " + field);
-                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Validation rules does not match any criteria", testContext);
+                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Validation rules does not match any criteria", testContext);
             }
         }
     }
@@ -1698,14 +1670,14 @@ public class Rules_StepDefinitions extends FLUtilities {
         error = clickRedBubble(valueJson);
         if (dateFields.stream().anyMatch(JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim().toLowerCase()::contains)) {
             if (displayedText.equalsIgnoreCase(" when "))
-                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Validation Rule -> " + " Value Validation", error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
+                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Validation Rule -> " + " Value Validation", error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
             else
-                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Validation Rule -> " + " Value Validation " + displayedText, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
+                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Validation Rule -> " + " Value Validation " + displayedText, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
             sendKeys(driver, getElement(valueJson, "single line textbox", null), "");
         } else {
-            if(conditionFlagCompare == false)
+            if (conditionFlagCompare == false)
                 requiredErrorMessage = "";
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, "Validation Rule -> " + displayedText, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, "Validation Rule -> " + displayedText, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
             if (JsonPath.read(valueJson, "$.WizardControlTypes").toString().equals("Radio Button")) {
                 resetValue(valueJson, inputValue);
             } else {
@@ -1799,7 +1771,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             sendKeys(driver, getElement(valueJson, "input", null), invalidEmail);
             String error = clickRedBubble(valueJson);
             String validationMessage = "Invalid Value Validation when " + field + " is " + invalidEmail;
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, field, distinctRule, validationMessage, error, requiredErrorMessage, error.equalsIgnoreCase(requiredErrorMessage), testContext);
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, distinctRule, validationMessage, error, requiredErrorMessage, error.equalsIgnoreCase(requiredErrorMessage), testContext);
         }
         return lastInvalidEmail;
     }
@@ -1863,9 +1835,9 @@ public class Rules_StepDefinitions extends FLUtilities {
                     if (getElements(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes")).size() > 0)
                         return getElements(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes")).size() > 0;
                     else
-                        onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Either Wizard Control type or Common tag is incorrect", testContext);
+                        onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "Either Wizard Control type or Common tag is incorrect", testContext);
                 } else {
-                    onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists", testContext);
+                    onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists", testContext);
                 }
             } else {
                 List<String> result = combinationConditions.get(0);
@@ -1888,7 +1860,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                     }
                     if (key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
                         if (!((howManyOperator.get(key).equalsIgnoreCase("=") & values.equalsIgnoreCase(jurisdictionStatesCode)) | (howManyOperator.get(key).equalsIgnoreCase("<>") & !(values.equalsIgnoreCase(jurisdictionStatesCode))))) {
-                            onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Either field does not exists or not applicable for jurisdiction " + testContext.getMapTestData().get("jurisdiction"), testContext);
+                            onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "Either field does not exists or not applicable for jurisdiction " + testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), testContext);
                             return false;
                         }
                     } else
@@ -1900,22 +1872,20 @@ public class Rules_StepDefinitions extends FLUtilities {
                         if (getElements(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes")).size() > 0)
                             return getElements(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes")).size() > 0;
                         else
-                            onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Either Wizard Control type or Common tag is incorrect", testContext);
+                            onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "Either Wizard Control type or Common tag is incorrect", testContext);
                     } else {
-                        onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists " + displayedText, testContext);
+                        onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists " + displayedText, testContext);
                     }
                 } else
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get("jurisdiction"), moduleName, JsonPath.read(valueJson, "$.CommonTag"), "", "Key " + listConditionkeys + " does not exists in JSON", false, "true", false, testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, JsonPath.read(valueJson, "$.CommonTag"), "", "Key " + listConditionkeys + " does not exists in JSON", false, "true", false, testContext);
                 combinationConditions.clear();
                 howManyOperator.clear();
             }
         } else
-            onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get("jurisdiction"), moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
+            onSoftAssertionHandlerPage.assertSkippedElement(driver, order, testContext.getMapTestData().get(executedJurisdiction + "_" + "jurisdiction"), moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
         return false;
     }
 }
-
-
 
 
 

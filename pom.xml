@@ -346,7 +346,8 @@
                 <version>2.19.1</version>
                 <configuration>
                     <excludes>
-                        <exclude>**/RunIntegrationTest.class</exclude>
+                        <exclude>**/RunIntegrationTest.java</exclude>
+                        <exclude>**/RunFireLightTest.java</exclude>
                     </excludes>
                     <systemProperties>
                         <property>

@@ -24,11 +24,59 @@ public class ForeSightExcelToJSON_StepDefinitions {
 
     JSONObject jsonObject = new JSONObject();
     List<String> requiredColumns = Arrays.asList(EnumsExcelColumns.ENUMSEXCELCOLUMNS.getText().split(", "));
-    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    JSONObject masterJson = new JSONObject();
+    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+    @Given("Create {string} file for eApp flow with interface file {string}")
+    public void createForesightTestDataInterface(String jsonFile, String excelFile) {
+        String filePath = EnumsCommon.ABSOLUTE_FILES_PATH.getText() + excelFile;
+        try (FileInputStream file = new FileInputStream(filePath);
+            XSSFWorkbook workbook = new XSSFWorkbook(file)) {
+
+            Sheet sheet = workbook.getSheet("Interface"); // Assuming data is in the first sheet
+            Iterator<Row> iterator = sheet.iterator();
+            Row headerRow = iterator.next().getSheet().getRow(0);
+
+            int clientNameIndex = findColumnIndex(headerRow, "Client Name");
+            int productIndex = findColumnIndex(headerRow, "Product");
+            int modulesIndex = findColumnIndex(headerRow, "Modules");
+            int filenameIndex = findColumnIndex(headerRow, "FileName");
+            int executeIndex = findColumnIndex(headerRow, "Execute");
+
+            while (iterator.hasNext()) {
+                Row currentRow = iterator.next();
+
+                String clientName = getCellValue(currentRow.getCell(clientNameIndex));
+                String product = getCellValue(currentRow.getCell(productIndex));
+                String modules = getCellValue(currentRow.getCell(modulesIndex));
+                String filename = getCellValue(currentRow.getCell(filenameIndex));
+                String execute = getCellValue(currentRow.getCell(executeIndex));
+
+                if(execute.equalsIgnoreCase("yes")) {
+                    if(!masterJson.containsKey(filename.replaceAll(".xlsx", "")))
+                        createForesightTestData(filename, product);
+                    createFeatureFile(clientName, modules, product, filename);
+                    createRunnerFile(clientName, modules);
+                }
+
+            }
+            FileWriter jsonTestData = new FileWriter(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
+            BufferedWriter writer = new BufferedWriter(jsonTestData);
+            writer.write(gson.toJson(jsonObject));
+            writer.close();
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            throw new FLException("Reading Properties File Failed" + e.getMessage());
+        }
+    }
 
     @Given("Create {string} file for eApp flow with file {string}")
-    public void createForesightTestData(String jsonFile, String excelFile) {
+    public void createForesightTestData(String excelFile, String product) {
         String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + excelFile;
+        String fieldList = "";
         try (FileInputStream file = new FileInputStream(filePath);
             XSSFWorkbook workbook = new XSSFWorkbook(file)) {
             String states = "";
@@ -116,8 +164,6 @@ public class ForeSightExcelToJSON_StepDefinitions {
                         Cell cell = currentRow.getCell(i);
                         String excelValue = getCellValue(cell, jsonRows);
                         System.out.println(excelValue);
-                        if(excelValue.equalsIgnoreCase("1. If Replacement_CompanyX_Method = Blank, then ISSUE ERROR MESSAGE: Replacement Method is required."))
-                            System.out.println(1);
                         if (!excelValue.isEmpty())
                             tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "").replaceAll("\n", ""), excelValue);
                     }
@@ -129,14 +175,17 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     for(String exchange : numberExchanges) {
                         tempJson.replaceAll((key, value) -> value.toString().replaceAll("X", exchange).replaceAll("Number_Transfers > 1","Number_Transfers = " + exchange));
                         jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim().replaceAll("X", exchange), tempJson);
+                        fieldList += ", " + currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim().replaceAll("X", exchange);
                         tempJson = new JSONObject(tempJsonReplacement);
                     }
                 }
-                else
+                else {
                     jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim(), tempJson);
+                    fieldList += ", " + currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim();
+                }
             }
-
-            JSONObject masterJson = new JSONObject();
+            jsonRows.put("product", product);
+            jsonRows.put("fieldList", fieldList.replaceFirst(", ",""));
             masterJson.put(excelFile.replaceAll(".xlsx", ""), jsonRows);
 
             JSONObject defaultEntry = getJsonObject();
@@ -144,10 +193,6 @@ public class ForeSightExcelToJSON_StepDefinitions {
             masterJson.put("commonTestData", defaultEntry);
 
             jsonObject.put("testData", masterJson);
-            FileWriter jsonTestData = new FileWriter(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
-            BufferedWriter writer = new BufferedWriter(jsonTestData);
-            writer.write(gson.toJson(jsonObject));
-            writer.close();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (Exception e) {
@@ -155,7 +200,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
         }
     }
 
-    private static String getCellValue(Cell cell, JSONObject jsonRows) {
+    private String getCellValue(Cell cell, JSONObject jsonRows) {
         String excelValue = "";
         String newValue = "";
         Pattern pattern = Pattern.compile("");
@@ -264,6 +309,19 @@ public class ForeSightExcelToJSON_StepDefinitions {
         return excelValue;
     }
 
+    private String getCellValue(Cell cell) {
+        String excelValue = "";
+
+        if (cell != null && cell.getCellType() == CellType.STRING) {
+            excelValue = cell.getStringCellValue().trim();
+            if (excelValue.contains("//"))
+                excelValue = excelValue.replaceAll("//", "/");
+        } else if (cell != null && cell.getCellType() == CellType.NUMERIC) {
+            excelValue = String.valueOf(((XSSFCell) cell).getRawValue()).trim();
+        }
+        return excelValue;
+    }
+
     private JSONObject getJsonObject() {
         JSONObject defaultEntry = new JSONObject();
         defaultEntry.put("InvalidTin", "123456789");
@@ -288,4 +346,88 @@ public class ForeSightExcelToJSON_StepDefinitions {
         return cell == null ? "" : cell.toString().trim();
     }
 
+    public void createFeatureFile(String client, String module, String product, String fileName){
+        ArrayList<String> lines = new ArrayList<>();
+        String line = null;
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(EnumsCommon.FEATUREFILESPATH.getText() + "End2End/E2EWizardTestFlow.feature"));
+            while ((line = reader.readLine()) != null) {
+                line = replaceLine(line, "@Module", "\t@" + module.replaceAll(" ", ""));
+                line = replaceLine(line, "Given User is on FireLight login page for TestCase", "\tGiven User is on FireLight login page for TestCase " + "\"End2End_" + client + "\"");
+                line = replaceLine(line, "Then User on Login Page enters valid username as", "\tThen User on Login Page enters valid username as \"" + client + "_User\" and password and clicks Login button");
+                line = line.replaceAll("ModuleName", module).replaceAll("productName", product).replaceAll("fileName", fileName);
+                lines.add(line);
+            }  //end if
+            reader.close();
+            File tempFile = new File(EnumsCommon.FEATUREFILESPATH.getText() + "ForesightTest/" + client + "_" + module.replaceAll(" ", "") + ".feature");
+            tempFile.getParentFile().mkdirs();
+            FileWriter featureFile = new FileWriter(tempFile);
+            BufferedWriter writer = new BufferedWriter(featureFile);
+            for (String line1 : lines)
+                writer.write(line1 + "\n");
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void createRunnerFile(String client, String module) {
+        ArrayList<String> lines = new ArrayList<>();
+        String line = null;
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(EnumsCommon.RUNNERFILESPATH.getText() + "RunFireLightTest.java"));
+            while ((line = reader.readLine()) != null) {
+                line = replaceLine(line, "package com.hexure.firelight.runner;", "package com.hexure.firelight.runner.ForeSightTest;");
+                line = replaceLine(line, "\"json:target/cucumber-html-report\",", "\t\t\"json:target/cucumber" + client + module.replaceAll(" ", "") + "-html-report\",");
+                line = replaceLine(line, "\"json:target/cucumber-reports/cucumber.xml\",", "\t\t\"json:target/cucumber-reports/cucumber" + client + module.replaceAll(" ", "") + ".xml\",");
+                line = replaceLine(line, "\"html:target/cucumber-reports/cucumber.html\",", "\t\t\"html:target/cucumber-reports/cucumber" + client + module.replaceAll(" ", "") + ".html\",");
+                line = replaceLine(line, "\"rerun:target/failedrun.txt\",", "\t\t\"rerun:target/failedrun" + client + module.replaceAll(" ", "") + ".txt\",");
+                line = replaceLine(line, "\"json:target/cucumber-reports/cucumber.json\",", "\t\t\"json:target/cucumber-reports/cucumber" + client + module.replaceAll(" ", "") + ".json\",");
+                line = replaceLine(line, "features = {", "\t\tfeatures = {\"src/test/resources/features/ForesightTest/" + client + "_" + module.replaceAll(" ", "") + ".feature\"},");
+                line = replaceLine(line, "tags = {", "\t\ttags = {\"@" + module.replaceAll(" ", "") + "\"},");
+                line = replaceLine(line, "public class RunFireLightTest {", "public class RunForesight" + client + module.replaceAll(" ", "") + "Test" + " {");
+                line = replaceLine(line, "core.run(RunFireLightTest.class);", "\t\tcore.run(RunForesight" + client + module.replaceAll(" ", "") + "Test" + ".class);");
+                line = replaceLine(line, "String cssFilePath = System.getProperty(\"user.dir\") +", "\t\tString cssFilePath = System.getProperty(\"user.dir\") + \"\\\\target\\\\cucumber-reports\\\\cucumber" + client + module.replaceAll(" ", "") + ".html\\\\style.css\"; // Specify the path to your cucumber.html file");
+                lines.add(line);
+            }  //end if
+            reader.close();
+            File tempFile = new File(EnumsCommon.RUNNERFILESPATH.getText() + "ForeSightTest/RunForesight" + client + module.replaceAll(" ", "") + "Test" + ".java");
+            tempFile.getParentFile().mkdirs();
+            FileWriter runnerFile = new FileWriter(tempFile);
+            BufferedWriter writer = new BufferedWriter(runnerFile);
+            for (String line1 : lines)
+                writer.write(line1 + "\n");
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void createUniqueCounter() {
+        ArrayList<String> lines = new ArrayList<>();
+        String line = null;
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(EnumsCommon.RUNNERFILESPATH.getText() + "UniqueTestCounter.java"));
+            while ((line = reader.readLine()) != null) {
+                line = replaceLine(line, "package com.hexure.firelight.runner;", "package com.hexure.firelight.runner.ForeSightTest;");
+                lines.add(line);
+            }  //end if
+            reader.close();
+            File tempFile = new File(EnumsCommon.RUNNERFILESPATH.getText() + "ForeSightTest/UniqueTestCounter.java");
+            tempFile.getParentFile().mkdirs();
+            FileWriter runnerFile = new FileWriter(tempFile);
+            BufferedWriter writer = new BufferedWriter(runnerFile);
+            for (String line1 : lines)
+                writer.write(line1 + "\n");
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String replaceLine(String line, String toBeReplaced, String replacement) {
+        if (line.contains(toBeReplaced))
+            return replacement;
+        return line;
+    }
 }
