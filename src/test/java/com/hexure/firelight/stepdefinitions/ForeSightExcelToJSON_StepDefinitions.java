@@ -16,9 +16,16 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import java.io.IOException;
+import java.util.Collections;
+
 
 public class ForeSightExcelToJSON_StepDefinitions {
 
@@ -31,7 +38,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
     public void createForesightTestDataInterface(String jsonFile, String excelFile) {
         String filePath = EnumsCommon.ABSOLUTE_FILES_PATH.getText() + excelFile;
         try (FileInputStream file = new FileInputStream(filePath);
-            XSSFWorkbook workbook = new XSSFWorkbook(file)) {
+             XSSFWorkbook workbook = new XSSFWorkbook(file)) {
 
             Sheet sheet = workbook.getSheet("Interface"); // Assuming data is in the first sheet
             Iterator<Row> iterator = sheet.iterator();
@@ -43,6 +50,8 @@ public class ForeSightExcelToJSON_StepDefinitions {
             int filenameIndex = findColumnIndex(headerRow, "FileName");
             int executeIndex = findColumnIndex(headerRow, "Execute");
 
+            deleteRunnerFeature(EnumsCommon.RUNNERFILESPATH.getText() + "ForeSightTest");
+            deleteRunnerFeature(EnumsCommon.FEATUREFILESPATH.getText() + "ForesightTest");
             while (iterator.hasNext()) {
                 Row currentRow = iterator.next();
 
@@ -52,8 +61,8 @@ public class ForeSightExcelToJSON_StepDefinitions {
                 String filename = getCellValue(currentRow.getCell(filenameIndex));
                 String execute = getCellValue(currentRow.getCell(executeIndex));
 
-                if(execute.equalsIgnoreCase("yes")) {
-                    if(!masterJson.containsKey(filename.replaceAll(".xlsx", "")))
+                if (execute.equalsIgnoreCase("yes")) {
+                    if (!masterJson.containsKey(filename.replaceAll(".xlsx", "")))
                         createForesightTestData(filename, product);
                     createFeatureFile(clientName, modules, product, filename);
                     createRunnerFile(clientName, modules);
@@ -78,7 +87,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
         String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + excelFile;
         String fieldList = "";
         try (FileInputStream file = new FileInputStream(filePath);
-            XSSFWorkbook workbook = new XSSFWorkbook(file)) {
+             XSSFWorkbook workbook = new XSSFWorkbook(file)) {
             String states = "";
 
             Sheet sheet = workbook.getSheet("Data List"); // Assuming data is in the first sheet
@@ -96,7 +105,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     Cell cell = currentRow.getCell(i);
                     String excelValue = getCellValue(cell, jsonRows);
                     if (!excelValue.isEmpty()) {
-                        if(jsonRows.containsKey(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")))
+                        if (jsonRows.containsKey(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")))
                             jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), jsonRows.get(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")).toString() + ", " + excelValue);
                         else
                             jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), excelValue);
@@ -118,7 +127,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     Cell cell = currentRow.getCell(i);
                     String excelValue = getCellValue(cell, jsonRows);
                     if (!excelValue.isEmpty()) {
-                        if(jsonRows.containsKey(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")))
+                        if (jsonRows.containsKey(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")))
                             jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), jsonRows.get(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")).toString() + ", " + excelValue);
                         else
                             jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), excelValue);
@@ -143,7 +152,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
                         tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "").replaceAll("\n", ""), excelValue);
                 }
                 jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.JURISDICTION.getText())).getStringCellValue().trim(), tempJson);
-                states +=  "," + tempJson.get("Jurisdiction").toString().trim();
+                states += "," + tempJson.get("Jurisdiction").toString().trim();
             }
             jsonRows.put("JurisdictionRules", states.replaceFirst(",", ""));
 
@@ -155,7 +164,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
             while (iterator.hasNext()) {
                 Row currentRow = iterator.next();
                 JSONObject tempJson = new JSONObject();
-                JSONObject tempJsonReplacement ;
+                JSONObject tempJsonReplacement;
 
                 // Create input file in json format
                 for (int i = 0; i < headerRow.getLastCellNum(); i++) {
@@ -169,23 +178,22 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     }
                 }
                 tempJsonReplacement = new JSONObject(tempJson);
-                if(tempJson.get("ModuleSectionName").equals("Replacements Module")) {
+                if (tempJson.get("ModuleSectionName").equals("Replacements Module")) {
                     List<String> numberExchanges = new ArrayList<>(Arrays.asList(jsonRows.get("NumberofExchanges/Transfers/Rollovers").toString().trim().split(", ")));
                     numberExchanges.removeAll(Arrays.asList("Blank"));
-                    for(String exchange : numberExchanges) {
-                        tempJson.replaceAll((key, value) -> value.toString().replaceAll("X", exchange).replaceAll("Number_Transfers > 1","Number_Transfers = " + exchange));
+                    for (String exchange : numberExchanges) {
+                        tempJson.replaceAll((key, value) -> value.toString().replaceAll("X", exchange).replaceAll("Number_Transfers > 1", "Number_Transfers = " + exchange));
                         jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim().replaceAll("X", exchange), tempJson);
                         fieldList += ", " + currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim().replaceAll("X", exchange);
                         tempJson = new JSONObject(tempJsonReplacement);
                     }
-                }
-                else {
+                } else {
                     jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim(), tempJson);
                     fieldList += ", " + currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim();
                 }
             }
             jsonRows.put("product", product);
-            jsonRows.put("fieldList", fieldList.replaceFirst(", ",""));
+            jsonRows.put("fieldList", fieldList.replaceFirst(", ", ""));
             masterJson.put(excelFile.replaceAll(".xlsx", ""), jsonRows);
 
             JSONObject defaultEntry = getJsonObject();
@@ -197,6 +205,22 @@ public class ForeSightExcelToJSON_StepDefinitions {
             e.printStackTrace();
         } catch (Exception e) {
             throw new FLException("Reading Properties File Failed" + e.getMessage());
+        }
+    }
+
+    private void deleteRunnerFeature(String folderPath) {
+        File folder = new File(folderPath);
+
+        try {
+            Path directory = Paths.get(String.valueOf(folder));
+            // Recursively delete the directory and its contents
+            Files.walk(directory)
+                    .sorted(Collections.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+            System.out.println("Folder deleted successfully.");
+        } catch (IOException e) {
+            System.err.println("Failed to delete the folder: " + e.getMessage());
         }
     }
 
@@ -214,27 +238,26 @@ public class ForeSightExcelToJSON_StepDefinitions {
                 for (String rule : listRules) {
                     JSONObject values = new JSONObject();
                     List<String> resultValue = new ArrayList<>();
-                    if (rule.toLowerCase().contains(" or ")  & !(rule.toLowerCase().contains("skip for automation"))) {
-                        rule = rule.replaceAll("\\[","").replaceAll("]","");
-                        if(rule.toLowerCase().contains("("))
+                    if (rule.toLowerCase().contains(" or ") & !(rule.toLowerCase().contains("skip for automation"))) {
+                        rule = rule.replaceAll("\\[", "").replaceAll("]", "");
+                        if (rule.toLowerCase().contains("("))
                             pattern = Pattern.compile("(.*?)\\((.*?)\\)(.*)");
                         else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?)(?:,)? then (.*)\\.?").matcher(rule).find())
                             pattern = Pattern.compile("(\\d+\\.\\s*)?If (.*?)(?:,)? then (.*)\\.?");
 
-                        if(!pattern.toString().equals("")) {
+                        if (!pattern.toString().equals("")) {
                             Matcher matcher = pattern.matcher(rule);
                             while (matcher.find()) {
                                 List<String> orConditions = Arrays.asList(matcher.group(2).split(" OR "));
                                 for (String condition : orConditions)
                                     newValue += rule.replaceAll(matcher.group(2), condition).replaceAll("\\(", "").replaceAll("\\)", "") + ";";
                             }
-                        }
-                        else
+                        } else
                             newValue += rule + ";";
                     } else
                         newValue += rule + ";";
                 }
-                excelValue = newValue.substring(0, newValue.length()-1);
+                excelValue = newValue.substring(0, newValue.length() - 1);
             }
             newValue = "";
             pattern = null;
@@ -271,7 +294,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     } else
                         newValue += rule + ";";
                 }
-                excelValue = newValue.substring(0, newValue.length()-1);
+                excelValue = newValue.substring(0, newValue.length() - 1);
             }
             newValue = "";
             if (excelValue.toLowerCase().contains("+")) {
@@ -346,7 +369,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
         return cell == null ? "" : cell.toString().trim();
     }
 
-    public void createFeatureFile(String client, String module, String product, String fileName){
+    public void createFeatureFile(String client, String module, String product, String fileName) {
         ArrayList<String> lines = new ArrayList<>();
         String line = null;
         try {
