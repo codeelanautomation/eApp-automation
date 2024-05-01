@@ -19,8 +19,7 @@ public enum EnumsCommon {
     ABSOLUTE_FILES_PATH(System.getProperty("user.dir") + "\\src\\test\\resources\\testdata\\"),
     FIREFOXBROWSER("Firefox"),
     FEATUREFILESPATH(System.getProperty("user.dir") + "/src/test/resources/features/"),
-    RUNNERFILESPATH(System.getProperty("user.dir") + "/src/test/java/com/hexure/firelight/runner/")
-    ;
+    RUNNERFILESPATH(System.getProperty("user.dir") + "/src/test/java/com/hexure/firelight/runner/");
 
     private final String text;
 

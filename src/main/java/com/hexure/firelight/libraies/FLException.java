@@ -6,5 +6,4 @@ public class FLException extends RuntimeException {
     public FLException(String message) {
         super(message);
     }
-
 }

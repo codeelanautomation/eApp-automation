@@ -1,6 +1,5 @@
 package com.hexure.firelight.libraies;
 
-import io.github.bonigarcia.wdm.WebDriverManager;
 import org.apache.commons.io.FileUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -25,9 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
-import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.FluentWait;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
 
 public class BaseClass {
@@ -54,7 +51,7 @@ public class BaseClass {
      * @param testContext The TestContext class reference
      */
     private void setEnvironment(TestContext testContext) {
-        if (configProperties.getProperty("execution.mode").trim().equalsIgnoreCase("jenkins")) {
+        if (isJenkinsExecution()) {
             testContext.setEnvironment((System.getenv("Environment")));
             testContext.setCaptureScreenshot((System.getenv("CaptureScreenshot")));
             testContext.setAppType((System.getenv("ApplicationType")));
@@ -69,6 +66,9 @@ public class BaseClass {
             testContext.setAdminCacheTime(configProperties.getProperty("adminCacheTime"));
         }
     }
+    private boolean isJenkinsExecution() {
+        return configProperties.getProperty("execution.mode").trim().equalsIgnoreCase("jenkins");
+    }
 
     /**
      * @param testContext The TestContext class reference
@@ -82,34 +82,24 @@ public class BaseClass {
      */
     protected WebDriver getWebDriver(TestContext testContext) {
         try {
-
-            switch (testContext.getBrowser()) {
-                case "Chrome":
-                    if (configProperties.getProperty("execution.type").trim().equalsIgnoreCase("local"))
+            if (configProperties.getProperty("execution.type").trim().equalsIgnoreCase("local")) {
+                switch (testContext.getBrowser()) {
+                    case "Chrome":
                         driver = new ChromeDriver(getChromeOptions());
-                    else
-                        driver = new RemoteWebDriver(new URL(testContext.getVM_Name()), getChromeOptions());
-                    break;
-
-                case "Firefox":
-                    if (configProperties.getProperty("execution.type").trim().equalsIgnoreCase("local")) {
+                        break;
+                    case "Firefox":
                         driver = new FirefoxDriver(getFirefoxOption());
                         driver.manage().window().maximize();
-                    } else
-                        driver = new RemoteWebDriver(new URL(testContext.getVM_Name()), getFirefoxOption());
-
-                    break;
-                case "Edge":
-                    if (configProperties.getProperty("execution.type").trim().equalsIgnoreCase("local")) {
+                        break;
+                    case "Edge":
                         driver = new EdgeDriver(getEdgeOptions());
                         driver.manage().window().maximize();
-                    } else
-                        driver = new RemoteWebDriver(new URL(testContext.getVM_Name()), getEdgeOptions());
-
-                    break;
-
-                default:
-                    throw new FLException("Invalid Value Provided For Browser");
+                        break;
+                    default:
+                        throw new FLException("Invalid Value Provided For Browser");
+                }
+            } else {
+                driver = new RemoteWebDriver(new URL(testContext.getVM_Name()), getRemoteOptions(testContext.getBrowser()));
             }
         } catch (Exception e) {
             Log.error("Loading WebDriver failed ", e);
@@ -124,15 +114,25 @@ public class BaseClass {
         return driver;
     }
 
+    private Capabilities getRemoteOptions(String browser) {
+        switch (browser) {
+            case "Chrome":
+                return getChromeOptions();
+            case "Firefox":
+                return getFirefoxOption();
+            case "Edge":
+                return getEdgeOptions();
+            default:
+                throw new FLException("Invalid Value Provided For Browser");
+        }
+    }
 
     /**
      * This method reads config.properties file and values shall be saved in key-value pair in 'configProperties' object
      * To retrieve the value user needs to be passed valid key. To view all keys please refer 'config.properties' file.
      */
     private void readConfigFile() {
-        BufferedReader reader;
-        try {
-            reader = new BufferedReader(new FileReader("./src/test/resources/other/config.properties"));
+        try (BufferedReader reader = new BufferedReader(new FileReader("./src/test/resources/other/config.properties"))) {
             configProperties = new Properties();
             configProperties.load(reader);
             reader.close();
@@ -140,7 +140,7 @@ public class BaseClass {
         } catch (FileNotFoundException e) {
             Log.error("Properties File Could Not Find ", e);
             throw new FLException("Properties File Could Not Find" + e.getMessage());
-        } catch (Exception e) {
+        } catch (IOException e) {
             Log.error("Reading Properties File Failed ", e);
             throw new FLException("Reading Properties File Failed" + e.getMessage());
         }
@@ -151,7 +151,7 @@ public class BaseClass {
      */
     private ChromeOptions getChromeOptions() {
         System.setProperty(configProperties.getProperty("chromeDriver.property"), configProperties.getProperty("chromeDriver.path"));
-//        WebDriverManager.chromedriver().setup();
+
         Map<String, Object> preferences = new HashMap<>();
         preferences.put("autofill.profile_enabled", false);
         preferences.put("download.prompt_for_download", false);
@@ -235,15 +235,13 @@ public class BaseClass {
 
         String url;
         if (testContext.getAppType().equalsIgnoreCase("app")) {
-            url = configProperties.getProperty("QANext.app.url");
-            if (testContext.getEnvironment().equalsIgnoreCase("qa")) {
-                url = configProperties.getProperty("QA.app.url");
-            }
+            url = testContext.getEnvironment().equalsIgnoreCase("qa") ?
+                    configProperties.getProperty("QA.app.url") :
+                    configProperties.getProperty("QANext.app.url");
         } else {
-            url = configProperties.getProperty("QANext.admin.url");
-            if (testContext.getEnvironment().equalsIgnoreCase("qa")) {
-                url = configProperties.getProperty("QA.admin.url");
-            }
+            url = testContext.getEnvironment().equalsIgnoreCase("qa") ?
+                    configProperties.getProperty("QA.admin.url") :
+                    configProperties.getProperty("QANext.admin.url");
         }
 
         System.out.println("URL = " + url);
@@ -264,13 +262,10 @@ public class BaseClass {
         try {
             String testDataFile = configProperties.getProperty(testContext.getModuleName() + ".testdata.filePath");
             System.out.println("TestDataFile = " + testDataFile);
-            Object object = new JSONParser().parse(new FileReader(testDataFile));
-            JSONObject entireJsonObject = (JSONObject) object; //converting into JSON Object
-            JSONObject parentJsonObject = (JSONObject) entireJsonObject.get("testData");
+            JSONObject parentJsonObject = (JSONObject) readJsonObjectFromFile(testDataFile).get("testData");
 
-            ((JSONObject) parentJsonObject.get("commonTestData")).forEach((key, value) -> testData.put(key.toString(), value.toString()));
-
-            ((JSONObject) parentJsonObject.get(testCaseID)).forEach((key, value) -> testData.put(key.toString(), value.toString()));
+            copyJsonObjectValuesToMap((JSONObject) parentJsonObject.get("commonTestData"), testData);
+            copyJsonObjectValuesToMap((JSONObject) parentJsonObject.get(testCaseID), testData);
 
             Log.info("Test Data Read Successfully");
         } catch (IOException e) {
@@ -285,6 +280,15 @@ public class BaseClass {
         }
 
         return testData;
+    }
+
+    private JSONObject readJsonObjectFromFile(String testDataFile) throws IOException, ParseException {
+        Object object = new JSONParser().parse(new FileReader(testDataFile));
+        return (JSONObject) object;
+    }
+
+    private void copyJsonObjectValuesToMap(JSONObject jsonObject, Map<String, String> map) {
+        jsonObject.forEach((key, value) -> map.put(key.toString(), value.toString()));
     }
 
     /**
@@ -375,10 +379,7 @@ public class BaseClass {
      * @return Truncated scenario name
      */
     private String truncateScenarioName(String scenarioName) {
-        if (scenarioName.length() > 200)
-            return scenarioName.substring(0, 200);
-
-        return scenarioName;
+        return scenarioName.length() > 200 ? scenarioName.substring(0, 200) : scenarioName;
     }
 
     /**
@@ -445,12 +446,12 @@ public class BaseClass {
         try {
             if (testContext.getDriver() != null) {
                 testContext.getDriver().quit();
+                Log.info("Driver Quit Successfully");
             }
-            Log.info("Driver Quit Successfully");
             Log.info("<<<===== END OF TEST =====>>>");
         } catch (Exception e) {
-            Log.info("Quiting Driver Failed", e);
-            throw new FLException("Quiting Driver Failed " + e.getMessage());
+            Log.info("Quitting Driver Failed", e);
+            throw new FLException("Quitting Driver Failed " + e.getMessage());
         }
     }
 
@@ -496,15 +497,12 @@ public class BaseClass {
         });
     }
 
-    protected boolean isAttribtuePresent(WebElement element, String attribute) {
-        Boolean result = false;
+    protected boolean isAttributePresent(WebElement element, String attribute) {
         try {
             String value = element.getAttribute(attribute);
-            if (value != null){
-                result = true;
-            }
-        } catch (Exception e) {}
-
-        return result;
+            return value != null;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
