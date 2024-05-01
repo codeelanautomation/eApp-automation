@@ -164,7 +164,7 @@ public class Rules_StepDefinitions extends FLUtilities {
 
     public void verify_form_data_with_inbound_XML_from_Excel_and_Xml(String excelFileName, String module) {
         String moduleNameValue;
-        List<String> fieldList = Arrays.asList(testContext.getMapTestData().get("fieldList").split(", "));
+        Set<String> fieldList = new LinkedHashSet<>(Arrays.asList(testContext.getMapTestData().get("fieldList").split(", ")));
         for (String fieldName : fieldList) {
             moduleNameValue = JsonPath.read(testContext.getMapTestData().get(fieldName).trim(), "$.ModuleSectionName").toString().trim();
             if (module.equalsIgnoreCase(moduleNameValue)) {
