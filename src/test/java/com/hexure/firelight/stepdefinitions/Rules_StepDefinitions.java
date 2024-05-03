@@ -964,7 +964,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             }
             if (expectedOperator.equalsIgnoreCase("=")) {
                 WebElement elem = getElement(valueDependentJson, JsonPath.read(valueDependentJson, "$.WizardControlTypes").toString(), result);
-                if (!(isAttribtuePresent(elem, "readonly") | isAttribtuePresent(elem, "disabled"))) {
+                if (!(isAttributePresent(elem, "readonly") | isAttributePresent(elem, "disabled"))) {
                     if ((result.equalsIgnoreCase("selected") | result.equalsIgnoreCase("unselected")) && JsonPath.read(valueDependentJson, "$.WizardControlTypes").toString().equalsIgnoreCase("checkbox"))
                         return verifyCheckBoxSelectYesNO(result, elem);
                     else
@@ -972,7 +972,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                 }
             } else if (expectedOperator.equalsIgnoreCase("<>")) {
                 WebElement elem = getElement(valueDependentJson, JsonPath.read(valueDependentJson, "$.WizardControlTypes").toString(), result);
-                if (!(isAttribtuePresent(elem, "readonly") | isAttribtuePresent(elem, "disabled")))
+                if (!(isAttributePresent(elem, "readonly") | isAttributePresent(elem, "disabled")))
                     setValue(valueDependentJson, "1");
             }
             waitForPageToLoad(driver);
@@ -1338,7 +1338,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                         onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Rule is applicable " + displayedText + " and not when state code is " + executedJurisdiction, testContext);
                     else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
                         WebElement elem = getElement(testContext.getMapTestData().get(key), JsonPath.read(valueJson, "$.WizardControlTypes").toString(), "");
-                        if (!(isAttribtuePresent(elem, "readonly") | isAttribtuePresent(elem, "disabled"))) {
+                        if (!(isAttributePresent(elem, "readonly") | isAttributePresent(elem, "disabled"))) {
                             if (!setDependentCondition(key, conditionalOperator, valueJson, values, distinctRule, displayedText)) {
                                 conditionFlag = false;
                             }
@@ -1356,7 +1356,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                             moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
                             if (!getElements(valueJson, wizardControlType).isEmpty()) {
                                 WebElement elem = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes").toString(), "");
-                                if (!(isAttribtuePresent(elem, "readonly") | isAttribtuePresent(elem, "disabled")))
+                                if (!(isAttributePresent(elem, "readonly") | isAttributePresent(elem, "disabled")))
                                     getLength(valueJson, attribute, rule, field, distinctRule, displayedText);
                                 else
                                     onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, "Length", "Field is disabled", testContext);
@@ -1395,7 +1395,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                     onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, rule + displayedText, expectedText, JsonPath.read(valueJson, "$." + rule).toString().trim(), expectedText.equalsIgnoreCase(JsonPath.read(valueJson, "$." + rule).toString().trim()), testContext);
 
                 WebElement elem = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes").toString(), "");
-                if (!(isAttribtuePresent(elem, "readonly") | isAttribtuePresent(elem, "disabled")))
+                if (!(isAttributePresent(elem, "readonly") | isAttributePresent(elem, "disabled")))
                     handleTextLengthFields(valueJson, rule, field, distinctRule, displayedText, combinationConditions);
             } catch (NullPointerException e) {
                 onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, "Field does not have attribute " + attribute, false, true, false, testContext);
@@ -1679,7 +1679,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                 resetValue(valueJson, inputValue);
             } else {
                 WebElement elem = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes").toString(), "");
-                if (!(isAttribtuePresent(elem, "readonly") | isAttribtuePresent(elem, "disabled")))
+                if (!(isAttributePresent(elem, "readonly") | isAttributePresent(elem, "disabled")))
                     resetValue(valueJson, "");
             }
         }
@@ -1748,7 +1748,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                 clickElement(driver, onCommonMethodsPage.getRedColorErrorValidationBubble());
             if (!(JsonPath.read(valueJson, "$.WizardControlTypes").toString().equals("Checkbox") | JsonPath.read(valueJson, "$.WizardControlTypes").toString().equals("Radio Button"))) {
                 WebElement elem = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes").toString(), "");
-                if (!(isAttribtuePresent(elem, "readonly") | isAttribtuePresent(elem, "disabled")))
+                if (!(isAttributePresent(elem, "readonly") | isAttributePresent(elem, "disabled")))
                     clickElement(driver, getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes").toString(), JsonPath.read(valueJson, "$.WizardControlTypes").toString()));
             }
 
