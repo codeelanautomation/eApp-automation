@@ -499,8 +499,12 @@ public class BaseClass {
 
     protected boolean isAttributePresent(WebElement element, String attribute) {
         try {
-            String value = element.getAttribute(attribute);
-            return value != null;
+            if (attribute.equalsIgnoreCase("class"))
+                return element.getAttribute(attribute).contains("disabled") | element.getAttribute(attribute).contains("readOnlyInput");
+            else {
+                String value = element.getAttribute(attribute);
+                return value != null;
+            }
         } catch (Exception e) {
             return false;
         }
