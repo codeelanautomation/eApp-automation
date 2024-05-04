@@ -13,6 +13,7 @@ import java.util.List;
 @Data
 public class CommonMethodsPage extends FLUtilities {
     public String selectField = "//select[@data-dataitemid='%s']";
+    public String textareaField = "//textarea[@data-dataitemid='%s']";
     public String labelField = "//div[@data-dataitemid='%s']";
     public String inputField = "//input[@data-dataitemid='%s']";
     public String radioField = "//div[@data-dataitemid='%s']//div[@title='%s']";
@@ -20,14 +21,17 @@ public class CommonMethodsPage extends FLUtilities {
     public String txtField = "//div[@title='%s']//ancestor::div[@class='dataGrid__row']//input";
     public String radioFieldCheckbox = "//div[@data-dataitemid='%s']//div[@role='checkbox']";
     public String sectionSelect = "//div[text()='%s']//ancestor::body//select[@data-dataitemid='%s']";
+    public String sectionTextarea = "//div[text()='%s']//ancestor::body//textarea[@data-dataitemid='%s']";
     public String sectionInput = "//div[text()='%s']//ancestor::body//input[@data-dataitemid='%s']";
     public String sectionRadio = "//div[text()='%s']//ancestor::body//div[@data-dataitemid='%s']";
     public String labelInput = "//input[@data-dataitemid='%s']/ancestor::div[@class='row baselineAlign']//p";
     public String labelSelect = "//select[@data-dataitemid='%s']/ancestor::div[@class='row baselineAlign']//label";
+    public String labelTextarea = "//textarea[@data-dataitemid='%s']/ancestor::div[@class='row baselineAlign']//label";
     public String radioFieldWithOption = "//div[@data-dataitemid='%s']//div[@role='checkbox' and @title='%s']";
     public String radioErrorField = "//div[@data-dataitemid='%s']//ancestor::div[@class='ITComponent']//span[@class='validationText']";
     public String inputErrorField = "//input[@data-dataitemid='%s']//ancestor::div[@class='ITComponent']//span[@class='validationText']";
     public String selectErrorField = "//select[@data-dataitemid='%s']//ancestor::div[@class='ITComponent']//span[@class='validationText']";
+    public String textareaErrorField = "//textarea[@data-dataitemid='%s']//ancestor::div[@class='ITComponent']//span[@class='validationText']";
     public String fieldWithTitleAttribute = "//*[@title=\"%s\"]|//*[@aria-label=\"%s\"]";
     public String mandatoryFormElement = "//*[@class='navDrawer__bundleName' and text()=\"%s\"]//..//a";
 

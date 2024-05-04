@@ -173,7 +173,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
                         Cell cell = currentRow.getCell(i);
                         String excelValue = getCellValue(cell, jsonRows);
                         System.out.println(excelValue);
-                        if (!excelValue.isEmpty())
+                        if (!excelValue.equalsIgnoreCase(""))
                             tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "").replaceAll("\n", ""), excelValue);
                     }
                 }
@@ -269,12 +269,13 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     if (rule.toLowerCase().contains("<>") & !(rule.toLowerCase().contains("skip for automation"))) {
                         String conditionAnother = "";
                         String expectedResult = "";
-                        if (Pattern.compile("(?i)([^<>\\s]+)\\s*<>(.*?)(?:,|AND|then|$)").matcher(rule).find()) {
-                            pattern = Pattern.compile("(?i)([^<>\\s]+)\\s*<>(.*?)(?:,|AND|then|$)");
+                        if (Pattern.compile("(?i)([^<>\\s]+)\\s*<>(.*?)(?:AND|then|$)").matcher(rule).find()) {
+                            pattern = Pattern.compile("(?i)([^<>\\s]+)\\s*<>(.*?)(?:AND|then|$)");
                             Matcher matcher = pattern.matcher(rule);
                             while (matcher.find()) {
                                 conditionAnother = matcher.group(1).trim();
                                 expectedResult = matcher.group(2).trim();
+                                expectedResult = (expectedResult.endsWith(",")) ? expectedResult.substring(0,expectedResult.length()-1) : expectedResult;
                                 if (jsonRows.containsKey(conditionAnother)) {
                                     values = (JSONObject) jsonRows.get(conditionAnother);
                                     if (values.containsKey("ListOptions") && !(values.get("ListOptions").toString().trim().contains("Number"))) {
