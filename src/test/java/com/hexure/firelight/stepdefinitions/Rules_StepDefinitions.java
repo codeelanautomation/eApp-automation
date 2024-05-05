@@ -172,7 +172,7 @@ public class Rules_StepDefinitions extends FLUtilities {
         Set<String> fieldList = new LinkedHashSet<>(Arrays.asList(testContext.getMapTestData().get("fieldList").split(", ")));
         for (String fieldName : fieldList) {
             moduleNameValue = JsonPath.read(testContext.getMapTestData().get(fieldName).trim(), "$.ModuleSectionName").toString().trim();
-            if (module.equalsIgnoreCase(moduleNameValue)) {
+            if (module.equalsIgnoreCase(moduleNameValue) | module.equalsIgnoreCase("All")) {
                 wizardTesting(fieldName);
             }
         }
