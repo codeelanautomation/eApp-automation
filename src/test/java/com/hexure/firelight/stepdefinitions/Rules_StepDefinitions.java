@@ -124,6 +124,7 @@ public class Rules_StepDefinitions extends FLUtilities {
         String moduleJurisdictionMapping;
         if (module.equalsIgnoreCase("All")) {
             for (String jurisdiction : States) {
+                skippedInvalidElements.clear();
                 moduleJurisdictionMapping = testContext.getMapTestData().get(jurisdiction).trim();
                 List<String> moduleValues = Arrays.asList(JsonPath.read(moduleJurisdictionMapping, "$.Module").toString().trim().split(", "));
                 jurisdictionStatesCode = JsonPath.read(moduleJurisdictionMapping, "$.State").toString().trim();
@@ -1541,7 +1542,9 @@ public class Rules_StepDefinitions extends FLUtilities {
     }
 
     public void handleValidationRules(String valueJson, String dependentCondition, String dependentResult, String field, String order, String displayedText) {
+        String displayedTextNew = displayedText;
         for (String distinctRule : JsonPath.read(valueJson, "$.ValidationRules").toString().trim().split((";"))) {
+            displayedText = displayedTextNew;
             distinctRule = distinctRule.replaceFirst("(\\d+\\.\\s*)?", "").trim();
             System.out.println(order + ". " + field + " -> " + distinctRule);
             String expectedResult;
@@ -1634,7 +1637,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                             listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*: (.*)", "", condition1.trim());
                             key = listFieldValueConditions.get(0).trim();
                             values = listFieldValueConditions.get(1).trim();
-                            displayedText += key + howManyOperatorValidations.get(key) + values + " and ";
+                            displayedText += " and " + key + howManyOperatorValidations.get(key) + values;
                             listConditionkeys = findKeyExistsJSON(key);  // This listConditionkeys is verifying whether key exists in JSON
                             conditionFlag = true;
 
@@ -1768,6 +1771,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                     case "dropdown":
                     case "state dropdown":
                         return expectedResult;
+                    default:
+                        return "TestValue";
                 }
             } else if (expectedResult.equalsIgnoreCase("current date")) {
                 switch (expectedOperator) {

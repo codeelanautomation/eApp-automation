@@ -30,10 +30,10 @@ import java.util.Collections;
 
 public class ForeSightExcelToJSON_StepDefinitions {
 
+    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     JSONObject jsonObject = new JSONObject();
     List<String> requiredColumns = Arrays.asList(EnumsExcelColumns.ENUMSEXCELCOLUMNS.getText().split(", "));
     JSONObject masterJson = new JSONObject();
-    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     @Given("Create {string} file for eApp flow with interface file {string}")
     public void createForesightTestDataInterface(String jsonFile, String excelFile) {
@@ -66,13 +66,12 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     if (!masterJson.containsKey(filename.replaceAll(".xlsx", "")))
                         createForesightTestData(filename, product);
                     JSONObject jsonTemp = JsonPath.read(masterJson, "$." + clientName);
-                    if(jsonTemp.containsKey(modules)) {
+                    if (jsonTemp.containsKey(modules)) {
                         for (String state : jsonTemp.get(modules).toString().trim().split(", ")) {
                             createFeatureFile(clientName, modules, product, filename, state);
                             createRunnerFile(clientName, modules, state);
                         }
-                    }
-                    else {
+                    } else {
                         createFeatureFile(clientName, modules, product, filename, "Alabama");
                         createRunnerFile(clientName, modules, "Alabama");
                     }
@@ -162,7 +161,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
                 }
                 jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.JURISDICTION.getText())).getStringCellValue().trim(), tempJson);
                 String[] jurisdictionModules = tempJson.get("Module").toString().trim().split(", ");
-                for(String jurisdictionModule : jurisdictionModules) {
+                for (String jurisdictionModule : jurisdictionModules) {
                     jsonRows.putIfAbsent(jurisdictionModule, "Alabama");
                     jsonRows.put(jurisdictionModule, jsonRows.get(jurisdictionModule).toString().contains(tempJson.get("Jurisdiction").toString()) ? jsonRows.get(jurisdictionModule) : jsonRows.get(jurisdictionModule) + ", " + tempJson.get("Jurisdiction"));
                 }
@@ -247,24 +246,33 @@ public class ForeSightExcelToJSON_StepDefinitions {
         if (cell != null && cell.getCellType() == CellType.STRING && !(cell.getStringCellValue().trim().equalsIgnoreCase("None"))) {
             excelValue = cell.getStringCellValue().trim();
             excelValue = excelValue.replaceAll("//", "/").replaceAll("[^\\x00-\\x7F]", "").replaceAll("\n", ";").replaceAll("=", " = ").replaceAll("<>", " <> ").replaceAll("“", "").replaceAll("\"", "").replaceAll("[\\s]+[.]+", ".").replaceAll("[\\s]+", " ").trim();
-            if (excelValue.toLowerCase().contains(" or ")) {
+            if (excelValue.contains(" OR ")) {
                 listRules = Arrays.asList(excelValue.split(";"));
                 for (String rule : listRules) {
                     JSONObject values = new JSONObject();
                     List<String> resultValue = new ArrayList<>();
-                    if (rule.toLowerCase().contains(" or ") & !(rule.toLowerCase().contains("skip for automation"))) {
+                    if (rule.contains(" OR ") & !(rule.toLowerCase().contains("skip for automation"))) {
                         rule = rule.replaceAll("\\[", "").replaceAll("]", "");
                         if (rule.toLowerCase().contains("("))
                             pattern = Pattern.compile("(.*?)\\((.*?)\\)(.*)");
                         else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?)(?:,)? then (.*)\\.?").matcher(rule).find())
                             pattern = Pattern.compile("(\\d+\\.\\s*)?If (.*?)(?:,)? then (.*)\\.?");
+                        else if (Pattern.compile("(\\d+\\.\\s*)?(.*?)").matcher(rule).find())
+                            pattern = Pattern.compile("(\\d+\\.\\s*)?(.*?)");
 
                         if (!pattern.toString().equals("")) {
                             Matcher matcher = pattern.matcher(rule);
+
                             while (matcher.find()) {
                                 List<String> orConditions = Arrays.asList(matcher.group(2).split(" OR "));
-                                for (String condition : orConditions)
-                                    newValue += rule.replaceAll(matcher.group(2), condition).replaceAll("\\(", "").replaceAll("\\)", "") + ";";
+                                if (orConditions.size() > 1) {
+                                    for (String condition : orConditions)
+                                        newValue += rule.replaceAll(matcher.group(2), condition).replaceAll("\\(", "").replaceAll("\\)", "") + ";";
+                                } else {
+                                    for (String condition : rule.split(" OR "))
+                                        newValue += condition + ";";
+                                    break;
+                                }
                             }
                         } else
                             newValue += rule + ";";
@@ -289,7 +297,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
                             while (matcher.find()) {
                                 conditionAnother = matcher.group(1).trim();
                                 expectedResult = matcher.group(2).trim();
-                                expectedResult = (expectedResult.endsWith(",")) ? expectedResult.substring(0,expectedResult.length()-1) : expectedResult;
+                                expectedResult = (expectedResult.endsWith(",")) ? expectedResult.substring(0, expectedResult.length() - 1) : expectedResult;
                                 if (jsonRows.containsKey(conditionAnother)) {
                                     values = (JSONObject) jsonRows.get(conditionAnother);
                                     if (values.containsKey("ListOptions") && !(values.get("ListOptions").toString().trim().contains("Number"))) {
