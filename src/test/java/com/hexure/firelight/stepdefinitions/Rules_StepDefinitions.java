@@ -116,21 +116,24 @@ public class Rules_StepDefinitions extends FLUtilities {
         return null;
     }
 
-    @Given("User clicks application for Product {string} and Product Type {string} and validate wizard fields for module {string}")
-    public void createAppAndValidateWizard(String product, String productType, String module) {
+    @Given("User clicks application for Product {string} and Product Type {string} and validate wizard fields for module {string} and jurisdiction {string}")
+    public void createAppAndValidateWizard(String product, String productType, String module, String jurisdiction1) {
         captureScreenshot(driver, testContext, false);
         String[] States = testContext.getMapTestData().get("JurisdictionRules").split(",");
 
-        for (String jurisdiction : States) {
-            String moduleJurisdictionMapping = testContext.getMapTestData().get(jurisdiction).trim();
-            List<String> moduleValues = Arrays.asList(JsonPath.read(moduleJurisdictionMapping, "$.Module").toString().trim().split(", "));
-            jurisdictionStatesCode = JsonPath.read(moduleJurisdictionMapping, "$.State").toString().trim();
-            if (module.equalsIgnoreCase("All")) {
+        String moduleJurisdictionMapping;
+        if (module.equalsIgnoreCase("All")) {
+            for (String jurisdiction : States) {
+                moduleJurisdictionMapping = testContext.getMapTestData().get(jurisdiction).trim();
+                List<String> moduleValues = Arrays.asList(JsonPath.read(moduleJurisdictionMapping, "$.Module").toString().trim().split(", "));
+                jurisdictionStatesCode = JsonPath.read(moduleJurisdictionMapping, "$.State").toString().trim();
                 for (String moduleValue : moduleValues)
                     createApplication(jurisdiction, product, productType, moduleValue);
-            } else if (moduleValues.contains(module) | moduleValues.contains("All")) {
-                createApplication(jurisdiction, product, productType, module);
             }
+        } else {
+            moduleJurisdictionMapping = testContext.getMapTestData().get(jurisdiction1).trim();
+            jurisdictionStatesCode = JsonPath.read(moduleJurisdictionMapping, "$.State").toString().trim();
+            createApplication(jurisdiction1, product, productType, module);
         }
         printFinalResults();
     }
@@ -169,10 +172,11 @@ public class Rules_StepDefinitions extends FLUtilities {
 
     public void verify_form_data_with_inbound_XML_from_Excel_and_Xml(String module) {
         String moduleNameValue;
+        int count = 0;
         Set<String> fieldList = new LinkedHashSet<>(Arrays.asList(testContext.getMapTestData().get("fieldList").split(", ")));
         for (String fieldName : fieldList) {
             moduleNameValue = JsonPath.read(testContext.getMapTestData().get(fieldName).trim(), "$.ModuleSectionName").toString().trim();
-            if (module.equalsIgnoreCase(moduleNameValue)) {
+            if (module.equalsIgnoreCase(moduleNameValue) | module.equalsIgnoreCase("All")) {
                 wizardTesting(fieldName);
             }
         }
@@ -1276,39 +1280,39 @@ public class Rules_StepDefinitions extends FLUtilities {
                 case "dropdown":
                     expectedText = new Select(getElement(valueJson, "dropdown", null)).getFirstSelectedOption().getText().trim();
                     if (expectedText.isEmpty())
-                        expectedText = "blank";
+                        expectedText = requiredAttributeValue;
                     printResults(condition, valueJson, field, requiredAttributeValue, expectedText, result, attribute, distinctRule);
                     break;
                 case "radio button":
                     List<WebElement> radioOptions = getElements(valueJson, "Radio Button");
                     for (WebElement element : radioOptions) {
                         expectedText = element.getAttribute("aria-checked");
-                        if (expectedText.equals("false"))
-                            expectedText = "unchecked";
-                        else
-                            expectedText = "checked";
+                        if (expectedText.equals("false") && requiredAttributeValue.equalsIgnoreCase("unchecked"))
+                            expectedText = requiredAttributeValue;
+                        else if (expectedText.equals("true") && requiredAttributeValue.equalsIgnoreCase("checked"))
+                            expectedText = requiredAttributeValue;
                         printResults(field, valueJson, field, requiredAttributeValue, expectedText, element.getAttribute("title"), attribute, distinctRule);
                     }
                     break;
                 case "checkbox":
                     expectedText = getElement(valueJson, "checkbox", null).getAttribute("aria-checked");
-                    if (expectedText.equals("false"))
-                        expectedText = "unchecked";
-                    else
-                        expectedText = "checked";
+                    if (expectedText.equals("false") && requiredAttributeValue.equalsIgnoreCase("unchecked"))
+                        expectedText = requiredAttributeValue;
+                    else if (expectedText.equals("true") && requiredAttributeValue.equalsIgnoreCase("checked"))
+                        expectedText = requiredAttributeValue;
                     printResults(condition, valueJson, field, requiredAttributeValue, expectedText, result, attribute, distinctRule);
                     break;
                 case "multiline textbox":
                 case "multi line text box":
                     expectedText = getElement(valueJson, "multiline textbox", null).getAttribute("value");
                     if (expectedText.isEmpty())
-                        expectedText = "blank";
+                        expectedText = requiredAttributeValue;
                     printResults(condition, valueJson, field, requiredAttributeValue, expectedText, result, attribute, distinctRule);
                     break;
                 default:
                     expectedText = getElement(valueJson, "single line textbox", null).getAttribute("value");
                     if (expectedText.isEmpty())
-                        expectedText = "blank";
+                        expectedText = requiredAttributeValue;
                     printResults(condition, valueJson, field, requiredAttributeValue, expectedText, result, attribute, distinctRule);
                     break;
             }
@@ -1322,7 +1326,7 @@ public class Rules_StepDefinitions extends FLUtilities {
     }
 
     public void printResults(String condition, String valueJson, String field, String requiredAttributeValue, String expectedText, String result, String attribute, String distinctRule) {
-        boolean flag = requiredAttributeValue.trim().equalsIgnoreCase(expectedText.trim());
+        boolean flag = requiredAttributeValue.trim().equals(expectedText.trim());
         if (condition.isEmpty()) {
             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, "Default Value ", expectedText, requiredAttributeValue, flag, testContext);
         } else if (attribute.equalsIgnoreCase("prefilled with"))
@@ -1884,7 +1888,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                 conditionFLag = setCombinationConditions(valueJson, "([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)");
         }
 
-        if(conditionFLag) {
+        if (conditionFLag) {
             if (invalidTag.isEmpty()) {
                 if (combinationConditions.isEmpty()) {
                     if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {

@@ -6,6 +6,7 @@ import com.hexure.firelight.libraies.Enums.EnumsExcelColumns;
 import com.hexure.firelight.libraies.Enums.EnumsJSONProp;
 import com.hexure.firelight.libraies.EnumsCommon;
 import com.hexure.firelight.libraies.FLException;
+import com.jayway.jsonpath.JsonPath;
 import cucumber.api.java.en.Given;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.xssf.usermodel.XSSFCell;
@@ -64,10 +65,18 @@ public class ForeSightExcelToJSON_StepDefinitions {
                 if (execute.equalsIgnoreCase("yes")) {
                     if (!masterJson.containsKey(filename.replaceAll(".xlsx", "")))
                         createForesightTestData(filename, product);
-                    createFeatureFile(clientName, modules, product, filename);
-                    createRunnerFile(clientName, modules);
+                    JSONObject jsonTemp = JsonPath.read(masterJson, "$." + clientName);
+                    if(jsonTemp.containsKey(modules)) {
+                        for (String state : jsonTemp.get(modules).toString().trim().split(", ")) {
+                            createFeatureFile(clientName, modules, product, filename, state);
+                            createRunnerFile(clientName, modules, state);
+                        }
+                    }
+                    else {
+                        createFeatureFile(clientName, modules, product, filename, "Alabama");
+                        createRunnerFile(clientName, modules, "Alabama");
+                    }
                 }
-
             }
             FileWriter jsonTestData = new FileWriter(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
             BufferedWriter writer = new BufferedWriter(jsonTestData);
@@ -152,6 +161,11 @@ public class ForeSightExcelToJSON_StepDefinitions {
                         tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "").replaceAll("\n", ""), excelValue);
                 }
                 jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.JURISDICTION.getText())).getStringCellValue().trim(), tempJson);
+                String[] jurisdictionModules = tempJson.get("Module").toString().trim().split(", ");
+                for(String jurisdictionModule : jurisdictionModules) {
+                    jsonRows.putIfAbsent(jurisdictionModule, "Alabama");
+                    jsonRows.put(jurisdictionModule, jsonRows.get(jurisdictionModule).toString().contains(tempJson.get("Jurisdiction").toString()) ? jsonRows.get(jurisdictionModule) : jsonRows.get(jurisdictionModule) + ", " + tempJson.get("Jurisdiction"));
+                }
                 states += "," + tempJson.get("Jurisdiction").toString().trim();
             }
             jsonRows.put("JurisdictionRules", states.replaceFirst(",", ""));
@@ -370,18 +384,18 @@ public class ForeSightExcelToJSON_StepDefinitions {
         return cell == null ? "" : cell.toString().trim();
     }
 
-    public void createFeatureFile(String client, String module, String product, String fileName) {
+    public void createFeatureFile(String client, String module, String product, String fileName, String state) {
         ArrayList<String> lines = new ArrayList<>();
         String line = null;
         try {
             BufferedReader reader = new BufferedReader(new FileReader(EnumsCommon.FEATUREFILESPATH.getText() + "End2End/E2EWizardTestFlow.feature"));
             while ((line = reader.readLine()) != null) {
                 line = line.replaceAll("ModuleName", module).replaceAll("ModuleTag", module.replaceAll(" ", "")).replaceAll("Client", client);
-                line = line.replaceAll("productName", product).replaceAll("fileName", fileName);
+                line = line.replaceAll("productName", product).replaceAll("fileName", fileName).replaceAll("state", state);
                 lines.add(line);
             }  //end if
             reader.close();
-            File tempFile = new File(EnumsCommon.FEATUREFILESPATH.getText() + "ForesightTest/" + client + "_" + module.replaceAll(" ", "") + ".feature");
+            File tempFile = new File(EnumsCommon.FEATUREFILESPATH.getText() + "ForesightTest/" + client + "_" + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + ".feature");
             tempFile.getParentFile().mkdirs();
             FileWriter featureFile = new FileWriter(tempFile);
             BufferedWriter writer = new BufferedWriter(featureFile);
@@ -393,27 +407,22 @@ public class ForeSightExcelToJSON_StepDefinitions {
         }
     }
 
-    public void createRunnerFile(String client, String module) {
+    public void createRunnerFile(String client, String module, String state) {
         ArrayList<String> lines = new ArrayList<>();
         String line = null;
         try {
             BufferedReader reader = new BufferedReader(new FileReader(EnumsCommon.RUNNERFILESPATH.getText() + "RunFireLightTest.java"));
             while ((line = reader.readLine()) != null) {
                 line = line.replaceAll("com.hexure.firelight.runner", "com.hexure.firelight.runner.ForeSightTest");
-                line = replaceLine(line, "\"json:target/cucumber-html-report\",", "\t\t\"json:target/cucumber" + client + module.replaceAll(" ", "") + "-html-report\",");
-                line = replaceLine(line, "\"json:target/cucumber-reports/cucumber.xml\",", "\t\t\"json:target/cucumber-reports/cucumber" + client + module.replaceAll(" ", "") + ".xml\",");
-                line = replaceLine(line, "\"html:target/cucumber-reports/cucumber.html\",", "\t\t\"html:target/cucumber-reports/cucumber" + client + module.replaceAll(" ", "") + ".html\",");
-                line = replaceLine(line, "\"rerun:target/failedrun.txt\",", "\t\t\"rerun:target/failedrun" + client + module.replaceAll(" ", "") + ".txt\",");
-                line = replaceLine(line, "\"json:target/cucumber-reports/cucumber.json\",", "\t\t\"json:target/cucumber-reports/cucumber" + client + module.replaceAll(" ", "") + ".json\",");
-                line = replaceLine(line, "features = {", "\t\tfeatures = {\"src/test/resources/features/ForesightTest/" + client + "_" + module.replaceAll(" ", "") + ".feature\"},");
+                line = line.replaceAll("ModuleName", module).replaceAll("ModuleTag", module.replaceAll(" ", "")).replaceAll("Client", client).replaceAll("State", state.replaceAll(" ", ""));
+                line = replaceLine(line, "features = {", "\t\tfeatures = {\"src/test/resources/features/ForesightTest/" + client + "_" + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + ".feature\"},");
                 line = replaceLine(line, "tags = {", "\t\ttags = {\"@" + module.replaceAll(" ", "") + "\"},");
-                line = replaceLine(line, "public class RunFireLightTest {", "public class RunForesight" + client + module.replaceAll(" ", "") + "Test" + " {");
-                line = replaceLine(line, "core.run(RunFireLightTest.class);", "\t\tcore.run(RunForesight" + client + module.replaceAll(" ", "") + "Test" + ".class);");
-                line = replaceLine(line, "String cssFilePath = System.getProperty(\"user.dir\") +", "\t\tString cssFilePath = System.getProperty(\"user.dir\") + \"\\\\target\\\\cucumber-reports\\\\cucumber" + client + module.replaceAll(" ", "") + ".html\\\\style.css\"; // Specify the path to your cucumber.html file");
+                line = replaceLine(line, "public class RunFireLightTest {", "public class RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test" + " {");
+                line = replaceLine(line, "core.run(RunFireLightTest.class);", "\t\tcore.run(RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test" + ".class);");
                 lines.add(line);
             }  //end if
             reader.close();
-            File tempFile = new File(EnumsCommon.RUNNERFILESPATH.getText() + "ForeSightTest/RunForesight" + client + module.replaceAll(" ", "") + "Test" + ".java");
+            File tempFile = new File(EnumsCommon.RUNNERFILESPATH.getText() + "ForeSightTest/RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test" + ".java");
             tempFile.getParentFile().mkdirs();
             FileWriter runnerFile = new FileWriter(tempFile);
             BufferedWriter writer = new BufferedWriter(runnerFile);
