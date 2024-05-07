@@ -178,6 +178,7 @@ public class Rules_StepDefinitions extends FLUtilities {
         for (String fieldName : fieldList) {
             moduleNameValue = JsonPath.read(testContext.getMapTestData().get(fieldName).trim(), "$.ModuleSectionName").toString().trim();
             if (module.equalsIgnoreCase(moduleNameValue) | module.equalsIgnoreCase("All")) {
+                fieldsEvaluated++;
                 wizardTesting(fieldName);
             }
         }
@@ -241,7 +242,6 @@ public class Rules_StepDefinitions extends FLUtilities {
                 wizardControlType = JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim();
                 moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
                 if (verifyElementExists(valueJson, skippedInvalidElements, order, field)) {
-                    fieldsEvaluated++;
                     combinationConditions.clear();
                     howManyOperator.clear();
                     for (String rule : rulesList) {
@@ -1000,7 +1000,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             waitForPageToLoad(driver);
             sleepInMilliSeconds(2000);
         } else {
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueDependentJson, "$.Order").toString().trim(), executedJurisdiction, moduleName, JsonPath.read(valueDependentJson, "$.CommonTag").toString().trim(), "", "Page " + JsonPath.read(valueDependentJson, "$.Page").toString().trim() + " does not exists " + displayedText, true, false, false, testContext);
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order").toString().trim(), executedJurisdiction, moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), "", "Page " + JsonPath.read(valueDependentJson, "$.Page").toString().trim() + " does not exists " + displayedText, true, false, false, testContext);
             return false;
         }
         return true;

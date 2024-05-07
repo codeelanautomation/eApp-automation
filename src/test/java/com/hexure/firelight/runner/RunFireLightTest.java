@@ -17,7 +17,7 @@ import java.util.Comparator;
         plugin = {
                 "json:target/cucumberClientModuleTagState-html-report",
                 "json:target/cucumber-reports/cucumberClientModuleTagState.xml",
-                "html:target/cucumber-reports/cucumberClientModuleTagState.html",
+                "html:target/cucumber-reports/cucumberClientModuleTagState",
                 "rerun:target/failedrun.txt",
                 "json:target/cucumber-reports/cucumberClientModuleTagState.json",
                 "pretty",
@@ -41,7 +41,7 @@ public class RunFireLightTest {
 
     @AfterClass
     public static void cssStyleUpdate() {
-        String cssFilePath = System.getProperty("user.dir") + "\\target\\cucumber-reports\\cucumberClientModuleTagState.html\\style.css"; // Specify the path to your cucumber.html file
+        String cssFilePath = System.getProperty("user.dir") + "\\target\\cucumber-reports\\cucumberClientModuleTagState\\style.css"; // Specify the path to your cucumber.html file
         String newCSSRule1 = "details { background: #C5D88A; }\n"; // New CSS rule 1
         String newCSSRule2 = ".cucumber-report .step .embedded-text { background: #C5D88A; }\n"; // New CSS rule 2
         String newCSSRule3 = "body { background: #C5D88A; }\n";
@@ -75,13 +75,13 @@ public class RunFireLightTest {
 
     public static void renameReportFile() {
         // Specify the desired new name for the report
-        String newReportName = "cucumberFILIAllocationsModule.html";
+        String newReportName = "cucumberClientModuleTagState.html";
         // Construct the paths for the original and new report files
-        Path originalReportPath = new File("target/cucumber-reports/cucumberClientModuleTagState.html/index.html").toPath();
-        Path newReportPath = new File("target/cucumber-reports/cucumberClientModuleTagState.html/" + newReportName).toPath();
+        Path originalReportPath = new File("target/cucumber-reports/cucumberClientModuleTagState/index.html").toPath();
+        Path newReportPath = new File("target/cucumber-reports/cucumberClientModuleTagState/" + newReportName).toPath();
 
-        Path sourceDir = Paths.get("target/cucumber-reports/cucumberClientModuleTagState.html");
-        Path targetDir = Paths.get("target/cucumber-report/cucumberClientModuleTagState.html");
+        Path sourceDir = Paths.get("target/cucumber-reports/cucumberClientModuleTagState");
+        Path targetDir = Paths.get("target/cucumber-report/cucumberClientModuleTagState");
 
         try {
             // Generate the new report file by moving the original one
