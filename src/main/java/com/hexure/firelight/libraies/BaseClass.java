@@ -435,6 +435,8 @@ public class BaseClass {
      */
     protected void closeBrowser(TestContext testContext) {
         if (testContext.getScenario().isFailed()) {
+            final byte[] screenshot = ((TakesScreenshot)driver).getScreenshotAs(OutputType.BYTES);
+            testContext.getScenario().embed(screenshot, "image/png");
             Log.info("TEST CASE " + testContext.getTestCaseID() + " is FAILED");
         } else {
             if (testContext.getTestCaseID() != null)
