@@ -231,7 +231,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
                     .sorted(Collections.reverseOrder())
                     .map(Path::toFile)
                     .forEach(File::delete);
-            System.out.println("Folder deleted successfully.");
+            System.out.println("Runner & Feature Folder deleted successfully.");
         } catch (IOException e) {
             System.err.println("Failed to delete the folder: " + e.getMessage());
         }
