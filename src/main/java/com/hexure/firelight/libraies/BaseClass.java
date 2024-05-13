@@ -245,6 +245,16 @@ public class BaseClass {
         }
 
         System.out.println("URL = " + url);
+
+        if(configProperties.getProperty("browser").equalsIgnoreCase("Edge"))
+        {
+            driver.get("edge://settings/content/pdfDocuments");
+
+            // Execute JavaScript to enable the option
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            js.executeScript("document.querySelector('input[type=\"checkbox\"]').click();");
+
+        }
         driver.get(url);
     }
 

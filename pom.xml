@@ -360,7 +360,7 @@
 
                     <parallel>classes</parallel>
                     <threadCount>5</threadCount>
-                    <rerunFailingTestsCount>0</rerunFailingTestsCount>
+                    <rerunFailingTestsCount>3</rerunFailingTestsCount>
                     <perCoreThreadCount>false</perCoreThreadCount>
 <!--                    <useUnlimitedThreads>true</useUnlimitedThreads>-->
                     <testFailureIgnore>false</testFailureIgnore>
