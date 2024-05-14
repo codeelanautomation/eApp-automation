@@ -50,6 +50,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
             int modulesIndex = findColumnIndex(headerRow, "Modules");
             int filenameIndex = findColumnIndex(headerRow, "FileName");
             int executeIndex = findColumnIndex(headerRow, "Execute");
+            int JurisdictionWiseReportIndex = findColumnIndex(headerRow, "JurisdictionWiseReport");
 
             deleteRunnerFeature(EnumsCommon.RUNNERFILESPATH.getText() + "ForeSightTest");
             deleteRunnerFeature(EnumsCommon.FEATUREFILESPATH.getText() + "ForesightTest");
@@ -61,19 +62,20 @@ public class ForeSightExcelToJSON_StepDefinitions {
                 String modules = getCellValue(currentRow.getCell(modulesIndex));
                 String filename = getCellValue(currentRow.getCell(filenameIndex));
                 String execute = getCellValue(currentRow.getCell(executeIndex));
+                String jurisdictionWiseReport = getCellValue(currentRow.getCell(JurisdictionWiseReportIndex));
 
                 if (execute.equalsIgnoreCase("yes")) {
                     if (!masterJson.containsKey(filename.replaceAll(".xlsx", "")))
                         createForesightTestData(filename, product);
                     JSONObject jsonTemp = JsonPath.read(masterJson, "$." + clientName);
-                    if (jsonTemp.containsKey(modules)) {
+                    if (jsonTemp.containsKey(modules) && jurisdictionWiseReport.equalsIgnoreCase("Yes")) {
                         for (String state : jsonTemp.get(modules).toString().trim().split(", ")) {
                             createFeatureFile(clientName, modules, product, filename, state);
                             createRunnerFile(clientName, modules, state);
                         }
                     } else {
-                        createFeatureFile(clientName, modules, product, filename, "Alabama");
-                        createRunnerFile(clientName, modules, "Alabama");
+                        createFeatureFile(clientName, modules, product, filename, "All");
+                        createRunnerFile(clientName, modules, "All");
                     }
                 }
             }
@@ -93,133 +95,119 @@ public class ForeSightExcelToJSON_StepDefinitions {
     @Given("Create {string} file for eApp flow with file {string}")
     public void createForesightTestData(String excelFile, String product) {
         String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + excelFile;
+        JSONObject jsonRows = new JSONObject();
         String fieldList = "";
+
         try (FileInputStream file = new FileInputStream(filePath);
              XSSFWorkbook workbook = new XSSFWorkbook(file)) {
-            String states = "";
 
-            Sheet sheet = workbook.getSheet("Data List"); // Assuming data is in the first sheet
-            Iterator<Row> iterator = sheet.iterator();
+            processSheet(workbook.getSheet("Data List"), jsonRows);
+            processSheet(workbook.getSheet("Ceding Carrier Custom List"), jsonRows);
+            processJurisdictionMappingSheet(workbook.getSheet("ModulesJurisdictionMapping"), jsonRows);
+            processEAppWizardSpecSheet(workbook.getSheet("E-App Wizard Spec"), jsonRows, fieldList, product);
 
-            // Assuming the first row contains headers
-            Row headerRow = iterator.next().getSheet().getRow(0);
-            JSONObject jsonRows = new JSONObject();
-
-            while (iterator.hasNext()) {
-                Row currentRow = iterator.next();
-
-                // Create input file in json format
-                for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-                    Cell cell = currentRow.getCell(i);
-                    String excelValue = getCellValue(cell, jsonRows);
-                    if (!excelValue.isEmpty()) {
-                        if (jsonRows.containsKey(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")))
-                            jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), jsonRows.get(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")).toString() + ", " + excelValue);
-                        else
-                            jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), excelValue);
-                    }
-                }
-            }
-
-            sheet = workbook.getSheet("Ceding Carrier Custom List"); // Assuming data is in the first sheet
-            iterator = sheet.iterator();
-
-            // Assuming the first row contains headers
-            headerRow = iterator.next().getSheet().getRow(0);
-
-            while (iterator.hasNext()) {
-                Row currentRow = iterator.next();
-
-                // Create input file in json format
-                for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-                    Cell cell = currentRow.getCell(i);
-                    String excelValue = getCellValue(cell, jsonRows);
-                    if (!excelValue.isEmpty()) {
-                        if (jsonRows.containsKey(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")))
-                            jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), jsonRows.get(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")).toString() + ", " + excelValue);
-                        else
-                            jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), excelValue);
-                    }
-                }
-            }
-
-            sheet = workbook.getSheet("ModulesJurisdictionMapping"); // Assuming data is in the first sheet
-            iterator = sheet.iterator();
-
-            // Assuming the first row contains headers
-            headerRow = iterator.next().getSheet().getRow(0);
-            while (iterator.hasNext()) {
-                Row currentRow = iterator.next();
-                JSONObject tempJson = new JSONObject();
-
-                // Create input file in json format
-                for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-                    Cell cell = currentRow.getCell(i);
-                    String excelValue = getCellValue(cell, jsonRows);
-                    if (!excelValue.isEmpty())
-                        tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "").replaceAll("\n", ""), excelValue);
-                }
-                jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.JURISDICTION.getText())).getStringCellValue().trim(), tempJson);
-                String[] jurisdictionModules = tempJson.get("Module").toString().trim().split(", ");
-                for (String jurisdictionModule : jurisdictionModules) {
-                    jsonRows.putIfAbsent(jurisdictionModule, "Alabama");
-                    jsonRows.put(jurisdictionModule, jsonRows.get(jurisdictionModule).toString().contains(tempJson.get("Jurisdiction").toString()) ? jsonRows.get(jurisdictionModule) : jsonRows.get(jurisdictionModule) + ", " + tempJson.get("Jurisdiction"));
-                }
-                states += "," + tempJson.get("Jurisdiction").toString().trim();
-            }
-            jsonRows.put("JurisdictionRules", states.replaceFirst(",", ""));
-
-            sheet = workbook.getSheet("E-App Wizard Spec"); // Assuming data is in the first sheet
-            iterator = sheet.iterator();
-
-            // Assuming the first row contains headers
-            headerRow = iterator.next().getSheet().getRow(0);
-            while (iterator.hasNext()) {
-                Row currentRow = iterator.next();
-                JSONObject tempJson = new JSONObject();
-                JSONObject tempJsonReplacement;
-
-                // Create input file in json format
-                for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-                    if (requiredColumns.contains(headerRow.getCell(i).getStringCellValue().trim())) {
-
-                        Cell cell = currentRow.getCell(i);
-                        String excelValue = getCellValue(cell, jsonRows);
-                        System.out.println(excelValue);
-                        if (!excelValue.equalsIgnoreCase(""))
-                            tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "").replaceAll("\n", ""), excelValue);
-                    }
-                }
-                tempJsonReplacement = new JSONObject(tempJson);
-                if (tempJson.get("ModuleSectionName").equals("Replacements Module")) {
-                    List<String> numberExchanges = new ArrayList<>(Arrays.asList(jsonRows.get("NumberofExchanges/Transfers/Rollovers").toString().trim().split(", ")));
-                    numberExchanges.removeAll(Arrays.asList("Blank"));
-                    for (String exchange : numberExchanges) {
-                        tempJson.replaceAll((key, value) -> value.toString().replaceAll("X", exchange).replaceAll("Number_Transfers > 1", "Number_Transfers = " + exchange));
-                        jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim().replaceAll("X", exchange), tempJson);
-                        fieldList += ", " + currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim().replaceAll("X", exchange);
-                        tempJson = new JSONObject(tempJsonReplacement);
-                    }
-                } else {
-                    jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim(), tempJson);
-                    fieldList += ", " + currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim();
-                }
-            }
-            jsonRows.put("product", product);
-            jsonRows.put("fieldList", fieldList.replaceFirst(", ", ""));
             masterJson.put(excelFile.replaceAll(".xlsx", ""), jsonRows);
-
-            JSONObject defaultEntry = getJsonObject();
-
-            masterJson.put("commonTestData", defaultEntry);
-
+            masterJson.put("commonTestData", getJsonObject());
             jsonObject.put("testData", masterJson);
+
         } catch (IOException e) {
             e.printStackTrace();
         } catch (Exception e) {
             throw new FLException("Reading Properties File Failed" + e.getMessage());
         }
     }
+
+    private void processSheet(Sheet sheet, JSONObject jsonRows) {
+        Iterator<Row> iterator = sheet.iterator();
+        Row headerRow = iterator.next().getSheet().getRow(0);
+
+        while (iterator.hasNext()) {
+            Row currentRow = iterator.next();
+            extractRowData(headerRow, currentRow, jsonRows);
+        }
+    }
+
+    private void extractRowData(Row headerRow, Row currentRow, JSONObject jsonRows) {
+        for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+            Cell cell = currentRow.getCell(i);
+            String excelValue = getCellValue(cell, jsonRows);
+            if (!excelValue.isEmpty()) {
+                if (jsonRows.containsKey(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")))
+                    jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), jsonRows.get(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")).toString() + ", " + excelValue);
+                else
+                    jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), excelValue);
+            }
+        }
+    }
+
+    private void processJurisdictionMappingSheet(Sheet sheet, JSONObject jsonRows) {
+        Iterator<Row> iterator = sheet.iterator();
+        Row headerRow = iterator.next().getSheet().getRow(0);
+        String states = "";
+
+        while (iterator.hasNext()) {
+            Row currentRow = iterator.next();
+            JSONObject tempJson = new JSONObject();
+
+            for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+                Cell cell = currentRow.getCell(i);
+                String excelValue = getCellValue(cell, jsonRows);
+                if (!excelValue.isEmpty()) {
+                    tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "").replaceAll("\n", ""), excelValue);
+                }
+            }
+            jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.JURISDICTION.getText())).getStringCellValue().trim(), tempJson);
+
+            String[] jurisdictionModules = tempJson.get("Module").toString().trim().split(", ");
+            for (String jurisdictionModule : jurisdictionModules) {
+                jsonRows.putIfAbsent(jurisdictionModule, "Alabama");
+                jsonRows.put(jurisdictionModule, jsonRows.get(jurisdictionModule).toString().contains(tempJson.get("Jurisdiction").toString()) ? jsonRows.get(jurisdictionModule) : jsonRows.get(jurisdictionModule) + ", " + tempJson.get("Jurisdiction"));
+            }
+            states += "," + tempJson.get("Jurisdiction").toString().trim();
+        }
+        jsonRows.put("JurisdictionRules", states.replaceFirst(",", ""));
+    }
+
+    private void processEAppWizardSpecSheet(Sheet sheet, JSONObject jsonRows, String fieldList, String product) {
+        Row headerRow;
+        Iterator<Row> iterator = sheet.iterator();
+
+        // Assuming the first row contains headers
+        headerRow = iterator.next().getSheet().getRow(0);
+
+        while (iterator.hasNext()) {
+            Row currentRow = iterator.next();
+            JSONObject tempJson = new JSONObject();
+            JSONObject tempJsonReplacement;
+
+            for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+                if (requiredColumns.contains(headerRow.getCell(i).getStringCellValue().trim())) {
+                    Cell cell = currentRow.getCell(i);
+                    String excelValue = getCellValue(cell, jsonRows);
+                    if (!excelValue.isEmpty()) {
+                        tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "").replaceAll("\n", ""), excelValue);
+                    }
+                }
+            }
+            tempJsonReplacement = new JSONObject(tempJson);
+            if (tempJson.get("ModuleSectionName").equals("Replacements Module")) {
+                List<String> numberExchanges = new ArrayList<>(Arrays.asList(jsonRows.get("NumberofExchanges/Transfers/Rollovers").toString().trim().split(", ")));
+                numberExchanges.removeAll(Arrays.asList("Blank"));
+                for (String exchange : numberExchanges) {
+                    tempJson.replaceAll((key, value) -> value.toString().replaceAll("X", exchange).replaceAll("Number_Transfers > 1", "Number_Transfers = " + exchange));
+                    jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim().replaceAll("X", exchange), tempJson);
+                    fieldList += ", " + currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim().replaceAll("X", exchange);
+                    tempJson = new JSONObject(tempJsonReplacement);
+                }
+            } else {
+                jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim(), tempJson);
+                fieldList += ", " + currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim();
+            }
+        }
+        jsonRows.put("product", product);
+        jsonRows.put("fieldList", fieldList.replaceFirst(", ", ""));
+    }
+
 
     private void deleteRunnerFeature(String folderPath) {
         File folder = new File(folderPath);
@@ -245,7 +233,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
         List<String> listRules = new ArrayList<>();
         if (cell != null && cell.getCellType() == CellType.STRING && !(cell.getStringCellValue().trim().equalsIgnoreCase("None"))) {
             excelValue = cell.getStringCellValue().trim();
-            excelValue = excelValue.replaceAll("//", "/").replaceAll("[^\\x00-\\x7F]", "").replaceAll("\n", ";").replaceAll("=", " = ").replaceAll("<>", " <> ").replaceAll("“", "").replaceAll("\"", "").replaceAll("[\\s]+[.]+", ".").replaceAll("[\\s]+", " ").trim();
+            excelValue = excelValue.replaceAll("//", "/").replaceAll("[^\\x00-\\x7F^–]", "").replaceAll("–", "-").replaceAll("\n", ";").replaceAll("=", " = ").replaceAll("<>", " <> ").replaceAll("“", "").replaceAll("\"", "").replaceAll("[\\s]+[.]+", ".").replaceAll("[\\s]+", " ").trim();
             if (excelValue.contains(" OR ")) {
                 listRules = Arrays.asList(excelValue.split(";"));
                 for (String rule : listRules) {
