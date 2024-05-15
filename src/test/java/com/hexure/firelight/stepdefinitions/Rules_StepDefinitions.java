@@ -122,14 +122,16 @@ public class Rules_StepDefinitions extends FLUtilities {
         String[] States = testContext.getMapTestData().get("JurisdictionRules").split(",");
 
         String moduleJurisdictionMapping;
-        if (module.equalsIgnoreCase("All")) {
+        if (module.equalsIgnoreCase("All") || jurisdiction1.equalsIgnoreCase("All")) {
             for (String jurisdiction : States) {
                 skippedInvalidElements.clear();
                 moduleJurisdictionMapping = testContext.getMapTestData().get(jurisdiction).trim();
-                List<String> moduleValues = Arrays.asList(JsonPath.read(moduleJurisdictionMapping, "$.Module").toString().trim().split(", "));
+                String[] moduleValues = JsonPath.read(moduleJurisdictionMapping, "$.Module").toString().trim().split(", ");
                 jurisdictionStatesCode = JsonPath.read(moduleJurisdictionMapping, "$.State").toString().trim();
-                for (String moduleValue : moduleValues)
-                    createApplication(jurisdiction, product, productType, moduleValue);
+                for (String moduleValue : moduleValues) {
+                    if (moduleValue.equalsIgnoreCase(module) | moduleValue.equalsIgnoreCase("All"))
+                        createApplication(jurisdiction, product, productType, module);
+                }
             }
         } else {
             moduleJurisdictionMapping = testContext.getMapTestData().get(jurisdiction1).trim();
@@ -162,28 +164,30 @@ public class Rules_StepDefinitions extends FLUtilities {
         onCreateApplicationPage.getTxtBox_newAppName().sendKeys(newAppName);
         onCreateApplicationPage.getBtn_CreateActivity().click();
         waitForPageToLoad(driver);
+        validateWizard(module);
+    }
+
+    public void validateWizard(String module) {
         if (!onCreateApplicationPage.getLstBtnClose().isEmpty())
             clickElement(driver, onCreateApplicationPage.getBtnClose());
-        verify_form_data_with_inbound_XML_from_Excel_and_Xml(module);
+        verifyFormDataWithInboundXml(module);
         waitForPageToLoad(driver);
         clickElement(driver, onCreateApplicationPage.getBtnHome());
         clickElement(driver, onCreateApplicationPage.getBtnPopupOK());
         waitForPageToLoad(driver);
     }
 
-    public void verify_form_data_with_inbound_XML_from_Excel_and_Xml(String module) {
+    public void verifyFormDataWithInboundXml(String module) {
         String moduleNameValue;
-        int count = 0;
         Set<String> fieldList = new LinkedHashSet<>(Arrays.asList(testContext.getMapTestData().get("fieldList").split(", ")));
         for (String fieldName : fieldList) {
             moduleNameValue = JsonPath.read(testContext.getMapTestData().get(fieldName).trim(), "$.ModuleSectionName").toString().trim();
             if (module.equalsIgnoreCase(moduleNameValue) | module.equalsIgnoreCase("All")) {
-                fieldsEvaluated++;
                 wizardTesting(fieldName);
+                fieldsEvaluated++;
             }
         }
     }
-
     public boolean verifyValueExists(String condition, String result) {
         boolean flag = true;
         if (JsonPath.read(testContext.getMapTestData().get(condition).trim(), "$.WizardControlTypes").toString().trim().equalsIgnoreCase("dropdown"))
