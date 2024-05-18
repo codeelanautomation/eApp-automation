@@ -1,6 +1,8 @@
 package com.hexure.firelight.stepdefinitions;
 
-import com.hexure.firelight.libraies.Enums.EnumsJSONProp;
+import com.hexure.firelight.libraies.EnumsCommon;
+import com.hexure.firelight.libraies.FLUtilities;
+import com.hexure.firelight.libraies.TestContext;
 import com.hexure.firelight.pages.CommonMethodsPage;
 import com.hexure.firelight.pages.CreateApplicationPage;
 import com.hexure.firelight.pages.LoginPage;
@@ -8,22 +10,13 @@ import com.hexure.firelight.pages.SoftAssertionHandlerPage;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import cucumber.api.java.en.Given;
-import io.qameta.allure.Allure;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFCell;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import com.hexure.firelight.libraies.*;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.Select;
 
 import javax.swing.text.MaskFormatter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -53,13 +46,14 @@ public class Rules_StepDefinitions extends FLUtilities {
     List<List<String>> combinationConditionsValidations = new ArrayList<>();
     Map<String, String> howManyOperator = new HashMap<>();
     Map<String, String> howManyOperatorEnableCondition = new HashMap<>();
+    Map<String, String> howManyOperatorDisplayCondition = new HashMap<>();
     Map<String, String> howManyOperatorValidations = new HashMap<>();
     String jurisdictionStatesCode = "";
     List<String> displayEnableConditions = new ArrayList<>();
+    List<String> displayConditions = new ArrayList<>();
     List<String> skippedInvalidElements = new ArrayList<>();
     int fieldsEvaluated = 0;
     String executedJurisdiction = "";
-
 
     public Rules_StepDefinitions(TestContext context) {
         testContext = context;
@@ -70,52 +64,14 @@ public class Rules_StepDefinitions extends FLUtilities {
         onCreateApplicationPage = testContext.getPageObjectManager().getCreateApplicationPage();
     }
 
-    private int findColumnIndex(Row headerRow, String columnName) {
-        Iterator<Cell> cellIterator = headerRow.cellIterator();
-        while (cellIterator.hasNext()) {
-            Cell cell = cellIterator.next();
-            if (columnName.equalsIgnoreCase(getCellValue(cell))) {
-                return cell.getColumnIndex();
-            }
-        }
-        return -1; // Column not found
-    }
-
-    private String getCellValue(Cell cell) {
-        return cell == null ? "" : cell.toString().trim();
-    }
-
-    public String getExcelColumnValue(String excelFilePath, String sheetName, int rowIndex, int columnIndex) {
-        try {
-            Workbook workbook = WorkbookFactory.create(new File(excelFilePath));
-            Sheet sheet = workbook.getSheet(sheetName);
-
-            if (sheet == null) {
-                throw new IllegalArgumentException("Sheet '" + sheetName + "' not found in the workbook.");
-            }
-
-            Row row = sheet.getRow(rowIndex);
-            Cell cell = row.getCell(columnIndex);
-
-            String excelValue;
-            if (cell != null && cell.getCellType() == CellType.STRING) {
-                excelValue = cell.getStringCellValue();
-            } else if (cell != null && cell.getCellType() == CellType.NUMERIC) {
-                excelValue = String.valueOf(((XSSFCell) cell).getRawValue());
-            } else {
-                excelValue = "";
-            }
-            workbook.close();
-            return excelValue.trim();
-        } catch (FileNotFoundException e) {
-            // Handle the FileNotFoundException
-            System.err.println("Either File not found or File is Open " + excelFilePath);
-        } catch (Exception ignored) {
-            // Handle other exceptions
-        }
-        return null;
-    }
-
+    /**
+     * This method set parameters to create application based on available Jurisdictions per module
+     *
+     * @param product
+     * @param productType
+     * @param module
+     * @param jurisdiction1
+     */
     @Given("User clicks application for Product {string} and Product Type {string} and validate wizard fields for module {string} and jurisdiction {string}")
     public void createAppAndValidateWizard(String product, String productType, String module, String jurisdiction1) {
         captureScreenshot(driver, testContext, false);
@@ -141,6 +97,14 @@ public class Rules_StepDefinitions extends FLUtilities {
         printFinalResults();
     }
 
+    /**
+     * This method create Firelight application
+     *
+     * @param jurisdiction
+     * @param product
+     * @param productType
+     * @param module
+     */
     public void createApplication(String jurisdiction, String product, String productType, String module) {
         executedJurisdiction = jurisdiction;
         clickElement(driver, onCreateApplicationPage.getBtnApplication());
@@ -177,6 +141,10 @@ public class Rules_StepDefinitions extends FLUtilities {
         waitForPageToLoad(driver);
     }
 
+    /**
+     * This method will iterate over each field of a module and start validating it.
+     * @param module
+     */
     public void verifyFormDataWithInboundXml(String module) {
         String moduleNameValue;
         Set<String> fieldList = new LinkedHashSet<>(Arrays.asList(testContext.getMapTestData().get("fieldList").split(", ")));
@@ -188,45 +156,61 @@ public class Rules_StepDefinitions extends FLUtilities {
             }
         }
     }
-    public boolean verifyValueExists(String condition, String result) {
-        boolean flag = true;
-        if (JsonPath.read(testContext.getMapTestData().get(condition).trim(), "$.WizardControlTypes").toString().trim().equalsIgnoreCase("dropdown"))
-            if (!getOptions(testContext.getMapTestData().get(condition).trim(), JsonPath.read(testContext.getMapTestData().get(condition).trim(), "$.WizardControlTypes").toString().trim()).contains(result))
-                flag = false;
-        return flag;
+
+    /**
+     * get all options of a dropdown or a radio button
+     * @param valueDependentJson
+     * @param conditionalWizard
+     * @param result
+     * @return
+     */
+    public boolean verifyValueExists(String valueDependentJson, String conditionalWizard, String result) {
+        return !getOptions(valueDependentJson, conditionalWizard).contains(result);
     }
 
+    /**
+     * Verify if key (commontag) exists in an input JSON
+     * @param condition
+     * @return Blank if key exists else key itself
+     */
     public String findKeyExistsJSON(String condition) {
-        if (!testContext.getMapTestData().containsKey(condition))
-            return condition;
+        if (!testContext.getMapTestData().containsKey(condition)) return condition;
         return "";
     }
 
+    /**
+     * This will validate following sections if available : List Options, Rules Wizard, Length and Format.
+     * Under RulesWizard, while testing default values, it validates placeholder and validation rules too.
+     *
+     * @param field
+     */
     public void wizardTesting(String field) {
         String section = "";
-        String condition = "";
-        String expectedOperator = "";
+        String condition;
+        String expectedOperator;
         String expectedResult;
-        String conditionAnother;
-        String expectedResultAnother = "";
-        String conditionalOperator;
         String requiredFirstAttribute;
         String requiredSecondAttribute;
         String requiredAttributeValue;
         boolean expectedFlag;
         List<String> actualOptions;
-        List<String> expectedOptions = new ArrayList<>();
+        List<String> expectedOptions;
         List<String> listConditions;
         List<String> expectedResults;
         List<String> listFieldValueConditions;
         String dataType = "";
         String wizardControlType;
+        String displayedText;
         String reason;
         String order;
-        String testData;
+        String key;
+        String values;
+        String[] conditionValues;
+        String listConditionkeys;
+        List<String> invalidTag;
+        boolean conditionFlag;
         LinkedHashMap<String, List<String>> mapConditions = new LinkedHashMap<>();
-        List<String> allKeys = new ArrayList<>();
-        List<String> filteredElements = null;
+        List<String> allKeys;
         List<String> rulesList = Arrays.asList("ListOptions", "ValidationRules", "RulesWizard", "Length", "Format");
 
         String valueJson = testContext.getMapTestData().get(field).trim();
@@ -241,87 +225,44 @@ public class Rules_StepDefinitions extends FLUtilities {
             howManyOperator = new HashMap<>();
 
             if (valueJson.contains("WizardControlTypes") & !(field.toLowerCase().contains("lookup") | valueJson.toLowerCase().contains("hide for day") | commonTag.equalsIgnoreCase("No Tag") | commonTag.isEmpty())) {
-                if (valueJson.contains("Section\""))
-                    section = JsonPath.read(valueJson, "$.Section").toString().trim();
+                if (valueJson.contains("Section\"")) section = JsonPath.read(valueJson, "$.Section").toString().trim();
                 wizardControlType = JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim();
                 moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
-                if (verifyElementExists(valueJson, skippedInvalidElements, order, field)) {
-                    combinationConditions.clear();
-                    howManyOperator.clear();
+                if (verifyElementExists(valueJson, order, field, true, "")) {
                     for (String rule : rulesList) {
+                        combinationConditions.clear();
+                        howManyOperator.clear();
                         displayEnableConditions.clear();
+                        displayConditions.clear();
                         try {
                             switch (rule) {
+                                /** Verify dropdown/radio button options in UI matches with the ones provided in spec. **/
                                 case "ListOptions":
-                                    String displayedText = "";
-                                    String key = "";
-                                    String values = "";
-                                    String[] conditionValues;
                                     mapConditions.clear();
-                                    String listConditionkeys = "";
-                                    List<String> invalidTag = new ArrayList<>();
-                                    boolean conditionFlag = true;
-
                                     String options = JsonPath.read(valueJson, "$.ListOptions").toString().trim();
-                                    if (options.contains(";"))
-                                        expectedOptions = Arrays.asList(options.split(";"));
-                                    else if (testContext.getMapTestData().containsKey(options.replaceAll(" ", "")))
-                                        expectedOptions = Arrays.asList(testContext.getMapTestData().get(options.replaceAll(" ", "")).split(", "));
-                                    else
-                                        conditionFlag = false;
+                                    expectedOptions = getExpectedOptions(options);
+                                    if (!expectedOptions.isEmpty()) {
+                                        List<Object> invalidFlag = setInvalidTags(valueJson, "", "(\\S+)\\s*(=|<>|<|>)\\s*(.*)");
+                                        invalidTag = (List<String>) invalidFlag.get(0);
+                                        conditionFlag = (Boolean) invalidFlag.get(1);
 
-                                    if (conditionFlag) {
-                                        if (valueJson.contains("DisplayRules")) {
-                                            invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0]);
-                                            conditionFlag = setCombinationConditions(valueJson, "([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)");
-                                        }
                                         if (conditionFlag) {
                                             if (invalidTag.isEmpty()) {
                                                 if (combinationConditions.isEmpty()) {
                                                     verifyOptions(valueJson, field, expectedOptions, "", "List Options");
                                                 } else {
                                                     for (List<String> result : combinationConditions) {
-                                                        displayedText = " when ";
-                                                        for (String condition1 : result) {
-                                                            listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*: (.*)", "", condition1.trim());
-                                                            key = listFieldValueConditions.get(0).trim();
-                                                            values = listFieldValueConditions.get(1).trim();
-                                                            displayedText += key + " " + howManyOperator.get(key) + " " + values + " and ";
-                                                            listConditionkeys = findKeyExistsJSON(key);
-                                                            conditionFlag = true;
+                                                        List<String> flagInvalidKeys = setDependentConditions(result, "([^\\s]+)\\s*: (.*)", valueJson, order, field, "List Options");
+                                                        conditionFlag = Boolean.parseBoolean(flagInvalidKeys.get(1));
+                                                        listConditionkeys = flagInvalidKeys.get(0);
+                                                        displayedText = flagInvalidKeys.get(2);
 
-                                                            if (!(listConditionkeys.isEmpty() | listConditionkeys.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")))
-                                                                break;
-                                                            listConditionkeys = listConditionkeys.replaceAll("FLI_ISSUED_STATE_CODE", "");
-                                                            conditionalOperator = howManyOperator.get(key);
-                                                            if (howManyOperator.get(key).equals(">") & (values.matches("[0-9]+"))) {
-                                                                values = String.valueOf(Integer.parseInt(values) + 1);
-                                                                conditionalOperator = "=";
-                                                            } else if (howManyOperator.get(key).equals("<") & (values.matches("[0-9]+"))) {
-                                                                values = String.valueOf(Integer.parseInt(values) - 1);
-                                                                conditionalOperator = "=";
-                                                            }
-                                                            if (key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                                                                if (!((howManyOperator.get(key).equalsIgnoreCase("=") & values.equalsIgnoreCase(jurisdictionStatesCode)) | (howManyOperator.get(key).equalsIgnoreCase("<>") & !(values.equalsIgnoreCase(jurisdictionStatesCode)))))
-                                                                    conditionFlag = false;
-                                                            }
-                                                            if (!conditionFlag)
-                                                                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, "List Options", "Rule is applicable " + displayedText + " and not when state code is " + executedJurisdiction, testContext);
-                                                            else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                                                                if (!setDependentCondition(key, "=", valueJson, values, "List Options", displayedText)) {
-                                                                    conditionFlag = false;
-                                                                }
-                                                            }
-                                                        }
-                                                        if (displayedText.trim().endsWith("and"))
-                                                            displayedText = displayedText.substring(0, displayedText.length() - 4);
                                                         if (conditionFlag) {
                                                             if (listConditionkeys.isEmpty()) {
-                                                                if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim()))
-                                                                    moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
+                                                                verifyAndMoveToPage(valueJson);
                                                                 verifyOptions(valueJson, field, expectedOptions, displayedText, "List Options");
                                                             } else
-                                                                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, "List Options", "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                                                                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, "List Options", "Key " + listConditionkeys + " does not exists in JSON " + displayedText, testContext);
                                                         }
                                                     }
                                                     combinationConditions.clear();
@@ -335,22 +276,25 @@ public class Rules_StepDefinitions extends FLUtilities {
                                         onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, "List Options", "Data list does not contain \"" + options + "\"", testContext);
                                     break;
                                 case "RulesWizard":
-                                    conditionAnother = "";
+                                    /** Iterate over each rule of Rules Wizard column **/
                                     for (String distinctRule : JsonPath.read(valueJson, "$." + rule).toString().trim().split(";")) {
                                         distinctRule = distinctRule.replaceFirst("(\\d+\\.\\s*)?", "").trim().replaceFirst("\\.$", "").trim();
                                         System.out.println(order + ". " + field + " -> " + distinctRule);
-                                        if (!(distinctRule.toLowerCase().contains("lookup") | distinctRule.toLowerCase().contains("not required to use") | distinctRule.toLowerCase().contains("implemented then specify") | distinctRule.toLowerCase().contains("skip for automation"))) {
+                                        combinationConditions.clear();
+                                        combinationConditionsValidations.clear();
+                                        howManyOperatorValidations.clear();
+                                        howManyOperator.clear();
+                                        if (!(distinctRule.toLowerCase().contains("lookup") | distinctRule.toLowerCase().contains("not required to use") | distinctRule.toLowerCase().contains("implemented then specify") | distinctRule.toLowerCase().contains("skip for automation") | distinctRule.isEmpty())) {
+                                            enableDisplayCondition(valueJson, displayConditions, howManyOperatorDisplayCondition);
                                             invalidTag = getInvalidTags(skippedInvalidElements, distinctRule);
                                             if (invalidTag.isEmpty()) {
-                                                if (Pattern.compile("(\\d+\\.\\s*)?If (.*?),? then (?i)(SHOW|HIDE) (Options|Label as) (.*)\\.?").matcher(distinctRule).find()) {
-                                                    listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?),? then (?i)(SHOW|HIDE) (Options|Label as) (.*)\\.?", "", distinctRule);
+                                                /** Validate dropdown options or label of any text depending on given conditions **/
+                                                if (Pattern.compile("(\\d+\\.\\s*)?(?i)If (.*?),? (?i)then (?i)(SHOW|HIDE) (Options|Option|Label as) (.*)\\.?").matcher(distinctRule).find()) {
+                                                    listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?(?i)If (.*?),? (?i)then (?i)(SHOW|HIDE) (Options|Option|Label as) (.*)\\.?", "", distinctRule);
                                                     condition = listConditions.get(1);
                                                     expectedResult = listConditions.get(2);
                                                     requiredSecondAttribute = listConditions.get(4);
-                                                    key = values = "";
                                                     mapConditions.clear();
-                                                    listConditionkeys = "";
-                                                    displayedText = "";
                                                     conditionFlag = true;
 
                                                     for (String eachCondition : condition.trim().split(("(?i)(AND)"))) {
@@ -362,56 +306,21 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                         expectedOperator = listFieldValueConditions.get(1).trim();
                                                         conditionValues = listFieldValueConditions.get(2).trim().trim().split(", ");
                                                         howManyOperator.put(key, expectedOperator);
-                                                        // Add the key-value pairs to the map
-                                                        for (String value : conditionValues) {
-                                                            List<String> valuesList = mapConditions.getOrDefault(key, new ArrayList<>());
-                                                            valuesList.add(value.trim());
-                                                            mapConditions.put(key, valuesList);
-                                                        }
+                                                        mapConditions = setMapConditions(conditionValues, key, mapConditions);
                                                     }
                                                     if (conditionFlag) {
                                                         allKeys = new ArrayList<>(mapConditions.keySet());
                                                         generateCombinations(allKeys, new ArrayList<>(), mapConditions, "ListOptions");
 
                                                         for (List<String> result : combinationConditions) {
-                                                            displayedText = " when ";
-                                                            for (String condition1 : result) {
-                                                                listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*: (.*)", "", condition1.trim());
-                                                                key = listFieldValueConditions.get(0).trim();
-                                                                values = listFieldValueConditions.get(1).trim();
-                                                                listConditionkeys = findKeyExistsJSON(key);
-                                                                displayedText += key + " " + howManyOperator.get(key) + " " + values + " and ";
-                                                                conditionFlag = true;
+                                                            List<String> flagInvalidKeys = setDependentConditions(result, "([^\\s]+)\\s*: (.*)", valueJson, order, field, distinctRule);
+                                                            conditionFlag = Boolean.parseBoolean(flagInvalidKeys.get(1));
+                                                            listConditionkeys = flagInvalidKeys.get(0);
+                                                            displayedText = flagInvalidKeys.get(2);
 
-                                                                if (!(listConditionkeys.isEmpty() | listConditionkeys.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")))
-                                                                    break;
-                                                                listConditionkeys = listConditionkeys.replaceAll("FLI_ISSUED_STATE_CODE", "");
-                                                                conditionalOperator = howManyOperator.get(key);
-                                                                if (howManyOperator.get(key).equals(">") & (values.matches("[0-9]+"))) {
-                                                                    values = String.valueOf(Integer.parseInt(values) + 1);
-                                                                    conditionalOperator = "=";
-                                                                } else if (howManyOperator.get(key).equals("<") & (values.matches("[0-9]+"))) {
-                                                                    values = String.valueOf(Integer.parseInt(values) - 1);
-                                                                    conditionalOperator = "=";
-                                                                }
-                                                                if (key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                                                                    if (!((howManyOperator.get(key).equalsIgnoreCase("=") & values.equalsIgnoreCase(jurisdictionStatesCode)) | (howManyOperator.get(key).equalsIgnoreCase("<>") & !(values.equalsIgnoreCase(jurisdictionStatesCode)))))
-                                                                        conditionFlag = false;
-                                                                }
-                                                                if (!conditionFlag)
-                                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Rule is applicable " + displayedText + " and not when state code is " + executedJurisdiction, testContext);
-                                                                else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                                                                    if (!setDependentCondition(key, conditionalOperator, valueJson, values, distinctRule, displayedText)) {
-                                                                        conditionFlag = false;
-                                                                    }
-                                                                }
-                                                            }
-                                                            if (displayedText.trim().endsWith("and"))
-                                                                displayedText = displayedText.substring(0, displayedText.length() - 4);
                                                             if (conditionFlag) {
                                                                 if (listConditionkeys.isEmpty()) {
-                                                                    if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim()))
-                                                                        moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
+                                                                    verifyAndMoveToPage(valueJson);
                                                                     switch (wizardControlType) {
                                                                         case "Dropdown":
                                                                         case "State Dropdown":
@@ -427,134 +336,98 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Field is displayed under label" + displayedText, expectedValue, requiredSecondAttribute, expectedValue.replaceAll("’", "").equals(requiredSecondAttribute), testContext);
                                                                     }
                                                                 } else
-                                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON " + displayedText, testContext);
                                                             }
                                                         }
                                                         combinationConditions.clear();
                                                         howManyOperator.clear();
                                                     } else
                                                         onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "There must be consecutive ANDs in display rule", testContext);
-                                                } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?)(?:,)? then (.*)\\.?").matcher(distinctRule).find()) {
-                                                    List<String> listExpectedConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?)(?:,)? then (.*)\\.?", "", distinctRule);
+                                                } else if (Pattern.compile("(\\d+\\.\\s*)?(?i)If (.*?)(?:,)? (?i)then (.*)\\.?").matcher(distinctRule).find()) {
+                                                    /** Validates visibility coditions for a field based on some given conditions  **/
+                                                    List<String> listExpectedConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?(?i)If (.*?)(?:,)? (?i)then (.*)\\.?", "", distinctRule);
                                                     condition = listExpectedConditions.get(1);
                                                     expectedResults = Arrays.asList(listExpectedConditions.get(2).split(" (?i)AND "));
-                                                    key = values = "";
                                                     mapConditions.clear();
-                                                    listConditionkeys = "";
                                                     boolean hidden = false;
                                                     conditionFlag = true;
                                                     String secondParamter = "";
                                                     if (expectedResults.size() > 1)
                                                         secondParamter = expectedResults.get(1);
-                                                    if (secondParamter.equalsIgnoreCase("hide"))
-                                                        hidden = true;
+                                                    if (secondParamter.equalsIgnoreCase("hide")) hidden = true;
 
                                                     for (String eachCondition : condition.trim().split(("AND"))) {
                                                         listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)", "", eachCondition.trim());
                                                         conditionFlag = !(listFieldValueConditions.isEmpty());
-                                                        if (!conditionFlag)
+                                                        if (!conditionFlag) {
+                                                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "There must be consecutive ANDs in display rule", testContext);
                                                             break;
+                                                        }
                                                         key = listFieldValueConditions.get(0).trim();
+                                                        conditionFlag = setKeyDisplay(valueJson, key, order, field, distinctRule, "");
                                                         expectedOperator = listFieldValueConditions.get(1).trim();
                                                         conditionValues = listFieldValueConditions.get(2).trim().trim().split(", ");
                                                         howManyOperator.put(key, expectedOperator);
                                                         // Add the key-value pairs to the map
-                                                        for (String value : conditionValues) {
-                                                            List<String> valuesList = mapConditions.getOrDefault(key, new ArrayList<>());
-                                                            valuesList.add(value.trim());
-                                                            mapConditions.put(key, valuesList);
-                                                        }
+                                                        mapConditions = setMapConditions(conditionValues, key, mapConditions);
                                                     }
-
+                                                    combinationConditions.clear();
                                                     if (conditionFlag) {
                                                         allKeys = new ArrayList<>(mapConditions.keySet());
                                                         generateCombinations(allKeys, new ArrayList<>(), mapConditions, "RulesWizard");
 
                                                         for (List<String> result : combinationConditions) {
-                                                            displayedText = " when ";
-                                                            for (String condition1 : result) {
-                                                                listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*: (.*)", "", condition1.trim());
-                                                                key = listFieldValueConditions.get(0).trim();
-                                                                values = listFieldValueConditions.get(1).trim();
-                                                                if (secondParamter.equalsIgnoreCase("enable") & displayEnableConditions.isEmpty()) {
-                                                                    displayEnableConditions.addAll(result);
-                                                                    howManyOperatorEnableCondition = new HashMap<>(howManyOperator);
-                                                                }
+                                                            List<String> flagInvalidKeys = setDependentConditions(result, "([^\\s]+)\\s*: (.*)", valueJson, order, field, distinctRule);
+                                                            conditionFlag = Boolean.parseBoolean(flagInvalidKeys.get(1));
+                                                            listConditionkeys = flagInvalidKeys.get(0);
+                                                            displayedText = flagInvalidKeys.get(2);
 
-                                                                displayedText += key + howManyOperator.get(key) + values + " and ";
-                                                                listConditionkeys = findKeyExistsJSON(key);  // This listConditionkeys is verifying whether key exists in JSON
-                                                                conditionFlag = true;
-
-                                                                if (!(listConditionkeys.isEmpty() | listConditionkeys.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")))
-                                                                    break;
-                                                                listConditionkeys = listConditionkeys.replaceAll("FLI_ISSUED_STATE_CODE", "");
-                                                                conditionalOperator = howManyOperator.get(key);
-                                                                if (howManyOperator.get(key).equals(">") & (values.matches("[0-9]+"))) {
-                                                                    values = String.valueOf(Integer.parseInt(values) + 1);
-                                                                    conditionalOperator = "=";
-                                                                } else if (howManyOperator.get(key).equals("<") & (values.matches("[0-9]+"))) {
-                                                                    values = String.valueOf(Integer.parseInt(values) - 1);
-                                                                    conditionalOperator = "=";
-                                                                }
-                                                                if (key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                                                                    if (!((howManyOperator.get(key).equalsIgnoreCase("=") & values.equalsIgnoreCase(jurisdictionStatesCode)) | (howManyOperator.get(key).equalsIgnoreCase("<>") & !(values.equalsIgnoreCase(jurisdictionStatesCode)))))
-                                                                        conditionFlag = false;
-                                                                }
-                                                                if (!conditionFlag)
-                                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Rule is applicable " + displayedText + " and not when state code is " + executedJurisdiction, testContext);
-                                                                else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                                                                    if (!setDependentCondition(key, conditionalOperator, valueJson, values, distinctRule, displayedText)) {
-                                                                        conditionFlag = false;
-                                                                    }
-                                                                }
+                                                            if (secondParamter.equalsIgnoreCase("enable") & displayEnableConditions.isEmpty()) {
+                                                                displayEnableConditions.addAll(result);
+                                                                howManyOperatorEnableCondition = new HashMap<>(howManyOperator);
                                                             }
                                                             if (conditionFlag) {
                                                                 if (listConditionkeys.isEmpty()) {
-                                                                    if (displayedText.trim().endsWith("and"))
-                                                                        displayedText = displayedText.substring(0, displayedText.length() - 4);
-                                                                    if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
-                                                                        moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
+                                                                    if (verifyAndMoveToPage(valueJson)) {
                                                                         if (!getElements(valueJson, wizardControlType).isEmpty()) {
-                                                                            setVisibilityRules(expectedResults.get(0).trim(), valueJson, wizardControlType, order, field, secondParamter, distinctRule, result, displayedText);
+                                                                            setVisibilityRules(expectedResults.get(0).trim(), valueJson, wizardControlType, order, field, secondParamter, distinctRule, displayedText);
                                                                             if (!secondParamter.isEmpty())
-                                                                                setVisibilityRules(secondParamter.trim(), valueJson, wizardControlType, order, field, "", distinctRule, result, displayedText);
+                                                                                setVisibilityRules(secondParamter.trim(), valueJson, wizardControlType, order, field, "", distinctRule, displayedText);
                                                                         } else
                                                                             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Field does not exists" + displayedText, true, "true", true, testContext);
                                                                     } else
                                                                         onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, hidden, hidden, testContext);
                                                                 } else
-                                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON " + displayedText, testContext);
                                                             }
                                                         }
                                                         combinationConditions.clear();
                                                         howManyOperator.clear();
-                                                    } else
-                                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "There must be consecutive ANDs in display rule", testContext);
-                                                } else if (Pattern.compile("(\\d+\\.\\s*)?(Default|Placeholder) = (.*)\\.?").matcher(distinctRule).find()) {
-                                                    listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?(.*?) = (.*)\\.?", "", distinctRule);
+                                                    }
+                                                } else if (Pattern.compile("(\\d+\\.\\s*)?(?i)(Default|Placeholder) = (.*)\\.?").matcher(distinctRule).find()) {
+                                                    /** Validates Default value of a field
+                                                     * Also validate Placeholder value if given in spec and validation rules for each field **/
+                                                    listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?(?i)(Default|Placeholder) = (.*)\\.?", "", distinctRule);
                                                     requiredFirstAttribute = listConditions.get(1);
                                                     requiredAttributeValue = listConditions.get(2);
                                                     key = values = "";
                                                     mapConditions.clear();
-                                                    listConditionkeys = "";
                                                     displayedText = "";
-                                                    conditionFlag = true;
 
-                                                    if (valueJson.contains("DisplayRules"))
-                                                        conditionFlag = setCombinationConditions(valueJson, "(.*?) (=|<>|<|>) (.*)");
+                                                    List<Object> invalidFlag = setInvalidTags(valueJson, "", "(.*?) (=|<>|<|>) (.*)");
+                                                    conditionFlag = (Boolean) invalidFlag.get(1);
 
                                                     if (conditionFlag) {
                                                         if (combinationConditions.isEmpty()) {   //Display rules is not available for this field
-                                                            if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
-                                                                moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
+                                                            if (verifyAndMoveToPage(valueJson)) {
                                                                 if (!getElements(valueJson, wizardControlType).isEmpty()) {
                                                                     if (requiredFirstAttribute.equalsIgnoreCase("Placeholder"))
                                                                         handlePlaceholderRules(valueJson, "", "", field, requiredAttributeValue, distinctRule);
                                                                     else {
-                                                                        verifyData(valueJson, field, "", "", requiredAttributeValue, "", distinctRule);
+                                                                        verifyData(valueJson, field, requiredAttributeValue, "", distinctRule, displayedText, order);
                                                                         if (valueJson.contains("ValidationRules"))
                                                                             handleValidationRules(valueJson, "", "", field, order, displayedText);
-                                                                        handleSectionRules(valueJson, wizardControlType, section, order, field, "");
+                                                                        handleSectionRules(valueJson, wizardControlType, section, order, field, displayedText);
                                                                     }
                                                                 } else
                                                                     onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Field " + field + " does not exists", true, "true", true, testContext);
@@ -562,69 +435,26 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                 onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists", true, "true", true, testContext);
                                                         } else {
                                                             for (List<String> result : combinationConditions) {
-                                                                displayedText = " when ";
-                                                                for (String condition1 : result) {
-                                                                    listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*:\\s*(.*?)(?:;|$)", "", condition1.trim());
-                                                                    key = listFieldValueConditions.get(0).trim();
-                                                                    values = listFieldValueConditions.get(1).trim();
-                                                                    listConditionkeys = findKeyExistsJSON(key);
-                                                                    displayedText += key + " " + howManyOperator.get(key) + " " + values + " and ";
-                                                                    conditionFlag = true;
+                                                                List<String> flagInvalidKeys = setDependentConditions(result, "([^\\s]+)\\s*:\\s*(.*?)(?:;|$)", valueJson, order, field, distinctRule);
+                                                                conditionFlag = Boolean.parseBoolean(flagInvalidKeys.get(1));
+                                                                listConditionkeys = flagInvalidKeys.get(0);
+                                                                displayedText = flagInvalidKeys.get(2);
 
-                                                                    if (!(listConditionkeys.isEmpty() | listConditionkeys.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")))
-                                                                        break;
-                                                                    listConditionkeys = listConditionkeys.replaceAll("FLI_ISSUED_STATE_CODE", "");
-                                                                    conditionalOperator = howManyOperator.get(key);
-                                                                    if (howManyOperator.get(key).equals(">") & (values.matches("[0-9]+"))) {
-                                                                        values = String.valueOf(Integer.parseInt(values) + 1);
-                                                                        conditionalOperator = "=";
-                                                                    } else if (howManyOperator.get(key).equals("<") & (values.matches("[0-9]+"))) {
-                                                                        values = String.valueOf(Integer.parseInt(values) - 1);
-                                                                        conditionalOperator = "=";
-                                                                    }
-                                                                    if (key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                                                                        if (!((howManyOperator.get(key).equalsIgnoreCase("=") & values.equalsIgnoreCase(jurisdictionStatesCode)) | (howManyOperator.get(key).equalsIgnoreCase("<>") & !(values.equalsIgnoreCase(jurisdictionStatesCode)))))
-                                                                            conditionFlag = false;
-                                                                    }
-                                                                    if (!conditionFlag)
-                                                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Rule is applicable " + displayedText + " not when state code is " + executedJurisdiction, testContext);
-                                                                    else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                                                                        if (!setDependentCondition(key, conditionalOperator, valueJson, values, distinctRule, displayedText)) {
-                                                                            conditionFlag = false;
-                                                                        }
-                                                                    }
-                                                                }
-                                                                if (displayedText.trim().endsWith("and"))
-                                                                    displayedText = displayedText.substring(0, displayedText.length() - 4);
                                                                 if (conditionFlag) {
                                                                     if (listConditionkeys.isEmpty()) {
-                                                                        if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
-                                                                            moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
+                                                                        if (verifyAndMoveToPage(valueJson)) {
                                                                             if (requiredFirstAttribute.equalsIgnoreCase("Placeholder"))
                                                                                 handlePlaceholderRules(valueJson, "", "", field, requiredAttributeValue, distinctRule);
                                                                             else {
                                                                                 if (!getElements(valueJson, wizardControlType).isEmpty()) {
-                                                                                    switch (requiredAttributeValue.toLowerCase().trim()) {
-                                                                                        case "blank":
-                                                                                        case "united states":
-                                                                                            verifyData(valueJson, field, key, values, requiredAttributeValue, "", distinctRule);
-                                                                                            break;
-                                                                                        case "unselected":
-                                                                                        case "unchecked":
-                                                                                            for (WebElement element : getElements(valueJson, wizardControlType)) {
-                                                                                                expectedFlag = element.getAttribute("aria-checked").equalsIgnoreCase("false");
-                                                                                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, wizardControlType + " \"" + element.getAttribute("title") + "\" " + requiredAttributeValue.toLowerCase().trim() + " by default" + displayedText, expectedFlag, "true", expectedFlag, testContext);
-                                                                                            }
-                                                                                            break;
-                                                                                        default:
-                                                                                            verifyData(valueJson, field, key, values, requiredAttributeValue, "", distinctRule);
+                                                                                    if (displayConditions.isEmpty()) {
+                                                                                        displayConditions.addAll(result);
+                                                                                        howManyOperatorDisplayCondition = new HashMap<>(howManyOperator);
                                                                                     }
-                                                                                    if (key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                                                                                        if (!((howManyOperator.get(key).equalsIgnoreCase("=") & values.equalsIgnoreCase(jurisdictionStatesCode)) | (howManyOperator.get(key).equalsIgnoreCase("<>") & !(values.equalsIgnoreCase(jurisdictionStatesCode)))))
-                                                                                            conditionFlag = false;
-                                                                                    }
+                                                                                    verifyData(valueJson, field, requiredAttributeValue, "", distinctRule, displayedText, order);
+                                                                                    conditionFlag = verifyStateCodeRules(key, howManyOperator.get(key), values);
                                                                                     if (!conditionFlag)
-                                                                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, "List Options", "Rule is applicable " + displayedText + " and not when state code is " + executedJurisdiction, testContext);
+                                                                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, "List Options", "Rule is applicable " + displayedText + " not when state code is " + executedJurisdiction, testContext);
                                                                                     else {
                                                                                         if (valueJson.contains("ValidationRules"))
                                                                                             handleValidationRules(valueJson, key, values, field, order, displayedText);
@@ -636,7 +466,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                         } else
                                                                             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, "true", true, testContext);
                                                                     } else
-                                                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                                                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON " + displayedText, testContext);
                                                                 }
                                                             }
                                                             combinationConditions.clear();
@@ -645,58 +475,26 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                     } else
                                                         onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "There must be consecutive ANDs in display rule", testContext);
                                                 } else if (Pattern.compile("(\\d+\\.\\s*)?(Age is calculated on age last birth date|(?i)Always enabled|(?i)Always disable|Optional)\\.?").matcher(distinctRule).find()) {
+                                                    /** validates all other cases for a field **/
                                                     listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?(Age is calculated on age last birth date|(?i)Always enabled|(?i)Always disable|Optional)\\.?", "", distinctRule);
                                                     requiredAttributeValue = listConditions.get(1);
                                                     mapConditions.clear();
-                                                    key = values = "";
-                                                    listConditionkeys = "";
-                                                    displayedText = "";
-                                                    conditionFlag = true;
 
-                                                    if (valueJson.contains("DisplayRules"))
-                                                        conditionFlag = setCombinationConditions(valueJson, "([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)");
+                                                    List<Object> invalidFlag = setInvalidTags(valueJson, "", "([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)");
+                                                    conditionFlag = (Boolean) invalidFlag.get(1);
+
                                                     if (conditionFlag) {
                                                         switch (requiredAttributeValue.toLowerCase()) {
                                                             case "age is calculated on age last birth date":
                                                                 for (List<String> result : combinationConditions) {
-                                                                    displayedText = " when ";
-                                                                    for (String condition1 : result) {
-                                                                        listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*: (.*)", "", condition1.trim());
-                                                                        key = listFieldValueConditions.get(0).trim();
-                                                                        values = listFieldValueConditions.get(1).trim();
-                                                                        listConditionkeys = findKeyExistsJSON(key);
-                                                                        displayedText += key + " " + howManyOperator.get(key) + " " + values + " and ";
-                                                                        conditionFlag = true;
+                                                                    List<String> flagInvalidKeys = setDependentConditions(result, "([^\\s]+)\\s*: (.*)", valueJson, order, field, distinctRule);
+                                                                    conditionFlag = Boolean.parseBoolean(flagInvalidKeys.get(1));
+                                                                    listConditionkeys = flagInvalidKeys.get(0);
+                                                                    displayedText = flagInvalidKeys.get(2);
 
-                                                                        if (!(listConditionkeys.isEmpty() | listConditionkeys.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")))
-                                                                            break;
-                                                                        listConditionkeys = listConditionkeys.replaceAll("FLI_ISSUED_STATE_CODE", "");
-                                                                        conditionalOperator = howManyOperator.get(key);
-                                                                        if (howManyOperator.get(key).equals(">") & (values.matches("[0-9]+"))) {
-                                                                            values = String.valueOf(Integer.parseInt(values) + 1);
-                                                                            conditionalOperator = "=";
-                                                                        } else if (howManyOperator.get(key).equals("<") & (values.matches("[0-9]+"))) {
-                                                                            values = String.valueOf(Integer.parseInt(values) - 1);
-                                                                            conditionalOperator = "=";
-                                                                        }
-                                                                        if (key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                                                                            if (!((howManyOperator.get(key).equalsIgnoreCase("=") & values.equalsIgnoreCase(jurisdictionStatesCode)) | (howManyOperator.get(key).equalsIgnoreCase("<>") & !(values.equalsIgnoreCase(jurisdictionStatesCode)))))
-                                                                                conditionFlag = false;
-                                                                        }
-                                                                        if (!conditionFlag)
-                                                                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Rule is applicable " + displayedText + " and not when state code is " + executedJurisdiction, testContext);
-                                                                        else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                                                                            if (!setDependentCondition(key, "=", valueJson, values, distinctRule, displayedText)) {
-                                                                                conditionFlag = false;
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                    if (displayedText.trim().endsWith("and"))
-                                                                        displayedText = displayedText.substring(0, displayedText.length() - 4);
                                                                     if (conditionFlag) {
                                                                         if (listConditionkeys.isEmpty()) {
-                                                                            if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim()))
-                                                                                moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
+                                                                            verifyAndMoveToPage(valueJson);
                                                                             LocalDate birthDatePastMonth = todaysDate.minusYears(25).plusMonths(-1);
                                                                             LocalDate birthDateFutureMonth = todaysDate.minusYears(25).plusMonths(1);
                                                                             sendKeys(driver, getElement(valueJson, wizardControlType, null), birthDatePastMonth.format(format));
@@ -704,23 +502,26 @@ public class Rules_StepDefinitions extends FLUtilities {
                                                                             sendKeys(driver, getElement(valueJson, wizardControlType, null), birthDateFutureMonth.format(format));
                                                                             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Age" + displayedText + " and birth date is " + birthDateFutureMonth.format(formatWithSlash), "24", String.valueOf(calculateAge(birthDateFutureMonth, todaysDate)), String.valueOf(calculateAge(birthDateFutureMonth, todaysDate)).equalsIgnoreCase("24"), testContext);
                                                                         } else
-                                                                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                                                                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON " + displayedText, testContext);
                                                                     }
                                                                 }
                                                                 combinationConditions.clear();
                                                                 howManyOperator.clear();
                                                                 break;
                                                             case "always enabled":
+                                                                verifyAndMoveToPage(valueJson);
                                                                 expectedFlag = getElement(valueJson, wizardControlType, null).isEnabled();
                                                                 onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Field is always enabled", expectedFlag, "true", expectedFlag, testContext);
                                                                 break;
                                                             case "always disable":
+                                                                verifyAndMoveToPage(valueJson);
                                                                 for (WebElement element : getElements(valueJson, wizardControlType)) {
                                                                     expectedFlag = element.getAttribute("class").contains("disabled") | element.getAttribute("class").contains("readOnlyInput");
                                                                     onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Field is always disabled", expectedFlag, "true", expectedFlag, testContext);
                                                                 }
                                                                 break;
                                                             case "optional":
+                                                                verifyAndMoveToPage(valueJson);
                                                                 String error = clickRedBubble(valueJson);
                                                                 onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Optional Field Validation", error, "", error.isEmpty(), testContext);
                                                                 break;
@@ -736,50 +537,25 @@ public class Rules_StepDefinitions extends FLUtilities {
                                         } else
                                             onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, reason, testContext);
                                     }
+                                    enableDisplayCondition(valueJson, displayEnableConditions, howManyOperatorEnableCondition);
                                     break;
+                                /** Validates length and Format of a field **/
                                 case "Length":
-                                    invalidTag = new ArrayList<>();
-                                    if (valueJson.contains("DisplayRules"))
-                                        invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0]);
-                                    if (invalidTag.isEmpty()) {
-                                        if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank")) {
-                                            getAttributeValue(field, valueJson, order, wizardControlType, rule, "maxLength", "Length");
-                                        }
-                                    } else
-                                        onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
-                                    break;
                                 case "Format":
-                                    invalidTag = new ArrayList<>();
-                                    if (valueJson.contains("DisplayRules"))
-                                        invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0]);
+                                    List<Object> invalidFlag = setInvalidTags(valueJson, "", "(\\S+)\\s*(=|<>|<|>)\\s*(.*)");
+                                    invalidTag = (List<String>) invalidFlag.get(0);
+                                    String attribute = "maxLength";
+                                    if (rule.equalsIgnoreCase("format"))
+                                        attribute = "mask";
                                     if (invalidTag.isEmpty()) {
                                         if (!JsonPath.read(valueJson, "$." + rule).toString().trim().equalsIgnoreCase("blank")) {
-                                            getAttributeValue(field, valueJson, order, wizardControlType, rule, "mask", "Format");
+                                            getAttributeValue(field, valueJson, order, wizardControlType, rule, attribute);
                                         }
                                     } else
                                         onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
                                     break;
-                            }
-                            if (!displayEnableConditions.isEmpty()) {
-                                for (String condition1 : displayEnableConditions) {
-                                    listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*: (.*)", "", condition1.trim());
-                                    String key = listFieldValueConditions.get(0).trim();
-                                    String values = listFieldValueConditions.get(1).trim();
-                                    conditionalOperator = howManyOperatorEnableCondition.get(key);
-
-                                    if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                                        if (howManyOperatorEnableCondition.get(key).equals(">") & (values.matches("[0-9]+"))) {
-                                            values = String.valueOf(Integer.parseInt(values.replaceAll("%", "")) + 1);
-                                            conditionalOperator = "=";
-                                        } else if (howManyOperatorEnableCondition.get(key).equals("<") & (values.matches("[0-9]+"))) {
-                                            values = String.valueOf(Integer.parseInt(values.replaceAll("%", "")) - 1);
-                                            conditionalOperator = "=";
-                                        }
-                                        if (!(onCommonMethodsPage.getListErrors().isEmpty()))
-                                            clickElement(driver, onCommonMethodsPage.getRedColorErrorValidationBubble());
-                                        setDependentCondition(key, conditionalOperator, valueJson, values, "", "");
-                                    }
-                                }
+                                default:
+                                    throw new IllegalStateException("Unexpected value: " + rule);
                             }
                         } catch (PathNotFoundException e) {
                             System.out.println("Field " + field + " does not have rule \"" + rule + "\"");
@@ -791,19 +567,195 @@ public class Rules_StepDefinitions extends FLUtilities {
                     System.out.println("The skipped invalid elements" + skippedInvalidElements);
                 }
             } else {
-                if (!field.isEmpty())
-                    skippedInvalidElements.add(field);
+                if (!field.isEmpty()) skippedInvalidElements.add(field);
                 onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Either field is Lookup, hide for day 1 or has no wizard control type", testContext);
             }
         } else
             onSoftAssertionHandlerPage.assertSkippedElement(driver, "", executedJurisdiction, moduleName, field, "Field has No Tag", testContext);
     }
 
-    public void setVisibilityRules(String requiredAttribute, String valueJson, String wizardControlType, String order, String field, String secondAttribute, String distinctRule, List<String> result, String displayedText) {
+    /**
+     * It sets precondition to display or enable any field based on its given Display rule.
+     *
+     * @param valueJson
+     * @param conditions
+     * @param operators
+     */
+    public void enableDisplayCondition(String valueJson, List<String> conditions, Map<String, String> operators) {
+        if (!conditions.isEmpty()) {
+            for (String condition1 : conditions) {
+                List<String> listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*: (.*)", "", condition1.trim());
+                String key = listFieldValueConditions.get(0).trim();
+                String values = listFieldValueConditions.get(1).trim();
+                String conditionalOperator = operators.get(key);
+                setDisplayEnableConditions(key, values, conditionalOperator, valueJson, operators);
+            }
+        }
+    }
+
+    /**
+     * Perform action to Display or Enable a field
+     *
+     * @param key
+     * @param values
+     * @param conditionalOperator
+     * @param valueJson
+     * @param operators
+     */
+    public void setDisplayEnableConditions(String key, String values, String conditionalOperator, String valueJson, Map<String, String> operators) {
+        if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
+            List<String> valuesOperator = adjustValuesAndOperator(key, values, operators);
+            values = valuesOperator.get(0);
+            conditionalOperator = (valuesOperator.get(1).equalsIgnoreCase("")) ? conditionalOperator : valuesOperator.get(1);
+            if (!(onCommonMethodsPage.getListErrors().isEmpty()))
+                clickElement(driver, onCommonMethodsPage.getRedColorErrorValidationBubble());
+            setDependentCondition(key, conditionalOperator, valueJson, values, "", "");
+        }
+    }
+
+    /**
+     * A field may display or enable based on another fields. This method display/enable those dependent fields based on corresponding display rules.
+      * @param valueJson
+     * @param key
+     * @param order
+     * @param field
+     * @param distinctRule
+     * @param conditionCombination
+     * @return
+     */
+    public boolean setKeyDisplay(String valueJson, String key, String order, String field, String distinctRule, String conditionCombination) {
+        if (!(key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE") | key.matches("[0-9]+"))) {
+            boolean conditionFlag = findKeyExistsJSON(key).isEmpty();
+            if (!conditionFlag) {
+                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + key + " does not exists in JSON ", testContext);
+                return false;
+            }
+            String tempJson = testContext.getMapTestData().get(key);
+            if (verifyAndMoveToPage(tempJson)) {
+                if (getElements(tempJson, JsonPath.read(tempJson, "$.WizardControlTypes").toString().trim()).isEmpty())
+                    conditionFlag = verifyElementExists(tempJson, JsonPath.read(tempJson, "$.Order").toString().trim(), JsonPath.read(tempJson, "$.CommonTag").toString().trim(), false, conditionCombination);
+                if (!conditionFlag) {
+                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + key + " does not exists in UI ", testContext);
+                    return false;
+                }
+            }
+            verifyAndMoveToPage(valueJson);
+        }
+        return true;
+    }
+
+    /**
+     * Verify if a given page exists.
+     * If page exists, move to that page
+     *
+     * @param valueJson
+     * @return
+     */
+    public boolean verifyAndMoveToPage(String valueJson) {
+        if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
+            moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
+            waitForPageToLoad(driver);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * This sets precondition for each field to set dependent conditions while validating Rules
+     * Also checks if a rule is applicable to given Jurisdiction based on key "FLI_ISSUED_STATE_CODE:.
+     * Also sets text to be displayed in cucumber report - displayedText
+     * Also sets value to be set on a field based on logical operators specified in dependent conditions.
+     * If element is enabled, it sets the value else mark that rule as a skipped rule
+     * it also sets invalid value for a field
+     *
+     * @param result
+     * @param pattern
+     * @param valueJson
+     * @param order
+     * @param field
+     * @param distinctRule
+     * @return conditionFlag - false if any dependent condition fails such as page/field does not exists or rule not applicable else true
+     * displayedText - Text to be displayed in cucumber report
+     * listConditionkeys - if any key/commonTag does not exists in JSON or is skipped previously as it is not available in UI
+     */
+    public List<String> setDependentConditions(List<String> result, String pattern, String valueJson, String order, String field, String distinctRule) {
+        String displayedText = " when ";
+        List<String> listFieldValueConditions;
+        String conditionalOperator;
+        String listConditionkeys = "";
+        boolean conditionFlag = true;
+
+        for (String condition1 : result) {
+            listFieldValueConditions = getDisplayRuleConditions(valueJson, pattern, "", condition1.trim());
+            String key = listFieldValueConditions.get(0).trim();
+            String values = listFieldValueConditions.get(1).trim();
+            listConditionkeys = findKeyExistsJSON(key);
+
+            if (!(listConditionkeys.isEmpty() | listConditionkeys.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")))
+                break;
+            listConditionkeys = listConditionkeys.replaceAll("FLI_ISSUED_STATE_CODE", "");
+            conditionalOperator = howManyOperator.get(key);
+            List<String> valuesOperator = adjustValuesAndOperator(key, values, howManyOperator);
+            values = valuesOperator.get(0);
+            conditionalOperator = (valuesOperator.get(1).equalsIgnoreCase("")) ? conditionalOperator : valuesOperator.get(1);
+            conditionFlag = verifyStateCodeRules(key, howManyOperator.get(key), values);
+            displayedText += key + " " + howManyOperator.get(key) + " " + values + " and ";
+            if (!conditionFlag)
+                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Rule is applicable " + displayedText + " not when state code is " + executedJurisdiction, testContext);
+            else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
+                String valueDependentJson = testContext.getMapTestData().get(key);
+                if (verifyAndMoveToPage(valueDependentJson)) {
+                    if (verifyElementDisabled(valueDependentJson, values)) {
+                        if (!setDependentCondition(key, conditionalOperator, valueJson, values, distinctRule, displayedText))
+                            conditionFlag = false;
+                    } else {
+                        conditionFlag = false;
+                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Field " + key + " is disabled " + displayedText, testContext);
+                    }
+                } else
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, " Validations -> Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, false, false, testContext);
+            }
+        }
+        if (displayedText.trim().endsWith("and"))
+            displayedText = displayedText.substring(0, displayedText.length() - 4);
+        return Arrays.asList(listConditionkeys, String.valueOf(conditionFlag), displayedText);
+    }
+
+    /**
+     * Verify if element is disabled
+     *
+     * @param valueDependentJson
+     * @param result
+     * @return true if element is enabled else false
+     */
+    public boolean verifyElementDisabled(String valueDependentJson, String result) {
+        String conditionalWizard = JsonPath.read(valueDependentJson, "$.WizardControlTypes").toString();
+        WebElement elem;
+        if (conditionalWizard.equalsIgnoreCase("radio button"))
+            elem = getElement(valueDependentJson, conditionalWizard, result);
+        else
+            elem = getElement(valueDependentJson, conditionalWizard, "");
+        return (!(isAttributePresent(elem, "readonly") | isAttributePresent(elem, "disabled")));
+    }
+
+    /**
+     * This validates visibility rules for a field.
+     * If based on multiple conditions, value for a field is set to another field or given value, it validates the same.
+     *
+     * @param requiredAttribute
+     * @param valueJson
+     * @param wizardControlType
+     * @param order
+     * @param field
+     * @param secondAttribute
+     * @param distinctRule
+     * @param displayedText
+     */
+    public void setVisibilityRules(String requiredAttribute, String valueJson, String wizardControlType, String order, String field, String secondAttribute, String distinctRule, String displayedText) {
         boolean expectedFlag;
         WebElement elem;
 
-        if (Pattern.compile("SET ([^\\s]+)\\s* = (.*)").matcher(requiredAttribute).find()) {
+        if (Pattern.compile("SET (\\S+)\\s* = (.*)").matcher(requiredAttribute).find()) {
             List<String> listConditions = getDisplayRuleConditions(valueJson, "SET ([^\\s]+)\\s* = (.*)", "", requiredAttribute);
             String conditionFirst = listConditions.get(0);
             String expectedResultFirst = listConditions.get(1);
@@ -811,20 +763,19 @@ public class Rules_StepDefinitions extends FLUtilities {
             if (listConditionkeys.isEmpty()) {
                 if (testContext.getMapTestData().containsKey(expectedResultFirst)) {
                     String testData = setTestData(testContext.getMapTestData().get(expectedResultFirst).trim());
-                    if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
-                        moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
+                    if (verifyAndMoveToPage(valueJson)) {
                         if (!getElements(valueJson, wizardControlType).isEmpty()) {
                             setDependentCondition(expectedResultFirst, "=", valueJson, testData, distinctRule, displayedText);
-                            verifyData(testContext.getMapTestData().get(conditionFirst).trim(), field, result.get(0).split(":")[0].trim(), result.get(0).split(":")[1].trim(), prefilledValue, testData, distinctRule);
+                            verifyData(testContext.getMapTestData().get(conditionFirst).trim(), field, prefilledValue, testData, distinctRule, displayedText, order);
                             setDependentCondition(expectedResultFirst, "=", valueJson, "", distinctRule, displayedText);
                         } else
                             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Field " + conditionFirst + " does not exists" + displayedText, true, "true", true, testContext);
                     } else
                         onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, "true", true, testContext);
                 } else {
-                    if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
+                    if (verifyAndMoveToPage(valueJson)) {
                         if (!getElements(valueJson, wizardControlType).isEmpty()) {
-                            verifyData(testContext.getMapTestData().get(conditionFirst).trim(), field, result.get(0).split(":")[0].trim(), result.get(0).split(":")[1].trim(), expectedResultFirst, "", distinctRule);
+                            verifyData(testContext.getMapTestData().get(conditionFirst).trim(), field, expectedResultFirst, "", distinctRule, displayedText, order);
                         } else
                             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Field " + conditionFirst + " does not exists" + displayedText, true, "true", true, testContext);
                     } else
@@ -865,22 +816,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                     break;
                 case "set to self":
                 case "set to united states":
-                    verifyData(valueJson, field, "", "", getDisplayRuleConditions(valueJson, "set to (.*)", "", requiredAttribute.toLowerCase()).get(0), "", distinctRule);
+                    verifyData(valueJson, field, getDisplayRuleConditions(valueJson, "set to (.*)", "", requiredAttribute.toLowerCase()).get(0), "", distinctRule, displayedText, order);
                     break;
-//                case "prefilled with":
-//                    if (valueJson.contains("\"Format\"")) {
-//                        String format = JsonPath.read(valueJson, "$.Format").toString().trim().replaceAll("[a-zA-Z]", "#");
-//                        MaskFormatter formatter;
-//                        try {
-//                            formatter = new MaskFormatter(format);
-//                            formatter.setValueContainsLiteralCharacters(false);
-//                            prefilledValue = formatter.valueToString(prefilledValue);
-//                        } catch (ParseException ignored) {
-//                        }
-//                    }
-//                    verifyData(valueJson, field, result.get(0).split(":")[0].trim(), result.get(0).split(":")[1].trim(), prefilledValue, requiredAttribute, distinctRule);
-//                    setDependentCondition(dependentPrefilledCondition, "=", valueJson, "");
-//                    break;
                 case "hide":
                     expectedFlag = getElements(valueJson, wizardControlType).isEmpty();
                     onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Hidden Rule " + displayedText, expectedFlag, "true", expectedFlag, testContext);
@@ -897,56 +834,87 @@ public class Rules_StepDefinitions extends FLUtilities {
         }
     }
 
-    public boolean setCombinationConditions(String valueJson, String pattern) {
+    /**
+     * It creates multiple combinations of given conditions
+     * Example, For given rule " If Owner_Type = Individual, UTMA/UGMA AND Owner_DOB <60 then HIDE options Yes, No.". this will create following combinations:
+     *  Owner_Type: Individual, Owner_DOB<60
+     *  Owner_Yype: UTMA/UGMA, Owner_DOB<60
+     * @param valueJson
+     * @param pattern
+     * @param conditionCombination
+     * @return true if conditions are specified correctly else false
+     *
+     */
+    public boolean setCombinationConditions(String valueJson, String pattern, String conditionCombination) {
         List<String> listFieldValueConditions;
-        String key = "";
+        String key;
         String[] conditionValues;
-        String expectedOperator = "";
-        boolean conditionFlag = true;
+        String expectedOperator;
+        boolean conditionFlag;
         LinkedHashMap<String, List<String>> mapConditions = new LinkedHashMap<>();
-        List<String> allKeys = new ArrayList<>();
+        List<String> allKeys;
 
         for (String eachCondition : JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0].split(("AND"))) {
             listFieldValueConditions = getDisplayRuleConditions(valueJson, pattern, "", eachCondition.trim());
             conditionFlag = !(listFieldValueConditions.isEmpty());
-            if (!conditionFlag)
-                return false;
+            if (!conditionFlag) return false;
 
             key = listFieldValueConditions.get(0).trim();
             expectedOperator = listFieldValueConditions.get(1).trim();
             conditionValues = listFieldValueConditions.get(2).trim().trim().split(", ");
             howManyOperator.put(key, expectedOperator);
             // Add the key-value pairs to the map
-            for (String value : conditionValues) {
-                List<String> valuesList = mapConditions.getOrDefault(key, new ArrayList<>());
-                valuesList.add(value.trim());
-                mapConditions.put(key, valuesList);
-            }
+            mapConditions = setMapConditions(conditionValues, key, mapConditions);
         }
         allKeys = new ArrayList<>(mapConditions.keySet());
-        generateCombinations(allKeys, new ArrayList<>(), mapConditions, "");
+        generateCombinations(allKeys, new ArrayList<>(), mapConditions, conditionCombination);
         return true;
     }
 
+    /**
+     * validates given section for each field
+     * @param valueJson
+     * @param wizardControlType
+     * @param section
+     * @param order
+     * @param field
+     * @param displayedText
+     */
     public void handleSectionRules(String valueJson, String wizardControlType, String section, String order, String field, String displayedText) {
         section = section.replaceAll("X", "1");
         boolean expectedFlag = getElementSection(valueJson, wizardControlType, section);
         onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, "Section Information", "Field is displayed under section " + section + displayedText, expectedFlag, "true", expectedFlag, testContext);
     }
 
+    /**
+     * Calculates age based on given DOB from currentDate
+     * @param dob
+     * @param currentDate
+     * @return age as integer
+     */
     public int calculateAge(LocalDate dob, LocalDate currentDate) {
         return Period.between(dob, currentDate).getYears();
     }
 
+    /**
+     * Verify options of a dropdown/radio button
+     * @param valueJson
+     * @param field
+     * @param expectedOptions
+     * @param displayedText
+     * @param distinctRule
+     */
     public void verifyOptions(String valueJson, String field, List<String> expectedOptions, String displayedText, String distinctRule) {
         String dataType = JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim();
         List<String> actualOptions = getOptions(valueJson, dataType);
-        if (displayedText.isEmpty())
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, dataType + " Options", actualOptions, expectedOptions, actualOptions.containsAll(expectedOptions), testContext);
-        else
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, dataType + " Options" + displayedText, actualOptions, expectedOptions, actualOptions.containsAll(expectedOptions), testContext);
+        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, dataType + " Options" + displayedText, actualOptions, expectedOptions, actualOptions.containsAll(expectedOptions), testContext);
     }
 
+    /**
+     * Removes failed conditions from displayedText so that cucumber report shows correct dependent conditions
+     * @param displayedText
+     * @return displayedText
+     */
     public String removeUnsetCondition(String displayedText) {
         // Split the input string by "and" keyword
         String[] parts = displayedText.split("\\band\\b");
@@ -962,12 +930,23 @@ public class Rules_StepDefinitions extends FLUtilities {
         return output.toString();
     }
 
-
+    /**
+     * setDependentConditions sets the condition and its values. It
+     * This method actually sets the value for each condition.
+     * It checks if page exists, or value exists for given dropdown/radio button.
+     *
+     * @param condition
+     * @param expectedOperator
+     * @param valueJson
+     * @param result
+     * @param distinctRule
+     * @param displayedText
+     * @return true if a value is set for a given field
+     */
     public boolean setDependentCondition(String condition, String expectedOperator, String valueJson, String result, String distinctRule, String displayedText) {
         String valueDependentJson = testContext.getMapTestData().get(condition).trim();
         String conditionalWizard = JsonPath.read(valueDependentJson, "$.WizardControlTypes").toString().trim();
-        if (verifyPage(JsonPath.read(valueDependentJson, "$.Page").toString().trim(), JsonPath.read(valueDependentJson, "$.ModuleSectionName").toString().trim())) {
-            moveToPage(JsonPath.read(valueDependentJson, "$.Page").toString().trim(), JsonPath.read(valueDependentJson, "$.ModuleSectionName").toString().trim());
+        if (verifyAndMoveToPage(valueDependentJson)) {
             if (getElements(valueDependentJson, conditionalWizard).isEmpty()) {
                 displayedText = removeUnsetCondition(displayedText);
                 onSoftAssertionHandlerPage.assertSkippedRules(driver, JsonPath.read(valueJson, "$.Order").toString().trim(), executedJurisdiction, moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), distinctRule, "Key " + condition + " does not exists in UI " + displayedText, testContext);
@@ -975,30 +954,28 @@ public class Rules_StepDefinitions extends FLUtilities {
             }
 
             if (result.isEmpty() | result.equalsIgnoreCase("blank")) {
+                result = "Blank";
                 if (conditionalWizard.equalsIgnoreCase("dropdown")) {
-                    result = "Blank";
-                    if (!getOptions(valueDependentJson, conditionalWizard).contains(result)) {
+                    if (verifyValueExists(valueDependentJson, conditionalWizard, result)) {
                         onSoftAssertionHandlerPage.assertSkippedRules(driver, JsonPath.read(valueJson, "$.Order").toString().trim(), executedJurisdiction, moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), distinctRule, "Value " + result + " does not exist for " + conditionalWizard + " " + condition, testContext);
                         return false;
                     }
                 }
             } else if (conditionalWizard.equalsIgnoreCase("dropdown") | conditionalWizard.equalsIgnoreCase("radio button")) {
-                if (!getOptions(valueDependentJson, conditionalWizard).contains(result)) {
+                if (verifyValueExists(valueDependentJson, conditionalWizard, result)) {
                     onSoftAssertionHandlerPage.assertSkippedRules(driver, JsonPath.read(valueJson, "$.Order").toString().trim(), executedJurisdiction, moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), distinctRule, "Value " + result + " does not exist for " + conditionalWizard + " " + condition, testContext);
                     return false;
                 }
             }
             if (expectedOperator.equalsIgnoreCase("=")) {
-                WebElement elem = getElement(valueDependentJson, conditionalWizard, result);
-                if (!(isAttributePresent(elem, "readonly") | isAttributePresent(elem, "disabled"))) {
+                if (verifyElementDisabled(valueDependentJson, result)) {
                     if ((result.equalsIgnoreCase("selected") | result.equalsIgnoreCase("unselected")) && conditionalWizard.equalsIgnoreCase("checkbox"))
-                        return verifyCheckBoxSelectYesNO(result, elem);
+                        return verifyCheckBoxSelectYesNO(result, getElement(valueDependentJson, conditionalWizard, result));
                     else
                         setValue(valueDependentJson, result);
                 }
             } else if (expectedOperator.equalsIgnoreCase("<>")) {
-                WebElement elem = getElement(valueDependentJson, conditionalWizard, result);
-                if (!(isAttributePresent(elem, "readonly") | isAttributePresent(elem, "disabled")))
+                if (verifyElementDisabled(valueDependentJson, result))
                     setValue(valueDependentJson, "1");
             }
             waitForPageToLoad(driver);
@@ -1010,6 +987,12 @@ public class Rules_StepDefinitions extends FLUtilities {
         return true;
     }
 
+    /**
+     * Set value in a given field
+     *
+     * @param valueDependentJson
+     * @param result
+     */
     public void setValue(String valueDependentJson, String result) {
         waitForPageToLoad(driver);
         if (result.equalsIgnoreCase("Blank")) {
@@ -1022,11 +1005,9 @@ public class Rules_StepDefinitions extends FLUtilities {
                     Select elem = new Select(getElement(valueDependentJson, "dropdown", null));
                     elem.selectByIndex(Integer.parseInt(result));
                     prefilledValue = elem.getFirstSelectedOption().getText().trim();
-                    if (prefilledValue.equals("0"))
-                        elem.selectByIndex(Integer.parseInt(result) + 1);
+                    if (prefilledValue.equals("0")) elem.selectByIndex(Integer.parseInt(result) + 1);
                     prefilledValue = elem.getFirstSelectedOption().getText().trim();
-                } else
-                    new Select(getElement(valueDependentJson, "dropdown", null)).selectByVisibleText(result);
+                } else new Select(getElement(valueDependentJson, "dropdown", null)).selectByVisibleText(result);
                 syncElement(driver, getElement(valueDependentJson, "dropdown", null), EnumsCommon.TOCLICKABLE.getText());
                 break;
             case "checkbox":
@@ -1053,6 +1034,12 @@ public class Rules_StepDefinitions extends FLUtilities {
         sleepInMilliSeconds(1000);
     }
 
+    /**
+     * Reset/Clear each field
+     *
+     * @param valueDependentJson
+     * @param result
+     */
     public void resetValue(String valueDependentJson, String result) {
         waitForPageToLoad(driver);
         if (result.equalsIgnoreCase("Blank")) {
@@ -1088,6 +1075,30 @@ public class Rules_StepDefinitions extends FLUtilities {
         sleepInMilliSeconds(1000);
     }
 
+    /**
+     * Verify if rule is applicable to a given jurisdiction
+     *
+     * @param key
+     * @param operator
+     * @param values
+     * @return true if rule is applicable else false
+     */
+    private boolean verifyStateCodeRules(String key, String operator, String values) {
+        if (key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
+            boolean isEqualOperator = operator.equals("=");
+            boolean isNotEqualOperator = operator.equals("<>");
+
+            return ((isEqualOperator && values.equalsIgnoreCase(jurisdictionStatesCode)) || (isNotEqualOperator && !values.equalsIgnoreCase(jurisdictionStatesCode)));
+        }
+        return true;
+    }
+
+    /**
+     * Set test data for a field
+     *
+     * @param valueDependentJson
+     * @return testdata
+     */
     public String setTestData(String valueDependentJson) {
         String wizardControlType = JsonPath.read(valueDependentJson, "$.WizardControlTypes").toString().trim().toLowerCase();
         switch (wizardControlType) {
@@ -1108,6 +1119,11 @@ public class Rules_StepDefinitions extends FLUtilities {
         }
     }
 
+    /**
+     * move to a given page
+     * @param pageHeader
+     * @param formHeader
+     */
     public void moveToPage(String pageHeader, String formHeader) {
         waitForPageToLoad(driver);
         boolean flag = false;
@@ -1117,17 +1133,24 @@ public class Rules_StepDefinitions extends FLUtilities {
             for (WebElement element : mandetoryFormList) {
                 String form = element.getAttribute("innerText");
                 if (form.equals(pageHeader)) {
+                    clickElement(driver, onCommonMethodsPage.getFormHeader());
                     clickElement(driver, element);
                     flag = true;
                     break;
                 }
             }
-            if (!flag)
-                clickElementByJSE(driver, onCommonMethodsPage.getWizardPageNameCollapse());
+            if (!flag) clickElementByJSE(driver, onCommonMethodsPage.getWizardPageNameCollapse());
         }
         waitForPageToLoad(driver);
     }
 
+    /**
+     * Verify if a page exists
+     *
+     * @param pageHeader
+     * @param formHeader
+     * @return true if page exists else false
+     */
     public boolean verifyPage(String pageHeader, String formHeader) {
         boolean flag = false;
         waitForPageToLoad(driver);
@@ -1146,6 +1169,13 @@ public class Rules_StepDefinitions extends FLUtilities {
         return flag;
     }
 
+    /**
+     * verify if an element exists
+     *
+     * @param valueJson
+     * @param datatype
+     * @return list of web element
+     */
     public List<WebElement> getElements(String valueJson, String datatype) {
         String commonTag = JsonPath.read(valueJson, "$.CommonTag").toString().trim();
         switch (datatype.toLowerCase()) {
@@ -1165,6 +1195,30 @@ public class Rules_StepDefinitions extends FLUtilities {
         }
     }
 
+    /**
+     * Create map for each key and values pair
+     *
+     * @param conditionValues
+     * @param key
+     * @param mapConditions
+     * @return map
+     */
+    public LinkedHashMap<String, List<String>> setMapConditions(String[] conditionValues, String key, LinkedHashMap<String, List<String>> mapConditions) {
+        for (String value : conditionValues) {
+            List<String> valuesList = mapConditions.getOrDefault(key, new ArrayList<>());
+            valuesList.add(value.trim());
+            mapConditions.put(key, valuesList);
+        }
+        return mapConditions;
+    }
+
+    /**
+     *
+     * @param valueJson
+     * @param datatype
+     * @param optionalValue
+     * @return webelement
+     */
     public WebElement getElement(String valueJson, String datatype, String optionalValue) {
         String commonTag = JsonPath.read(valueJson, "$.CommonTag").toString().trim();
         switch (datatype.toLowerCase()) {
@@ -1200,6 +1254,12 @@ public class Rules_StepDefinitions extends FLUtilities {
         }
     }
 
+    /**
+     * @param valueJson
+     * @param datatype
+     * @param section
+     * @return section of each webelement
+     */
     public boolean getElementSection(String valueJson, String datatype, String section) {
         String commonTag = JsonPath.read(valueJson, "$.CommonTag").toString().trim();
         switch (datatype.toLowerCase()) {
@@ -1218,15 +1278,18 @@ public class Rules_StepDefinitions extends FLUtilities {
         }
     }
 
+    /**
+     *
+     * @param valueJson
+     * @param datatype
+     * @return label of each webelement
+     */
     public WebElement getElementLabel(String valueJson, String datatype) {
         String commonTag = JsonPath.read(valueJson, "$.CommonTag").toString().trim();
         switch (datatype.toLowerCase()) {
             case "dropdown":
             case "state dropdown":
                 return findElement(driver, String.format(onCommonMethodsPage.getLabelSelect(), commonTag));
-//            case "checkbox":
-//            case "radio button":
-//                return findElements(driver, String.format(onCommonMethodsPage.getLabelRadio(), commonTag)).size() > 0;
             case "multiline textbox":
             case "multi line text box":
                 return findElement(driver, String.format(onCommonMethodsPage.getLabelTextarea(), commonTag));
@@ -1235,6 +1298,12 @@ public class Rules_StepDefinitions extends FLUtilities {
         }
     }
 
+    /**
+     *
+     * @param valueJson
+     * @param dataType
+     * @return dropdown or radio button options
+     */
     public List<String> getOptions(String valueJson, String dataType) {
         List<String> actualOptions = new ArrayList<>();
         switch (dataType.toLowerCase()) {
@@ -1242,10 +1311,8 @@ public class Rules_StepDefinitions extends FLUtilities {
             case "state dropdown":
                 List<WebElement> dropdownOptions = new Select(getElement(valueJson, "dropdown", null)).getOptions();
                 for (WebElement element : dropdownOptions) {
-                    if (element.getText().isEmpty())
-                        actualOptions.add("Blank");
-                    else
-                        actualOptions.add(element.getText());
+                    if (element.getText().isEmpty()) actualOptions.add("Blank");
+                    else actualOptions.add(element.getText());
                 }
                 break;
             case "radio button":
@@ -1258,13 +1325,19 @@ public class Rules_StepDefinitions extends FLUtilities {
         return actualOptions;
     }
 
+    /**
+     *
+     * @param valueJson
+     * @param requiredPattern
+     * @param parameter
+     * @param distinctRule
+     * @return list of conditions based on given pattern and rule
+     */
     public List<String> getDisplayRuleConditions(String valueJson, String requiredPattern, String parameter, String distinctRule) {
         Pattern pattern = Pattern.compile(requiredPattern);
         Matcher matcher;
-        if (parameter.isEmpty())
-            matcher = pattern.matcher(distinctRule);
-        else
-            matcher = pattern.matcher(JsonPath.read(valueJson, "$." + parameter).toString().trim());
+        if (parameter.isEmpty()) matcher = pattern.matcher(distinctRule);
+        else matcher = pattern.matcher(JsonPath.read(valueJson, "$." + parameter).toString().trim());
 
         int count = 1;
         List<String> options = new ArrayList<>();
@@ -1277,200 +1350,217 @@ public class Rules_StepDefinitions extends FLUtilities {
         return options;
     }
 
-    public void verifyData(String valueJson, String field, String condition, String result, String requiredAttributeValue, String attribute, String distinctRule) {
+    /**
+     * Verify default/invalid value of a field
+     *
+     * @param valueJson
+     * @param field
+     * @param requiredAttributeValue
+     * @param attribute
+     * @param distinctRule
+     * @param displayedText
+     * @param order
+     */
+    public void verifyData(String valueJson, String field, String requiredAttributeValue, String attribute, String distinctRule, String displayedText, String order) {
         String expectedText;
-        try {
-            switch (JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim().toLowerCase()) {
-                case "state dropdown":
-                case "dropdown":
-                    expectedText = new Select(getElement(valueJson, "dropdown", null)).getFirstSelectedOption().getText().trim();
-                    if (expectedText.isEmpty())
-                        expectedText = requiredAttributeValue;
-                    printResults(condition, valueJson, field, requiredAttributeValue, expectedText, result, attribute, distinctRule);
-                    break;
-                case "radio button":
+
+        switch (JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim().toLowerCase()) {
+            case "state dropdown":
+            case "dropdown":
+                expectedText = new Select(getElement(valueJson, "dropdown", null)).getFirstSelectedOption().getText().trim();
+                if (expectedText.isEmpty())
+                    expectedText = requiredAttributeValue;
+                printResults(field, requiredAttributeValue, expectedText, attribute, distinctRule, displayedText, order);
+                break;
+            case "radio button":
+                if (!(requiredAttributeValue.toLowerCase().contains("checked") | requiredAttributeValue.equalsIgnoreCase("blank"))) {
+                    expectedText = getElement(valueJson, "Radio Button", requiredAttributeValue).getAttribute("aria-checked");
+                    if (expectedText.trim().equalsIgnoreCase("true"))
+                        requiredAttributeValue = "true";
+                    printResults(field, requiredAttributeValue, expectedText, attribute, distinctRule, displayedText, order);
+                } else {
                     List<WebElement> radioOptions = getElements(valueJson, "Radio Button");
                     for (WebElement element : radioOptions) {
                         expectedText = element.getAttribute("aria-checked");
-                        if (expectedText.equals("false") && requiredAttributeValue.equalsIgnoreCase("unchecked"))
-                            expectedText = requiredAttributeValue;
-                        else if (expectedText.equals("true") && requiredAttributeValue.equalsIgnoreCase("checked"))
-                            expectedText = requiredAttributeValue;
-                        printResults(field, valueJson, field, requiredAttributeValue, expectedText, element.getAttribute("title"), attribute, distinctRule);
+                        expectedText = getExpectedText(expectedText, requiredAttributeValue);
+                        displayedText += " and " + field + " is " + element.getAttribute("title");
+                        printResults(field, requiredAttributeValue, expectedText, attribute, distinctRule, displayedText, order);
                     }
-                    break;
-                case "checkbox":
-                    expectedText = getElement(valueJson, "checkbox", null).getAttribute("aria-checked");
-                    if (expectedText.equals("false") && requiredAttributeValue.equalsIgnoreCase("unchecked"))
-                        expectedText = requiredAttributeValue;
-                    else if (expectedText.equals("true") && requiredAttributeValue.equalsIgnoreCase("checked"))
-                        expectedText = requiredAttributeValue;
-                    printResults(condition, valueJson, field, requiredAttributeValue, expectedText, result, attribute, distinctRule);
-                    break;
-                case "multiline textbox":
-                case "multi line text box":
-                    expectedText = getElement(valueJson, "multiline textbox", null).getAttribute("value");
-                    if (expectedText.isEmpty())
-                        expectedText = requiredAttributeValue;
-                    printResults(condition, valueJson, field, requiredAttributeValue, expectedText, result, attribute, distinctRule);
-                    break;
-                default:
-                    expectedText = getElement(valueJson, "single line textbox", null).getAttribute("value");
-                    if (expectedText.isEmpty())
-                        expectedText = requiredAttributeValue;
-                    printResults(condition, valueJson, field, requiredAttributeValue, expectedText, result, attribute, distinctRule);
-                    break;
-            }
-        } catch (NullPointerException e) {
-            onSoftAssertionHandlerPage.assertNoElement(driver, field, condition + " = " + result, testContext);
+                }
+                break;
+            case "checkbox":
+                expectedText = getElement(valueJson, "checkbox", null).getAttribute("aria-checked");
+                expectedText = getExpectedText(expectedText, requiredAttributeValue);
+                printResults(field, requiredAttributeValue, expectedText, attribute, distinctRule, displayedText, order);
+                break;
+            case "multiline textbox":
+            case "multi line text box":
+                expectedText = getElement(valueJson, "multiline textbox", null).getAttribute("value");
+                if (expectedText.isEmpty())
+                    expectedText = requiredAttributeValue;
+                printResults(field, requiredAttributeValue, expectedText, attribute, distinctRule, displayedText, order);
+                break;
+            default:
+                expectedText = getElement(valueJson, "single line textbox", null).getAttribute("value");
+                if (expectedText.isEmpty() && requiredAttributeValue.equalsIgnoreCase("blank"))
+                    expectedText = requiredAttributeValue;
+                printResults(field, requiredAttributeValue, expectedText, attribute, distinctRule, displayedText, order);
+                break;
         }
     }
 
+    public String getExpectedText(String expectedText, String requiredAttributeValue) {
+        switch (expectedText + "_" + requiredAttributeValue.toLowerCase()) {
+            case "false_unchecked":
+            case "false_unselected":
+            case "true_checked":
+            case "true_selected":
+                expectedText = requiredAttributeValue;
+                break;
+            case "false_checked":
+                expectedText = "Unchecked";
+                break;
+            case "false_selected":
+                expectedText = "Unselected";
+                break;
+            case "true_unchecked":
+                expectedText = "Checked";
+                break;
+            case "true_unselected":
+                expectedText = "Selected";
+                break;
+        }
+        return expectedText;
+    }
+
+    /**
+     * Add element to skippedInvalidElements list if it does not exist in UI
+     * @param skippedInvalidElements
+     * @param valueJson
+     * @return
+     */
     public List<String> getInvalidTags(List<String> skippedInvalidElements, String valueJson) {
         return skippedInvalidElements.stream().filter(valueJson::contains).collect(Collectors.toList());
     }
 
-    public void printResults(String condition, String valueJson, String field, String requiredAttributeValue, String expectedText, String result, String attribute, String distinctRule) {
+    /**
+     * add assertions
+     * @param field
+     * @param requiredAttributeValue
+     * @param expectedText
+     * @param attribute
+     * @param distinctRule
+     * @param displayedText
+     * @param order
+     */
+    public void printResults(String field, String requiredAttributeValue, String expectedText, String attribute, String distinctRule, String displayedText, String order) {
         boolean flag = requiredAttributeValue.trim().equals(expectedText.trim());
-        if (condition.isEmpty()) {
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, "Default Value ", expectedText, requiredAttributeValue, flag, testContext);
-        } else if (attribute.equalsIgnoreCase("prefilled with"))
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, "Prefilled Value when " + condition + " is " + result, expectedText, requiredAttributeValue, flag, testContext);
+        if (attribute.equalsIgnoreCase("prefilled with"))
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Prefilled Value " + displayedText, expectedText, requiredAttributeValue, flag, testContext);
         else
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, "Default Value when " + condition + " is " + result, expectedText, requiredAttributeValue, flag, testContext);
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Default Value " + displayedText, expectedText, requiredAttributeValue, flag, testContext);
     }
 
-    public void getAttributeValue(String field, String valueJson, String order, String wizardControlType, String rule, String attribute, String distinctRule) {
-        List<String> listConditions;
-        String dependentCondition = "";
-        String dependentResult = "";
-        String conditionAnother = "";
-        String expectedResultAnother = "";
-        List<String> listFieldValueConditions = new ArrayList<>();
-        String key = "";
-        String[] conditionValues;
-        LinkedHashMap<String, List<String>> mapConditions = new LinkedHashMap<>();
-        List<String> allKeys = new ArrayList<>();
-        String values = "";
-        String listConditionkeys = "";
-        String displayedText = "";
-        boolean conditionFlag = true;
-        String conditionalOperator;
+    /**
+     * get value of an attribute maxlength or a mask for a field
+     * @param field
+     * @param valueJson
+     * @param order
+     * @param wizardControlType
+     * @param rule
+     * @param attribute
+     */
+    public void getAttributeValue(String field, String valueJson, String order, String wizardControlType, String rule, String attribute) {
+        String listConditionkeys;
+        String displayedText;
+        boolean conditionFlag;
 
         if (!valueJson.contains("DisplayRules")) {
-            if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
-                moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
+            if (verifyAndMoveToPage(valueJson)) {
                 if (!getElements(valueJson, wizardControlType).isEmpty())
-                    getLength(valueJson, attribute, rule, field, distinctRule, null);
+                    getLength(valueJson, attribute, rule, field, null);
                 else
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, rule + " Validations -> Field does not exists", true, "true", true, testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, rule, rule + " Validations -> Field does not exists", true, "true", true, testContext);
             } else
-                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, rule + " Validations -> Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists", true, false, false, testContext);
+                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, rule, rule + " Validations -> Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists", true, false, false, testContext);
         } else {
-            conditionFlag = setCombinationConditions(valueJson, "([^\\s]+)\\s* (=|<>|>|<) (.*)");
+            conditionFlag = setCombinationConditions(valueJson, "([^\\s]+)\\s* (=|<>|>|<) (.*)", "");
             if (conditionFlag) {
                 for (List<String> result : combinationConditions) {
-                    displayedText = " when ";
-                    for (String condition1 : result) {
-                        listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*: \\s*(.*?)(?:;|$)", "", condition1.trim());
-                        key = listFieldValueConditions.get(0).trim();
-                        values = listFieldValueConditions.get(1).trim();
-                        listConditionkeys = findKeyExistsJSON(key);
-                        displayedText += key + " " + howManyOperator.get(key) + " " + values + " and ";
-                        conditionFlag = true;
+                    List<String> flagInvalidKeys = setDependentConditions(result, "([^\\s]+)\\s*: \\s*(.*?)(?:;|$)", valueJson, order, field, rule);
+                    conditionFlag = Boolean.parseBoolean(flagInvalidKeys.get(1));
+                    listConditionkeys = flagInvalidKeys.get(0);
+                    displayedText = flagInvalidKeys.get(2);
 
-                        if (!(listConditionkeys.isEmpty() | listConditionkeys.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")))
-                            break;
-                        listConditionkeys = listConditionkeys.replaceAll("FLI_ISSUED_STATE_CODE", "");
-                        conditionalOperator = howManyOperator.get(key);
-                        if (howManyOperator.get(key).equals(">") & (values.matches("[0-9]+"))) {
-                            values = String.valueOf(Integer.parseInt(values) + 1);
-                            conditionalOperator = "=";
-                        } else if (howManyOperator.get(key).equals("<") & (values.matches("[0-9]+"))) {
-                            values = String.valueOf(Integer.parseInt(values) - 1);
-                            conditionalOperator = "=";
-                        }
-                        if (key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                            if (!((howManyOperator.get(key).equalsIgnoreCase("=") & values.equalsIgnoreCase(jurisdictionStatesCode)) | (howManyOperator.get(key).equalsIgnoreCase("<>") & !(values.equalsIgnoreCase(jurisdictionStatesCode)))))
-                                conditionFlag = false;
-                        }
-                        if (!conditionFlag)
-                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Rule is applicable " + displayedText + " and not when state code is " + executedJurisdiction, testContext);
-                        else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                            String valueDependentJson = testContext.getMapTestData().get(key).toString().trim();
-                            if (verifyPage(JsonPath.read(valueDependentJson, "$.Page").toString().trim(), JsonPath.read(valueDependentJson, "$.ModuleSectionName").toString().trim())) {
-                                moveToPage(JsonPath.read(valueDependentJson, "$.Page").toString().trim(), JsonPath.read(valueDependentJson, "$.ModuleSectionName").toString().trim());
-                                WebElement elem = getElement(valueDependentJson, JsonPath.read(valueDependentJson, "$.WizardControlTypes").toString(), "");
-                                if (!(isAttributePresent(elem, "readonly") | isAttributePresent(elem, "disabled"))) {
-                                    if (!setDependentCondition(key, conditionalOperator, valueJson, values, distinctRule, displayedText)) {
-                                        conditionFlag = false;
-                                    }
-                                } else {
-                                    conditionFlag = false;
-                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, "Length", "Field " + key + " is disabled", testContext);
-                                }
-                            } else
-                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, rule + " Validations -> Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, false, false, testContext);
-                        }
-                    }
-                    if (displayedText.trim().endsWith("and"))
-                        displayedText = displayedText.substring(0, displayedText.length() - 4);
                     if (conditionFlag) {
                         if (listConditionkeys.isEmpty()) {
-                            if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
-                                moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
+                            if (verifyAndMoveToPage(valueJson)) {
                                 if (!getElements(valueJson, wizardControlType).isEmpty()) {
-                                    WebElement elem = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes").toString(), "");
-                                    if (!(isAttributePresent(elem, "readonly") | isAttributePresent(elem, "disabled")))
-                                        getLength(valueJson, attribute, rule, field, distinctRule, displayedText);
+                                    if (verifyElementDisabled(valueJson, ""))
+                                        getLength(valueJson, attribute, rule, field, displayedText);
                                     else
                                         onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, "Length", "Field is disabled", testContext);
                                 } else
-                                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, rule + " Validations -> Field does not exists" + displayedText, true, "true", true, testContext);
+                                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, rule, rule + " Validations -> Field does not exists" + displayedText, true, "true", true, testContext);
                             } else
-                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, rule + " Validations -> Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, false, false, testContext);
+                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, rule, rule + " Validations -> Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, false, false, testContext);
                         } else
-                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, rule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
                     }
                 }
                 combinationConditions.clear();
                 howManyOperator.clear();
             } else
-                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "There must be consecutive ANDs in display rule", testContext);
+                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, rule, "There must be consecutive ANDs in display rule", testContext);
         }
     }
 
-    public void getLength(String valueJson, String attribute, String rule, String field, String distinctRule, String displayedText) {
+    /**
+     * Enter digits and verify format for a field
+     *
+     * @param valueJson
+     * @param attribute
+     * @param rule
+     * @param field
+     * @param displayedText
+     */
+    public void getLength(String valueJson, String attribute, String rule, String field, String displayedText) {
         boolean expectedFlag;
 
         if (JsonPath.read(valueJson, "$.WizardControlTypes").toString().equalsIgnoreCase("email")) {
             sendKeys(driver, getElement(valueJson, "input", null), JsonPath.read(valueJson, "$.Format").toString());
             expectedFlag = findElements(driver, String.format(onCommonMethodsPage.getInputErrorField(), JsonPath.read(valueJson, "$.CommonTag").toString().trim())).isEmpty();
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, "Format of " + field + " is " + JsonPath.read(valueJson, "$.Format").toString(), expectedFlag, "true", expectedFlag, testContext);
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, rule, "Format of " + field + " is " + JsonPath.read(valueJson, "$.Format").toString(), expectedFlag, "true", expectedFlag, testContext);
         } else {
             try {
                 String expectedText = getElement(valueJson, "input", null).getAttribute(attribute);
 
-                if (expectedText.equals("99/99/9999"))
-                    expectedText = "MM/dd/yyyy";
-                if (rule.equalsIgnoreCase("format"))
-                    expectedText = expectedText.replaceAll("9", "#");
+                if (expectedText.equals("99/99/9999")) expectedText = "MM/dd/yyyy";
+                if (rule.equalsIgnoreCase("format")) expectedText = expectedText.replaceAll("9", "#");
 
                 if (combinationConditions.isEmpty())
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, rule, expectedText, JsonPath.read(valueJson, "$." + rule).toString().trim(), expectedText.equalsIgnoreCase(JsonPath.read(valueJson, "$." + rule).toString().trim()), testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, rule, rule, expectedText, JsonPath.read(valueJson, "$." + rule).toString().trim(), expectedText.equalsIgnoreCase(JsonPath.read(valueJson, "$." + rule).toString().trim()), testContext);
                 else
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, rule + displayedText, expectedText, JsonPath.read(valueJson, "$." + rule).toString().trim(), expectedText.equalsIgnoreCase(JsonPath.read(valueJson, "$." + rule).toString().trim()), testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, rule, rule + displayedText, expectedText, JsonPath.read(valueJson, "$." + rule).toString().trim(), expectedText.equalsIgnoreCase(JsonPath.read(valueJson, "$." + rule).toString().trim()), testContext);
 
-                WebElement elem = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes").toString(), "");
-                if (!(isAttributePresent(elem, "readonly") | isAttributePresent(elem, "disabled")))
-                    handleTextLengthFields(valueJson, rule, field, distinctRule, displayedText, combinationConditions);
+                if (verifyElementDisabled(valueJson, ""))
+                    handleTextLengthFields(valueJson, rule, field, displayedText, combinationConditions);
             } catch (NullPointerException e) {
-                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, "Field does not have attribute " + attribute, "", JsonPath.read(valueJson, "$." + rule).toString().trim(), false, testContext);
+                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, rule, "Field does not have attribute " + attribute, "", JsonPath.read(valueJson, "$." + rule).toString().trim(), false, testContext);
             }
         }
     }
 
-    public void handleTextLengthFields(String valueJson, String rule, String field, String distinctRule, String displayedText, List<List<String>> combinationConditions) {
+    /**
+     * Enter digits of different length to test length and format of each field
+     *
+     * @param valueJson
+     * @param rule
+     * @param field
+     * @param displayedText
+     * @param combinationConditions
+     */
+    public void handleTextLengthFields(String valueJson, String rule, String field, String displayedText, List<List<String>> combinationConditions) {
         int attributeValue = Integer.parseInt(JsonPath.read(valueJson, "$.Length").toString().trim());
         String allowedChars = "9";
         String expectedText;
@@ -1486,8 +1576,7 @@ public class Rules_StepDefinitions extends FLUtilities {
                     setValue(valueJson, temp);
                     expectedText = getElement(valueJson, "single line textbox", null).getAttribute("value");
                     error = clickRedBubble(valueJson);
-                    if (length == attributeValue + 1)
-                        temp = temp.substring(0, temp.length() - 1);
+                    if (length == attributeValue + 1) temp = temp.substring(0, temp.length() - 1);
 
                     if (valueJson.contains("\"Format\"")) {
                         format = JsonPath.read(valueJson, "$.Format").toString().trim().replaceAll("[a-zA-Z]", "#");
@@ -1499,43 +1588,53 @@ public class Rules_StepDefinitions extends FLUtilities {
                     if (length == attributeValue - 1) {
                         if (error.isEmpty() & expectedText.isEmpty()) {
                             if (combinationConditions.isEmpty())
-                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, rule + " validations when length is " + length, "Not a mandatory field or value less than given length", temp, true, testContext);
+                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, rule, rule + " validations when length is " + length, "Not a mandatory field or value less than given length", temp, true, testContext);
                             else
-                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, rule + " validations " + displayedText + " and length is " + length, "Not a mandatory field or value less than given length", temp, true, testContext);
+                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, rule, rule + " validations " + displayedText + " and length is " + length, "Not a mandatory field or value less than given length", temp, true, testContext);
                         } else if (error.isEmpty()) {
                             if (combinationConditions.isEmpty())
-                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, rule + " validations when length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
+                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, rule, rule + " validations when length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
                             else
-                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, rule + " validations " + displayedText + " and length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
+                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, rule, rule + " validations " + displayedText + " and length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
                         } else {
                             if (combinationConditions.isEmpty())
-                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, rule + " validations when length is " + length, error, error, true, testContext);
+                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, rule, rule + " validations when length is " + length, error, error, true, testContext);
                             else
-                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, rule + " validations " + displayedText + " and length is " + length, error, error, true, testContext);
+                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, rule, rule + " validations " + displayedText + " and length is " + length, error, error, true, testContext);
                         }
                     } else {
                         if (combinationConditions.isEmpty())
-                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, rule + " validations when length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
+                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, rule, rule + " validations when length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
                         else
-                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, rule + " validations " + displayedText + " and length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
+                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, rule, rule + " validations " + displayedText + " and length is " + length, expectedText, temp, expectedText.equalsIgnoreCase(temp), testContext);
                     }
                 }
-                setValue(valueJson, "");
             } else {
                 temp = RandomStringUtils.random(attributeValue, allowedChars);
                 setValue(valueJson, temp);
                 expectedText = getElement(valueJson, "single line textbox", null).getAttribute("value");
                 expectedFormat = getElement(valueJson, "single line textbox", null).getAttribute("mask");
                 if (combinationConditions.isEmpty())
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, rule + "validations when length is " + attributeValue, expectedText, expectedFormat, expectedText.equalsIgnoreCase(expectedFormat), testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, rule, rule + "validations when length is " + attributeValue, expectedText, expectedFormat, expectedText.equalsIgnoreCase(expectedFormat), testContext);
                 else
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, rule + " validations " + displayedText + " and length is " + attributeValue, expectedText, expectedFormat, expectedText.equalsIgnoreCase(expectedFormat), testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, rule, rule + " validations " + displayedText + " and length is " + attributeValue, expectedText, expectedFormat, expectedText.equalsIgnoreCase(expectedFormat), testContext);
             }
+            setValue(valueJson, "");
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
     }
 
+    /**
+     * Verify placeholder for a given field
+     *
+     * @param valueJson
+     * @param dependentCondition
+     * @param dependentResult
+     * @param field
+     * @param requiredAttributeValue
+     * @param distinctRule
+     */
     public void handlePlaceholderRules(String valueJson, String dependentCondition, String dependentResult, String field, String requiredAttributeValue, String distinctRule) {
         String expectedAttribute = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes"), "").getAttribute("placeholder");
         if (dependentCondition.isEmpty())
@@ -1545,33 +1644,41 @@ public class Rules_StepDefinitions extends FLUtilities {
 
     }
 
+    /**
+     * Handle validation rules.
+     * Iterate over each validation rule and validate the same
+     *
+     * @param valueJson
+     * @param dependentCondition
+     * @param dependentResult
+     * @param field
+     * @param order
+     * @param displayedText
+     */
     public void handleValidationRules(String valueJson, String dependentCondition, String dependentResult, String field, String order, String displayedText) {
         String displayedTextNew = displayedText;
         for (String distinctRule : JsonPath.read(valueJson, "$.ValidationRules").toString().trim().split((";"))) {
             displayedText = displayedTextNew;
             distinctRule = distinctRule.replaceFirst("(\\d+\\.\\s*)?", "").trim();
             System.out.println(order + ". " + field + " -> " + distinctRule);
-            String expectedResult;
             String condition, key, values;
             String expectedOperator = "";
-            String listConditionkeys = "";
-            List<String> expectedResults = new ArrayList<>();
+            String listConditionkeys;
             LinkedHashMap<String, List<String>> mapConditions = new LinkedHashMap<>();
-            List<String> allKeys = new ArrayList<>();
-            boolean conditionFlag = true;
-            List<String> listFieldValueConditions = new ArrayList<>();
+            List<String> allKeys;
+            boolean conditionFlag;
+            List<String> listFieldValueConditions;
             String[] conditionValues;
-            String conditionalOperator = "";
+            String conditionalOperator;
             String wizardControlType = JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim();
-            String requiredErrorMessage = "";
+            String requiredErrorMessage;
 
             if (!(dependentCondition.isEmpty() | dependentCondition.equals("FLI_ISSUED_STATE_CODE")))
                 setDependentCondition(dependentCondition, howManyOperator.get(dependentCondition), valueJson, dependentResult, distinctRule, displayedText);
-            if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim()))
-                moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
+            verifyAndMoveToPage(valueJson);
 
-            if (Pattern.compile("(\\d+\\.\\s*)?If (.*?) results in an age that is less than (.*?) or greater than (.*?),? then (.*?): (.*)").matcher(distinctRule).find()) {
-                List<String> listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?) results in an age that is less than (.*?) or greater than (.*?),? then (.*?): (.*)", "", distinctRule);
+            if (Pattern.compile("(\\d+\\.\\s*)?(?i)If (.*?) results in an age that is less than (.*?) or greater than (.*?),? (?i)then (.*?): (.*)").matcher(distinctRule).find()) {
+                List<String> listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?(?i)If (.*?) results in an age that is less than (.*?) or greater than (.*?),? (?i)then (.*?): (.*)", "", distinctRule);
                 String minValue = listConditions.get(2);
                 String maxValue = listConditions.get(3);
                 requiredErrorMessage = listConditions.get(5);
@@ -1592,24 +1699,26 @@ public class Rules_StepDefinitions extends FLUtilities {
                     onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, "Validation Rule -> Error message when " + displayedText + " and age is " + calculateAge(dob, todaysDate) + " and DOB is " + dob.format(formatWithSlash), error, requiredErrorMessage, calculateAge(dob, todaysDate) < Integer.parseInt(maxValue), testContext);
                 } else
                     onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
-            } else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?)(?:,)? then (.*?): (.*)\\.?").matcher(distinctRule).find()) {
-                List<String> listExpectedConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?If (.*?)(?:,)? then (.*?): (.*)\\.?", "", distinctRule);
+            } else if (Pattern.compile("(\\d+\\.\\s*)?(?i)If (.*?)(?:,)? (?i)then (.*?): (.*)\\.?").matcher(distinctRule).find()) {
+                /** Validate error message based on dependent conditions **/
+                List<String> listExpectedConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?(?i)If (.*?)(?:,)? (?i)then (.*?): (.*)\\.?", "", distinctRule);
                 condition = listExpectedConditions.get(1).trim().replaceAll("FLI_EFFECTIVE_DATE - ", "");
                 requiredErrorMessage = listExpectedConditions.get(3);
-                mapConditions.clear();
                 listConditionkeys = "";
                 boolean hidden = false;
                 conditionFlag = true;
-                String secondParamter = "";
+                boolean conditionAnotherFlag = true;
                 String tempCondition = "";
                 String tempOperator = "";
                 String[] tempValues = new String[0];
                 boolean conditionFlagCompare = true;
+                List<String> dateFields = Arrays.asList("dob", "date", "mm/dd/yyyy");
 
                 for (String eachCondition : condition.trim().split(("AND"))) {
-                    if (Pattern.compile("([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)").matcher(eachCondition.trim()).find()) {
-                        listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)", "", eachCondition.trim());
+                    if (Pattern.compile("(\\S+)\\s*(=|>=|<=|<>|<|>)\\s*(.*)").matcher(eachCondition.trim()).find()) {
+                        listFieldValueConditions = getDisplayRuleConditions(valueJson, "(\\S+)\\s*(=|>=|<=|<>|<|>)\\s*(.*)", "", eachCondition.trim());
                         key = listFieldValueConditions.get(0).trim();
+                        conditionAnotherFlag = setKeyDisplay(valueJson, key, order, field, distinctRule, "ValidationRules");
                         expectedOperator = listFieldValueConditions.get(1).trim();
                         conditionValues = listFieldValueConditions.get(2).trim().trim().split(", ");
                         if (tempCondition.equalsIgnoreCase(key) & tempOperator.equals(">") & expectedOperator.equals("<")) {
@@ -1619,106 +1728,86 @@ public class Rules_StepDefinitions extends FLUtilities {
                             tempCondition = key;
                             tempValues = conditionValues;
                             tempOperator = expectedOperator;
-
                             howManyOperatorValidations.put(key, expectedOperator);
                             // Add the key-value pairs to the map
-                            for (String value : conditionValues) {
-                                List<String> valuesList = mapConditions.getOrDefault(key, new ArrayList<>());
-                                valuesList.add(value.trim());
-                                mapConditions.put(key, valuesList);
-                            }
+                            mapConditions = setMapConditions(conditionValues, key, mapConditions);
                         }
                     } else
                         conditionFlag = false;
                 }
+                combinationConditionsValidations.clear();
+                if (conditionAnotherFlag) {
+                    if (conditionFlag) {
+                        allKeys = new ArrayList<>(mapConditions.keySet());
+                        generateCombinations(allKeys, new ArrayList<>(), mapConditions, "ValidationRules");
 
-                if (conditionFlag) {
-                    allKeys = new ArrayList<>(mapConditions.keySet());
-                    generateCombinations(allKeys, new ArrayList<>(), mapConditions, "ValidationRules");
+                        for (List<String> result : combinationConditionsValidations) {
+                            displayedText = displayedTextNew;
+                            for (String condition1 : result) {
+                                listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*: (.*)", "", condition1.trim());
+                                key = listFieldValueConditions.get(0).trim();
+                                values = listFieldValueConditions.get(1).trim();
+                                listConditionkeys = findKeyExistsJSON(key);  // This listConditionkeys is verifying whether key exists in JSON
+                                conditionFlag = true;
 
-                    for (List<String> result : combinationConditionsValidations) {
-                        for (String condition1 : result) {
-                            listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*: (.*)", "", condition1.trim());
-                            key = listFieldValueConditions.get(0).trim();
-                            values = listFieldValueConditions.get(1).trim();
-                            displayedText += " and " + key + howManyOperatorValidations.get(key) + values;
-                            listConditionkeys = findKeyExistsJSON(key);  // This listConditionkeys is verifying whether key exists in JSON
-                            conditionFlag = true;
-
-                            if (listConditionkeys.matches("[0-9]+")) {
-                                if (howManyOperatorValidations.get(key).equalsIgnoreCase(">"))
-                                    conditionFlagCompare = Integer.parseInt(key) > Integer.parseInt(values);
-                                else if (howManyOperatorValidations.get(key).equalsIgnoreCase("<"))
-                                    conditionFlagCompare = Integer.parseInt(key) < Integer.parseInt(values);
-                                else if (howManyOperatorValidations.get(key).equalsIgnoreCase("="))
-                                    conditionFlagCompare = Integer.parseInt(key) == Integer.parseInt(values);
-                                else if (howManyOperatorValidations.get(key).equalsIgnoreCase("<>"))
-                                    conditionFlagCompare = Integer.parseInt(key) != Integer.parseInt(values);
-                                listConditionkeys = listConditionkeys.replaceAll("[0-9]+", "");
-                            } else {
-                                if (!(listConditionkeys.isEmpty() | listConditionkeys.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")))
-                                    break;
-                                listConditionkeys = listConditionkeys.replaceAll("FLI_ISSUED_STATE_CODE", "");
-                                conditionalOperator = howManyOperatorValidations.get(key);
-                                if (howManyOperatorValidations.get(key).equals(">") & (values.matches("[0-9]+"))) {
-                                    values = String.valueOf(Integer.parseInt(values) + 1);
-                                    conditionalOperator = "=";
-                                } else if (howManyOperatorValidations.get(key).equals("<") & (values.matches("[0-9]+"))) {
-                                    values = String.valueOf(Integer.parseInt(values) - 1);
-                                    conditionalOperator = "=";
+                                if (findKeyExistsJSON(values).isEmpty() && dateFields.contains(JsonPath.read(testContext.getMapTestData().get(key).trim(), "$.WizardControlTypes").toString().trim().toLowerCase())) {
+                                    if (!setDependentCondition(values, "=", valueJson, todaysDate.format(format), distinctRule, displayedText))
+                                        conditionFlag = false;
+                                    values = "current date";
                                 }
-                                if (key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                                    if (!((howManyOperatorValidations.get(key).equalsIgnoreCase("=") & values.equalsIgnoreCase(jurisdictionStatesCode)) | (howManyOperatorValidations.get(key).equalsIgnoreCase("<>") & !(values.equalsIgnoreCase(jurisdictionStatesCode)))))
-                                        conditionFlag = false;
-                                }
-                                if (!conditionFlag)
-                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Rule is applicable " + displayedText + " and not when state code is " + executedJurisdiction, testContext);
-                                else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                                    List<String> dateFields = Arrays.asList("dob", "date", "mm/dd/yyyy");
-                                    List<String> dateCondition = new ArrayList<>();
-                                    String inputValue = "";
-
-                                    if (!(values.equalsIgnoreCase("blank")) & (values.equalsIgnoreCase("invalid") | values.equalsIgnoreCase("current date") | dateFields.contains(JsonPath.read(testContext.getMapTestData().get(key).trim(), "$.WizardControlTypes").toString().trim().toLowerCase()))) {
-                                        inputValue = getInvalidValue(values, expectedOperator, valueJson, field, distinctRule, requiredErrorMessage, testContext);
-                                        displayedText += "input is " + inputValue;
-                                        conditionalOperator = "=";
-                                        if (!(dateCondition.isEmpty())) {
-                                            if (dateCondition.get(1).equalsIgnoreCase("months"))
-                                                expectedResult = "current date";
-                                        }
-                                    } else
-                                        inputValue = values;
-                                    if (inputValue.equalsIgnoreCase("fail")) {
-                                        conditionFlag = false;
-                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "No value found for " + values + displayedText, testContext);
-                                    } else if (!setDependentCondition(key, conditionalOperator, valueJson, inputValue, distinctRule, displayedText))
-                                        conditionFlag = false;
+                                if (listConditionkeys.matches("[0-9]+")) {
+                                    conditionFlagCompare = compareValues(key, values);
+                                    listConditionkeys = listConditionkeys.replaceAll("[0-9]+", "");
+                                } else {
+                                    if (!(listConditionkeys.isEmpty() | listConditionkeys.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")))
+                                        break;
+                                    listConditionkeys = listConditionkeys.replaceAll("FLI_ISSUED_STATE_CODE", "");
+                                    conditionalOperator = howManyOperatorValidations.get(key);
+                                    List<String> valuesOperator = adjustValuesAndOperator(key, values, howManyOperatorValidations);
+                                    values = valuesOperator.get(0);
+                                    conditionalOperator = (valuesOperator.get(1).equalsIgnoreCase("")) ? conditionalOperator : valuesOperator.get(1);
+                                    conditionFlag = verifyStateCodeRules(key, howManyOperatorValidations.get(key), values);
+                                    displayedText += " and " + key + howManyOperatorValidations.get(key) + values;
+                                    if (!conditionFlag)
+                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Rule is applicable " + displayedText + " not when state code is " + executedJurisdiction, testContext);
+                                    else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
+                                        String inputValue;
+                                        if (!(values.equalsIgnoreCase("blank")) & (values.equalsIgnoreCase("invalid") | values.equalsIgnoreCase("current date") | dateFields.contains(JsonPath.read(testContext.getMapTestData().get(key).trim(), "$.WizardControlTypes").toString().trim().toLowerCase()))) {
+                                            inputValue = getInvalidValue(values, expectedOperator, valueJson, field, distinctRule, requiredErrorMessage, testContext);
+                                            displayedText += " and input is " + inputValue;
+                                            conditionalOperator = "=";
+                                        } else
+                                            inputValue = values;
+                                        if (inputValue.equalsIgnoreCase("fail")) {
+                                            conditionFlag = false;
+                                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "No value found for " + values + displayedText, testContext);
+                                        } else if (!setDependentCondition(key, conditionalOperator, valueJson, inputValue, distinctRule, displayedText))
+                                            conditionFlag = false;
+                                    }
                                 }
                             }
-                        }
 
-
-                        if (conditionFlag) {
-                            if (listConditionkeys.isEmpty()) {
-                                if (displayedText.trim().endsWith("and"))
-                                    displayedText = displayedText.substring(0, displayedText.length() - 4);
-                                if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
-                                    moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
-                                    if (!getElements(valueJson, wizardControlType).isEmpty()) {
-                                        handleErrorMessage(valueJson, requiredErrorMessage, field, distinctRule, order, displayedText, conditionFlagCompare);
+                            if (conditionFlag) {
+                                if (listConditionkeys.isEmpty()) {
+                                    if (displayedText.trim().endsWith("and"))
+                                        displayedText = displayedText.substring(0, displayedText.length() - 4);
+                                    if (verifyAndMoveToPage(valueJson)) {
+                                        if (!getElements(valueJson, wizardControlType).isEmpty()) {
+                                            handleErrorMessage(valueJson, requiredErrorMessage, field, distinctRule, displayedText, conditionFlagCompare);
+                                        } else
+                                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Field does not exists" + displayedText, true, "true", true, testContext);
                                     } else
-                                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Field does not exists" + displayedText, true, "true", true, testContext);
+                                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, hidden, hidden, testContext);
                                 } else
-                                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, hidden, hidden, testContext);
-                            } else
-                                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                            }
                         }
-                    }
-                    combinationConditionsValidations.clear();
-                    mapConditions.clear();
-                    howManyOperatorValidations.clear();
-                } else
-                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Condition " + condition + " does not match expected criteria", testContext);
+                        combinationConditionsValidations.clear();
+                        mapConditions.clear();
+                        howManyOperatorValidations.clear();
+                    } else
+                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Condition " + condition + " does not match expected criteria", testContext);
+                }
             } else {
                 System.out.println("Rule " + distinctRule + " does not match any criteria for field " + field);
                 onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Validation rules does not match any criteria", testContext);
@@ -1726,7 +1815,36 @@ public class Rules_StepDefinitions extends FLUtilities {
         }
     }
 
-    public void handleErrorMessage(String valueJson, String requiredErrorMessage, String field, String distinctRule, String order, String displayedText, boolean conditionFlagCompare) {
+    /**
+     * Compare integer values
+     *
+     * @param key
+     * @param values
+     * @return true if condition is satisfied else false
+     */
+    public boolean compareValues(String key, String values) {
+        if (howManyOperatorValidations.get(key).equalsIgnoreCase(">"))
+            return Integer.parseInt(key) > Integer.parseInt(values);
+        else if (howManyOperatorValidations.get(key).equalsIgnoreCase("<"))
+            return Integer.parseInt(key) < Integer.parseInt(values);
+        else if (howManyOperatorValidations.get(key).equalsIgnoreCase("="))
+            return Integer.parseInt(key) == Integer.parseInt(values);
+        else if (howManyOperatorValidations.get(key).equalsIgnoreCase("<>"))
+            return Integer.parseInt(key) != Integer.parseInt(values);
+        return true;
+    }
+
+    /**
+     * validates error message
+     *
+     * @param valueJson
+     * @param requiredErrorMessage
+     * @param field
+     * @param distinctRule
+     * @param displayedText
+     * @param conditionFlagCompare
+     */
+    public void handleErrorMessage(String valueJson, String requiredErrorMessage, String field, String distinctRule, String displayedText, boolean conditionFlagCompare) {
         String inputValue = "";
         List<String> dateFields = Arrays.asList("dob", "date", "mm/dd/yyyy");
         String error;
@@ -1739,19 +1857,27 @@ public class Rules_StepDefinitions extends FLUtilities {
                 onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, "Validation Rule -> Value Validation " + displayedText, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
             sendKeys(driver, getElement(valueJson, "single line textbox", null), "");
         } else {
-            if (conditionFlagCompare == false)
-                requiredErrorMessage = "";
+            if (!conditionFlagCompare) requiredErrorMessage = "";
             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, "Validation Rule -> " + displayedText, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
             if (JsonPath.read(valueJson, "$.WizardControlTypes").toString().equals("Radio Button")) {
                 resetValue(valueJson, inputValue);
             } else {
-                WebElement elem = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes").toString(), "");
-                if (!(isAttributePresent(elem, "readonly") | isAttributePresent(elem, "disabled")))
-                    resetValue(valueJson, "");
+                if (verifyElementDisabled(valueJson, "")) resetValue(valueJson, "");
             }
         }
     }
 
+    /**
+     *
+     * @param expectedResult
+     * @param expectedOperator
+     * @param valueJson
+     * @param field
+     * @param distinctRule
+     * @param requiredErrorMessage
+     * @param testContext
+     * @return invalidValue for a given field
+     */
     public String getInvalidValue(String expectedResult, String expectedOperator, String valueJson, String field, String distinctRule, String requiredErrorMessage, TestContext testContext) {
         try {
             List<String> dateCondition = new ArrayList<>();
@@ -1784,6 +1910,8 @@ public class Rules_StepDefinitions extends FLUtilities {
                         return todaysDate.format(format);
                     case ">":
                         return todaysDate.plusDays(1).format(format);
+                    case "<":
+                        return todaysDate.minusDays(1).format(format);
                 }
             } else if (dateFields.contains(JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim().toLowerCase())) {
                 if (expectedResult.toLowerCase().contains(" "))
@@ -1808,6 +1936,11 @@ public class Rules_StepDefinitions extends FLUtilities {
         return "";
     }
 
+    /**
+     * Click red bubble
+     * @param valueJson
+     * @return error message
+     */
     public String clickRedBubble(String valueJson) {
         waitForPageToLoad(driver);
         String error;
@@ -1816,8 +1949,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             if (onCommonMethodsPage.getListErrors().isEmpty())
                 clickElement(driver, onCommonMethodsPage.getRedColorErrorValidationBubble());
             if (!(JsonPath.read(valueJson, "$.WizardControlTypes").toString().equals("Checkbox") | JsonPath.read(valueJson, "$.WizardControlTypes").toString().equals("Radio Button"))) {
-                WebElement elem = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes").toString(), "");
-                if (!(isAttributePresent(elem, "readonly") | isAttributePresent(elem, "disabled")))
+                if (verifyElementDisabled(valueJson, ""))
                     clickElement(driver, getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes").toString(), JsonPath.read(valueJson, "$.WizardControlTypes").toString()));
             }
 
@@ -1830,6 +1962,16 @@ public class Rules_StepDefinitions extends FLUtilities {
         return error;
     }
 
+    /**
+     * validate invalid values for an email field
+     *
+     * @param valueJson
+     * @param field
+     * @param requiredErrorMessage
+     * @param distinctRule
+     *
+     * @return invalidValue
+     */
     public String validateInvalidEmail(String valueJson, String field, String requiredErrorMessage, String distinctRule) {
         List<String> invalidEmails = Arrays.asList(testContext.getMapTestData().get("InvalidEmail").trim().split(","));
         String lastInvalidEmail = invalidEmails.get(invalidEmails.size() - 1);
@@ -1842,6 +1984,23 @@ public class Rules_StepDefinitions extends FLUtilities {
         return lastInvalidEmail;
     }
 
+    /**
+     * Read options from given spec
+     *
+     * @param options
+     * @return
+     */
+    public List<String> getExpectedOptions(String options) {
+        List<String> expectedOptions = new ArrayList<>();
+        if (options.contains(";")) expectedOptions = Arrays.asList(options.split(";"));
+        else if (testContext.getMapTestData().containsKey(options.replaceAll(" ", "")))
+            expectedOptions = Arrays.asList(testContext.getMapTestData().get(options.replaceAll(" ", "")).split(", "));
+        return expectedOptions;
+    }
+
+    /**
+     * calculate execution time for cucumber report
+     */
     public void printFinalResults() {
         long endTime;
         LocalTime endLocalTime;
@@ -1878,39 +2037,54 @@ public class Rules_StepDefinitions extends FLUtilities {
         }
     }
 
-    public boolean verifyElementExists(String valueJson, List<String> skippedInvalidElements, String order, String field) {
-        List<String> listFieldValueConditions;
-        String key = "";
-        String[] conditionValues;
-        LinkedHashMap<String, List<String>> mapConditions = new LinkedHashMap<>();
-        List<String> allKeys = new ArrayList<>();
-        String listConditionkeys = "";
-        String values = "";
+    /**
+     * Find if commonTag exists in skipped elements
+     *
+     * @param valueJson
+     * @param conditionCombination
+     * @param pattern
+     * @return invalid common tag. Return true if display rule is given in specified format else false
+     */
+    public List<Object> setInvalidTags(String valueJson, String conditionCombination, String pattern) {
         List<String> invalidTag = new ArrayList<>();
-        String conditionalOperator;
-        String displayedText = "";
-        boolean conditionFLag = true;
-
+        boolean conditionFlag = true;
         if (valueJson.contains("DisplayRules")) {
             invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0]);
-            if (Pattern.compile("([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)").matcher(JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0]).find())
-                conditionFLag = setCombinationConditions(valueJson, "([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)");
+            if (Pattern.compile(pattern).matcher(JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0]).find())
+                conditionFlag = setCombinationConditions(valueJson, pattern, conditionCombination);
         }
+        return Arrays.asList(invalidTag, conditionFlag);
+    }
 
-        if (conditionFLag) {
+    /**
+     * Verify if an element exists on a UI based on display rules
+     *
+     * @param valueJson
+     * @param order
+     * @param field
+     * @param assertionFlag
+     * @param conditionCombination
+     * @return true if exists else false
+     */
+    public boolean verifyElementExists(String valueJson, String order, String field, boolean assertionFlag, String conditionCombination) {
+        List<String> listFieldValueConditions;
+        String key;
+        String listConditionkeys = "";
+        String values;
+        List<String> invalidTag;
+        String conditionalOperator;
+        String displayedText = "";
+        boolean conditionFlag;
+
+        List<Object> invalidFlag = setInvalidTags(valueJson, conditionCombination, "(\\S+)\\s*(=|<>|<|>)\\s*(.*)");
+        invalidTag = (List<String>) invalidFlag.get(0);
+        conditionFlag = (Boolean) invalidFlag.get(1);
+
+        List<List<String>> tempCombinationConditions = (conditionCombination.equalsIgnoreCase("ValidationRules")) ? combinationConditionsValidations : combinationConditions;
+        if (conditionFlag) {
             if (invalidTag.isEmpty()) {
-                if (combinationConditions.isEmpty()) {
-                    if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
-                        moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
-                        if (getElements(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes")).size() > 0)
-                            return getElements(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes")).size() > 0;
-                        else
-                            onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Either Wizard Control type or Common tag is incorrect", testContext);
-                    } else {
-                        onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists", testContext);
-                    }
-                } else {
-                    List<String> result = combinationConditions.get(0);
+                if (!tempCombinationConditions.isEmpty()) {
+                    List<String> result = tempCombinationConditions.get(0);
                     for (String condition1 : result) {
                         listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*: (.*)", "", condition1.trim());
                         key = listFieldValueConditions.get(0).trim();
@@ -1921,42 +2095,68 @@ public class Rules_StepDefinitions extends FLUtilities {
                             break;
                         listConditionkeys = listConditionkeys.replaceAll("FLI_ISSUED_STATE_CODE", "");
                         conditionalOperator = howManyOperator.get(key);
-                        if (howManyOperator.get(key).equals(">") & (values.matches("[0-9]+"))) {
-                            values = String.valueOf(Integer.parseInt(values.replaceAll("%", "")) + 1);
-                            conditionalOperator = "=";
-                        } else if (howManyOperator.get(key).equals("<") & (values.matches("[0-9]+"))) {
-                            values = String.valueOf(Integer.parseInt(values.replaceAll("%", "")) - 1);
-                            conditionalOperator = "=";
-                        }
+                        List<String> valuesOperator = adjustValuesAndOperator(key, values, howManyOperator);
+                        values = valuesOperator.get(0);
+                        conditionalOperator = (valuesOperator.get(1).equalsIgnoreCase("")) ? conditionalOperator : valuesOperator.get(1);
                         if (key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
                             if (!((howManyOperator.get(key).equalsIgnoreCase("=") & values.equalsIgnoreCase(jurisdictionStatesCode)) | (howManyOperator.get(key).equalsIgnoreCase("<>") & !(values.equalsIgnoreCase(jurisdictionStatesCode))))) {
-                                onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Either field does not exists or not applicable for jurisdiction " + executedJurisdiction, testContext);
+                                if (assertionFlag)
+                                    onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Either field does not exists or not applicable for jurisdiction " + executedJurisdiction, testContext);
                                 return false;
                             }
-                        } else
-                            setDependentCondition(key, conditionalOperator, valueJson, values, "Display rule -> " + JsonPath.read(valueJson, "$.DisplayRules").toString().trim(), displayedText);
-                    }
-                    if (listConditionkeys.isEmpty()) {
-                        if (verifyPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
-                            moveToPage(JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
-                            if (getElements(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes")).size() > 0)
-                                return getElements(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes")).size() > 0;
-                            else
-                                onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Either Wizard Control type or Common tag is incorrect", testContext);
                         } else {
-                            onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists " + displayedText, testContext);
+                            setDependentCondition(key, conditionalOperator, valueJson, values, "Display rule -> " + JsonPath.read(valueJson, "$.DisplayRules").toString().trim(), displayedText);
                         }
-                    } else
-                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, JsonPath.read(valueJson, "$.CommonTag"), "Display rule -> " + JsonPath.read(valueJson, "$.DisplayRules").toString().trim(), "Key " + listConditionkeys + " does not exists in JSON", false, "true", false, testContext);
-                    combinationConditions.clear();
-                    howManyOperator.clear();
+                    }
                 }
-            } else
+                if (listConditionkeys.isEmpty()) {
+                    if (verifyAndMoveToPage(valueJson)) {
+                        if (!getElements(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes")).isEmpty())
+                            return !getElements(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes")).isEmpty();
+                        else if (assertionFlag)
+                            onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Either Wizard Control type or Common tag is incorrect", testContext);
+                    } else if (assertionFlag)
+                        onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists " + displayedText, testContext);
+                } else if (assertionFlag)
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, JsonPath.read(valueJson, "$.CommonTag"), "Display rule -> " + JsonPath.read(valueJson, "$.DisplayRules").toString().trim(), "Key " + listConditionkeys + " does not exists in JSON", false, "true", false, testContext);
+                if (conditionCombination.equalsIgnoreCase("ValidationRules"))
+                    combinationConditionsValidations.clear();
+                else
+                    combinationConditions.clear();
+                howManyOperator.clear();
+            } else if (assertionFlag)
                 onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
-        } else
+        } else if (assertionFlag)
             onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "There must be consecutive ANDs in display rule", testContext);
         return false;
     }
+
+    /**
+     * set value based on a given operator
+     *
+     * @param key
+     * @param values
+     * @param operators
+     * @return list of values and updated logical operator
+     */
+    private List<String> adjustValuesAndOperator(String key, String values, Map<String, String> operators) {
+        String operator = operators.get(key);
+        String conditionalOperator = "";
+        if (values.matches("\\d+")) {
+            switch (operator) {
+                case ">":
+                    values = String.valueOf(Integer.parseInt(values) + 1);
+                    conditionalOperator = "=";
+                    break;
+                case "<":
+                    values = String.valueOf(Integer.parseInt(values) - 1);
+                    conditionalOperator = "=";
+                    break;
+            }
+        }
+        return Arrays.asList(values, conditionalOperator);
+    }
+
 }
 
 

@@ -35,6 +35,12 @@ public class ForeSightExcelToJSON_StepDefinitions {
     List<String> requiredColumns = Arrays.asList(EnumsExcelColumns.ENUMSEXCELCOLUMNS.getText().split(", "));
     JSONObject masterJson = new JSONObject();
 
+    /**
+     * Create input JSON, runner and feature files from given spec and created flow interface
+     *
+     * @param jsonFile
+     * @param excelFile
+     */
     @Given("Create {string} file for eApp flow with interface file {string}")
     public void createForesightTestDataInterface(String jsonFile, String excelFile) {
         String filePath = EnumsCommon.ABSOLUTE_FILES_PATH.getText() + excelFile;
@@ -92,7 +98,11 @@ public class ForeSightExcelToJSON_StepDefinitions {
         }
     }
 
-    @Given("Create {string} file for eApp flow with file {string}")
+    /**
+     * Create input JSON for multiple sheets
+     * @param excelFile
+     * @param product
+     */
     public void createForesightTestData(String excelFile, String product) {
         String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + excelFile;
         JSONObject jsonRows = new JSONObject();
@@ -127,6 +137,13 @@ public class ForeSightExcelToJSON_StepDefinitions {
         }
     }
 
+    /**
+     * Create key value pair with columnName as key and cell value as value for a JSONObject jsonRows
+     *
+     * @param headerRow
+     * @param currentRow
+     * @param jsonRows
+     */
     private void extractRowData(Row headerRow, Row currentRow, JSONObject jsonRows) {
         for (int i = 0; i < headerRow.getLastCellNum(); i++) {
             Cell cell = currentRow.getCell(i);
@@ -140,6 +157,12 @@ public class ForeSightExcelToJSON_StepDefinitions {
         }
     }
 
+    /**
+     * Read ModuleJurisdcitionMapping sheet and create input json and put entries in JSONObject jsonRows
+     *
+     * @param sheet
+     * @param jsonRows
+     */
     private void processJurisdictionMappingSheet(Sheet sheet, JSONObject jsonRows) {
         Iterator<Row> iterator = sheet.iterator();
         Row headerRow = iterator.next().getSheet().getRow(0);
@@ -168,6 +191,14 @@ public class ForeSightExcelToJSON_StepDefinitions {
         jsonRows.put("JurisdictionRules", states.replaceFirst(",", ""));
     }
 
+    /**
+     * Read wizard spec sheet and create input json
+     *
+     * @param sheet
+     * @param jsonRows
+     * @param fieldList
+     * @param product
+     */
     private void processEAppWizardSpecSheet(Sheet sheet, JSONObject jsonRows, String fieldList, String product) {
         Row headerRow;
         Iterator<Row> iterator = sheet.iterator();
@@ -208,7 +239,11 @@ public class ForeSightExcelToJSON_StepDefinitions {
         jsonRows.put("fieldList", fieldList.replaceFirst(", ", ""));
     }
 
-
+    /**
+     * Delete existing feature and runner files
+     *
+     * @param folderPath
+     */
     private void deleteRunnerFeature(String folderPath) {
         File folder = new File(folderPath);
 
@@ -225,6 +260,17 @@ public class ForeSightExcelToJSON_StepDefinitions {
         }
     }
 
+    /**
+     * get value of a cell and make necessary adjustments to each cell.
+     * handle "or" and create separate rule
+     * handle "<>" operator
+     * handle "+" operator
+     * handle ">=" and "<=" operators
+     *
+     * @param cell
+     * @param jsonRows
+     * @return cell value
+     */
     private String getCellValue(Cell cell, JSONObject jsonRows) {
         String excelValue = "";
         String newValue = "";
@@ -233,7 +279,7 @@ public class ForeSightExcelToJSON_StepDefinitions {
         List<String> listRules = new ArrayList<>();
         if (cell != null && cell.getCellType() == CellType.STRING && !(cell.getStringCellValue().trim().equalsIgnoreCase("None"))) {
             excelValue = cell.getStringCellValue().trim();
-            excelValue = excelValue.replaceAll("//", "/").replaceAll("[^\\x00-\\x7F^–]", "").replaceAll("–", "-").replaceAll("\n", ";").replaceAll("=", " = ").replaceAll("<>", " <> ").replaceAll("“", "").replaceAll("\"", "").replaceAll("[\\s]+[.]+", ".").replaceAll("[\\s]+", " ").trim();
+            excelValue = excelValue.replaceAll("//", "/").replaceAll("[^\\x00-\\x7F^–]", "").replaceAll("–", "-").replaceAll("\n", ";").replaceAll("=", " = ").replaceAll("<>", " <> ").replaceAll("“", "").replaceAll("\"", "").replaceAll("[\\s]+[.]+", ".").replaceAll("[\\s]+", " ").replaceAll("> =", ">=").replaceAll("< =", "<=").trim();
             if (excelValue.contains(" OR ")) {
                 listRules = Arrays.asList(excelValue.split(";"));
                 for (String rule : listRules) {
@@ -270,7 +316,6 @@ public class ForeSightExcelToJSON_StepDefinitions {
                 excelValue = newValue.substring(0, newValue.length() - 1);
             }
             newValue = "";
-            pattern = null;
             if (excelValue.toLowerCase().contains("<>")) {
                 listRules = Arrays.asList(excelValue.split(";"));
                 for (String rule : listRules) {
@@ -338,6 +383,23 @@ public class ForeSightExcelToJSON_StepDefinitions {
                 }
                 excelValue = newValue.substring(0, newValue.length() - 1);
             }
+            newValue = "";
+            if (excelValue.toLowerCase().contains(">=") | excelValue.toLowerCase().contains("<=")) {
+                String expectedOperator = "";
+                for (String rule : excelValue.split(";")) {
+                    if (Pattern.compile("(.*?)\\s*(>=|<=)\\s*(.*)").matcher(rule).find()) {
+                        pattern = Pattern.compile("(.*?)\\s*(>=|<=)\\s*(.*)");
+                        Matcher matcher = pattern.matcher(rule);
+                        while (matcher.find()) {
+                            expectedOperator = matcher.group(2).trim();
+                        }
+                        for(int i =0;i<expectedOperator.length();i++)
+                            newValue += rule.replaceAll(expectedOperator, expectedOperator.substring(i, i+1)) + ";";
+                    } else
+                        newValue += rule + ";";
+                }
+                excelValue = newValue.substring(0, newValue.length() - 1);
+            }
         } else if (cell != null && cell.getCellType() == CellType.NUMERIC)
             excelValue = String.valueOf(((XSSFCell) cell).getRawValue()).trim();
         return excelValue;
@@ -356,6 +418,10 @@ public class ForeSightExcelToJSON_StepDefinitions {
         return excelValue;
     }
 
+    /**
+     * common test data in a json
+     * @return JSONObject
+     */
     private JSONObject getJsonObject() {
         JSONObject defaultEntry = new JSONObject();
         defaultEntry.put("InvalidTin", "123456789");
@@ -365,6 +431,13 @@ public class ForeSightExcelToJSON_StepDefinitions {
         return defaultEntry;
     }
 
+    /**
+     * index of a given column in excel
+     *
+     * @param headerRow
+     * @param columnName
+     * @return
+     */
     private int findColumnIndex(Row headerRow, String columnName) {
         Iterator<Cell> cellIterator = headerRow.cellIterator();
         while (cellIterator.hasNext()) {
@@ -380,6 +453,14 @@ public class ForeSightExcelToJSON_StepDefinitions {
         return cell == null ? "" : cell.toString().trim();
     }
 
+    /**
+     * Create feature file based on module and jurisdiction
+     * @param client
+     * @param module
+     * @param product
+     * @param fileName
+     * @param state
+     */
     public void createFeatureFile(String client, String module, String product, String fileName, String state) {
         ArrayList<String> lines = new ArrayList<>();
         String line = null;
@@ -403,6 +484,12 @@ public class ForeSightExcelToJSON_StepDefinitions {
         }
     }
 
+    /**
+     * Create runner file based on module and jurisdiction
+     * @param client
+     * @param module
+     * @param state
+     */
     public void createRunnerFile(String client, String module, String state) {
         ArrayList<String> lines = new ArrayList<>();
         String line = null;
@@ -430,6 +517,9 @@ public class ForeSightExcelToJSON_StepDefinitions {
         }
     }
 
+    /**
+     * Create runner file for each re-run
+     */
     public void createUniqueCounter() {
         ArrayList<String> lines = new ArrayList<>();
         String line = null;
@@ -452,9 +542,14 @@ public class ForeSightExcelToJSON_StepDefinitions {
         }
     }
 
+    /**
+     * Replace line with given parameters
+     * @param line
+     * @param toBeReplaced
+     * @param replacement
+     * @return
+     */
     public String replaceLine(String line, String toBeReplaced, String replacement) {
-        if (line.contains(toBeReplaced))
-            return replacement;
-        return line;
+        return line.contains(toBeReplaced) ? replacement : line;
     }
 }

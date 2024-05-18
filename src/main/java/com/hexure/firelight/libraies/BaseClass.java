@@ -66,6 +66,7 @@ public class BaseClass {
             testContext.setAdminCacheTime(configProperties.getProperty("adminCacheTime"));
         }
     }
+
     private boolean isJenkinsExecution() {
         return configProperties.getProperty("execution.mode").trim().equalsIgnoreCase("jenkins");
     }
@@ -92,8 +93,8 @@ public class BaseClass {
                         driver.manage().window().maximize();
                         break;
                     case "Edge":
-                        driver = new EdgeDriver(getEdgeOptions());
-                        driver.manage().window().maximize();
+                            driver = new EdgeDriver(getEdgeOptions());
+                            driver.manage().window().maximize();
                         break;
                     default:
                         throw new FLException("Invalid Value Provided For Browser");
@@ -109,7 +110,7 @@ public class BaseClass {
         Log.info("Driver Loaded Successfully.");
         driver.manage().timeouts().implicitlyWait(Integer.parseInt(configProperties.getProperty("implicit_wait")), TimeUnit.SECONDS);
         driver.manage().deleteAllCookies();
-        Log.info("Implicit Wait Set as " + configProperties.getProperty("implicit_wait") + " Seconds");
+        Log.info("Implicit Wait Set as {} Seconds", configProperties.getProperty("implicit_wait"));
 
         return driver;
     }
@@ -162,7 +163,7 @@ public class BaseClass {
         ChromeOptions chromeOptions = new ChromeOptions();
         chromeOptions.setExperimentalOption("prefs", preferences);
         if (Boolean.valueOf(configProperties.getProperty("headlessExecution.switch")))
-            chromeOptions.addArguments("headless", "--disable-gpu", "--window-size=1920,1080","--zoom=0.8","--ignore-certificate-errors");
+            chromeOptions.addArguments("headless", "--disable-gpu", "--window-size=1920,1080", "--zoom=0.8", "--ignore-certificate-errors");
 
         chromeOptions.addArguments("disable-infobars");
         chromeOptions.addArguments("--start-maximized");
@@ -246,14 +247,11 @@ public class BaseClass {
 
         System.out.println("URL = " + url);
 
-        if(configProperties.getProperty("browser").equalsIgnoreCase("Edge"))
-        {
+        if (configProperties.getProperty("browser").equalsIgnoreCase("Edge")) {
             driver.get("edge://settings/content/pdfDocuments");
-
             // Execute JavaScript to enable the option
             JavascriptExecutor js = (JavascriptExecutor) driver;
             js.executeScript("document.querySelector('input[type=\"checkbox\"]').click();");
-
         }
         driver.get(url);
     }
@@ -421,7 +419,7 @@ public class BaseClass {
                     break;
 
                 case "forPDFVerification":
-                    dateFormat = new SimpleDateFormat("M/dd/YYYY");
+                    dateFormat = new SimpleDateFormat("M/dd/yyyy");
                     break;
 
                 default:
@@ -445,12 +443,12 @@ public class BaseClass {
      */
     protected void closeBrowser(TestContext testContext) {
         if (testContext.getScenario().isFailed()) {
-            final byte[] screenshot = ((TakesScreenshot)driver).getScreenshotAs(OutputType.BYTES);
+            final byte[] screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
             testContext.getScenario().embed(screenshot, "image/png");
-            Log.info("TEST CASE " + testContext.getTestCaseID() + " is FAILED");
+            Log.info("TEST CASE {} is FAILED", testContext.getTestCaseID());
         } else {
             if (testContext.getTestCaseID() != null)
-                Log.info("TEST CASE " + testContext.getTestCaseID() + " is PASSED");
+                Log.info("TEST CASE {} is PASSED", testContext.getTestCaseID());
         }
 
         captureScreenshot(driver, testContext, true);
@@ -517,4 +515,5 @@ public class BaseClass {
             return false;
         }
     }
+
 }

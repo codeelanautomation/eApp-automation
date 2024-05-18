@@ -59,6 +59,8 @@ public class CommonMethodsPage extends FLUtilities {
     @FindBy(id = "imgCloseWiz")
     private List<WebElement> List_WizardPageNameCollapse;
 
+    @FindBy(xpath = "//div[@class='react-datepicker']")
+    private List<WebElement> grid_DatePicker;
 
     public CommonMethodsPage(WebDriver driver) {
         initElements(driver);
