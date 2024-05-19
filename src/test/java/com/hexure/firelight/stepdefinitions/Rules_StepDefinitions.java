@@ -87,7 +87,7 @@ public class Rules_StepDefinitions extends FLUtilities {
     public void verifyFormDataWithInboundXml(String module) {
         String moduleNameValue;
         Set<String> fieldList = new LinkedHashSet<>(Arrays.asList(testContext.getMapTestData().get("fieldList").split(", ")));
-        onWizardFlowDataPage.setPageObjects(testContext, driver);
+        onWizardFlowDataPage.setPageObjects(testContext, driver, executedJurisdiction);
         for (String fieldName : fieldList) {
             moduleNameValue = JsonPath.read(testContext.getMapTestData().get(fieldName).trim(), "$.ModuleSectionName").toString().trim();
             if (module.equalsIgnoreCase(moduleNameValue) | module.equalsIgnoreCase("All")) {

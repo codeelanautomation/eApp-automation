@@ -58,12 +58,13 @@ public class WizardFlowDataPage extends FLUtilities {
         PageFactory.initElements(driver, this);
     }
 
-    public void setPageObjects(TestContext testContext, WebDriver driver) {
+    public void setPageObjects(TestContext testContext, WebDriver driver, String executedJurisdiction) {
         onCommonMethodsPage = testContext.getPageObjectManager().getCommonMethodPage();
         onSoftAssertionHandlerPage = testContext.getPageObjectManager().getSoftAssertionHandlerPage();
         onLoginPage = testContext.getPageObjectManager().getLoginPage();
         this.testContext = testContext;
         this.driver = driver;
+        this.executedJurisdiction = executedJurisdiction;
     }
 
     /**
