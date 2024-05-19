@@ -1,6 +1,8 @@
 package com.hexure.firelight.libraies;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -14,6 +16,7 @@ import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.firefox.FirefoxProfile;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
+import org.openqa.selenium.support.ui.FluentWait;
 
 import java.io.*;
 import java.net.URL;
@@ -21,10 +24,6 @@ import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
-import org.openqa.selenium.support.ui.FluentWait;
 
 
 public class BaseClass {
@@ -51,24 +50,18 @@ public class BaseClass {
      * @param testContext The TestContext class reference
      */
     private void setEnvironment(TestContext testContext) {
-        if (isJenkinsExecution()) {
+        if (configProperties.getProperty("execution.mode").trim().equalsIgnoreCase("jenkins")) {
             testContext.setEnvironment((System.getenv("Environment")));
             testContext.setCaptureScreenshot((System.getenv("CaptureScreenshot")));
             testContext.setAppType((System.getenv("ApplicationType")));
             testContext.setBrowser(System.getenv("Browser"));
-            testContext.setAdminCacheTime(System.getenv("AdminCacheTime"));
             testContext.setVM_Name(System.getenv("VMName"));
         } else {
             testContext.setEnvironment(configProperties.getProperty("environment"));
             testContext.setCaptureScreenshot(configProperties.getProperty("captureScreenshot.switch"));
             testContext.setAppType(configProperties.getProperty("applicationType"));
             testContext.setBrowser(configProperties.getProperty("browser"));
-            testContext.setAdminCacheTime(configProperties.getProperty("adminCacheTime"));
         }
-    }
-
-    private boolean isJenkinsExecution() {
-        return configProperties.getProperty("execution.mode").trim().equalsIgnoreCase("jenkins");
     }
 
     /**
@@ -463,31 +456,6 @@ public class BaseClass {
             Log.info("Quitting Driver Failed", e);
             throw new FLException("Quitting Driver Failed " + e.getMessage());
         }
-    }
-
-    /**
-     * This method opens up Firelight Admin or Application portal.
-     *
-     * @param driver      The WebDriver reference
-     * @param testContext The TestContext class reference
-     * @param whichApp    Application to open either Firelight App or Firelight Admin
-     */
-    protected void opensFLAppOrAdminLoginPage(WebDriver driver, TestContext testContext, String whichApp) {
-        String url;
-        if (whichApp.equalsIgnoreCase("Firelight")) {
-            url = configProperties.getProperty("QANext.app.url");
-            if (testContext.getEnvironment().equalsIgnoreCase("qa")) {
-                url = configProperties.getProperty("QA.app.url");
-            }
-        } else {
-            url = configProperties.getProperty("QANext.admin.url");
-            if (testContext.getEnvironment().equalsIgnoreCase("qa")) {
-                url = configProperties.getProperty("QA.admin.url");
-            }
-        }
-
-        System.out.println("URL = " + url);
-        driver.get(url);
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.hexure.firelight.pages;
 
-import com.hexure.firelight.libraies.*;
+import com.hexure.firelight.libraies.FLUtilities;
+import com.hexure.firelight.libraies.TestContext;
 import cucumber.api.Scenario;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.PageFactory;
@@ -196,4 +197,16 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         scenario.write(resultSetSkippedRules.toString());
 
     }
+
+    public void printTabularReport(List<List<String>> entries, TestContext testContext) {
+        Scenario scenario = testContext.getScenario();
+        String resultSet = "";
+        resultSet += "<table border=\"1\" width=\"90%\"> <tr style='color: blue; font-weight: bold; background-color: #C5D88A;'> <th>S.No</th> <th>Form Name</th> <th>Wizard Name</th> <th>Common Tag</th> <th>Control Type</th> <th>Test Data</th> </tr>";
+
+        for (List<String> entry : entries)
+            resultSet += "<tr style='color: green; font-weight: bold; background-color: #C5D88A;'> <td>" + entry.get(0) + "</td> <td>" + entry.get(1) + "</td> <td>" + entry.get(2) + "</td> <td>" + entry.get(3) + "</td> <td>" + entry.get(4) + "</td> <td>" + entry.get(5) + "</td> </tr>";
+        resultSet += "</table>";
+        scenario.write(resultSet);
+    }
+
 }

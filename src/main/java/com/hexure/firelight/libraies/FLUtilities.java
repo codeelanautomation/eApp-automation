@@ -1,19 +1,20 @@
 package com.hexure.firelight.libraies;
 
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
-import org.openqa.selenium.support.ui.*;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
-import java.io.*;
-import java.sql.*;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.FluentWait;
+import org.openqa.selenium.support.ui.Select;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.io.IOException;
 
 public class FLUtilities extends BaseClass {
     private static final Logger Log = LogManager.getLogger(FLUtilities.class);
@@ -95,16 +96,6 @@ public class FLUtilities extends BaseClass {
             throw new FLException("Clicking WebElement By JavaScriptExecutor Failed " + e.getMessage());
         }
     }
-
-    protected void moveToElement(WebDriver driver, WebElement element) {
-        try {
-            new Actions(driver).moveToElement(element).build().perform();
-        } catch (Exception e) {
-            Log.error("Move MouseOver Action WebElement Failed ", e);
-            throw new FLException("Move MouseOver Action WebElement Failed " + e.getMessage());
-        }
-    }
-
 
     protected void sendKeys(WebDriver driver, WebElement element, String stringToInput) {
         syncElement(driver, element, EnumsCommon.TOVISIBLE.getText());
@@ -215,5 +206,28 @@ public class FLUtilities extends BaseClass {
 
     private boolean getCheckBoxAction(String action) {
         return action.equalsIgnoreCase("yes") | action.equalsIgnoreCase("check") | action.equalsIgnoreCase("checked") | action.equalsIgnoreCase("selected");
+    }
+
+
+    /**
+     * index of a given column in excel
+     *
+     * @param headerRow
+     * @param columnName
+     * @return
+     */
+    public int findColumnIndex(Row headerRow, String columnName) {
+        Iterator<Cell> cellIterator = headerRow.cellIterator();
+        while (cellIterator.hasNext()) {
+            Cell cell = cellIterator.next();
+            if (columnName.equalsIgnoreCase(getCellColumnValue(cell))) {
+                return cell.getColumnIndex();
+            }
+        }
+        return -1; // Column not found
+    }
+
+    public String getCellColumnValue(Cell cell) {
+        return cell == null ? "" : cell.toString().trim();
     }
 }

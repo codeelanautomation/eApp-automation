@@ -1,8 +1,12 @@
 package com.hexure.firelight.stepdefinitions;
 
-import com.hexure.firelight.libraies.*;
 import com.hexure.firelight.libraies.Enums.EnumsJSONProp;
-import com.hexure.firelight.pages.*;
+import com.hexure.firelight.libraies.FLUtilities;
+import com.hexure.firelight.libraies.TestContext;
+import com.hexure.firelight.pages.CommonMethodsPage;
+import com.hexure.firelight.pages.CreateApplicationPage;
+import com.hexure.firelight.pages.DataEntryPage;
+import com.hexure.firelight.pages.SoftAssertionHandlerPage;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import io.qameta.allure.Allure;
@@ -10,21 +14,21 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.*;
+import org.openqa.selenium.WebElement;
 
 import java.awt.*;
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 public class Common_StepDefinitions extends FLUtilities {
+    private static final Logger Log = LogManager.getLogger(Common_StepDefinitions.class);
     private final WebDriver driver;
     private final TestContext testContext;
     private final CreateApplicationPage onCreateApplicationPage;
     private final DataEntryPage onDataEntryPage;
     private final CommonMethodsPage onCommonMethodsPage;
     private final SoftAssertionHandlerPage onSoftAssertionHandlerPage;
-    private static final Logger Log = LogManager.getLogger(Common_StepDefinitions.class);
 
     public Common_StepDefinitions(TestContext context) {
         testContext = context;
@@ -51,16 +55,6 @@ public class Common_StepDefinitions extends FLUtilities {
         System.out.println("CaptureScreenshot = " + testContext.getCaptureScreenshot());
         System.out.println("ScreenshotFolder = " + testContext.getScreenshotFolderName());
         openLoginPage(driver, testContext);
-        testContext.setUiType(testContext.getMapTestData().get("uiType"));
-        System.out.println("UI TYPE is = " + testContext.getMapTestData().get("uiType"));
-//        Robot robot = new Robot();
-//        System.out.println("About to zoom in");
-//        for (int i = 0; i < 2; i++) {
-//            robot.keyPress(KeyEvent.VK_CONTROL);
-//            robot.keyPress(KeyEvent.VK_SUBTRACT);
-//            robot.keyRelease(KeyEvent.VK_SUBTRACT);
-//            robot.keyRelease(KeyEvent.VK_CONTROL);
-//        }
         testContext.getScenario().write("<div style='width: 5%; position: absolute; top: 5px; font-size: 2vw; border: none; color: green; text-align: center; font-weight: bold; background-color: #C5D88A; left: 50%; transform: translateX(-50%);'>" + testContext.getTestCaseID() + "</div>");
         Log.info("TEST CASE " + testCaseID + " STARTED");
     }
@@ -74,7 +68,7 @@ public class Common_StepDefinitions extends FLUtilities {
                 clickElement(driver, onCreateApplicationPage.getBtn_Create());
                 break;
             case "Close":
-                if(!onCreateApplicationPage.getLstBtnClose().isEmpty())
+                if (!onCreateApplicationPage.getLstBtnClose().isEmpty())
                     clickElement(driver, onCreateApplicationPage.getBtnClose());
                 break;
             default:

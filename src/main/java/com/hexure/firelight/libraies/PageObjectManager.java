@@ -8,10 +8,12 @@ import org.openqa.selenium.WebDriver;
 public class PageObjectManager extends BaseClass {
     private final WebDriver driver;
     private LoginPage onLoginPage;
-    private HomePage onHomePage;
     private CreateApplicationPage onCreateApplicationPage;
     private DataEntryPage onDataEntryPage;
     private CommonMethodsPage onCommonMethodsPage;
+    private ExcelHandlerPage onExcelHandlerPage;
+    private E2EFlowDataPage onE2EFlowDataPage;
+    private WizardFlowDataPage onWizardFlowDataPage;
     private SoftAssertionHandlerPage onSoftAssertionHandlerPage;
     private static final Logger Log = LogManager.getLogger(PageObjectManager.class);
 
@@ -25,15 +27,6 @@ public class PageObjectManager extends BaseClass {
         } catch (Exception e) {
             Log.error("Instance creations of LoginPage Failed ", e);
             throw new FLException("Instance creations of LoginPage Failed " + e.getMessage());
-        }
-    }
-
-    public HomePage getHomePage() {
-        try {
-            return (onHomePage == null) ? onHomePage = new HomePage(driver) : onHomePage;
-        } catch (Exception e) {
-            Log.error("Instance creations of HomePage Failed ", e);
-            throw new FLException("Instance creations of HomePage Failed " + e.getMessage());
         }
     }
 
@@ -61,6 +54,33 @@ public class PageObjectManager extends BaseClass {
         } catch (Exception e) {
             Log.error("Instance creations of CommonMethodsPage Failed ", e);
             throw new FLException("Instance creations of CommonMethodsPage Failed " + e.getMessage());
+        }
+    }
+
+    public ExcelHandlerPage getExcelHandlerPage() {
+        try {
+            return (onExcelHandlerPage == null) ? onExcelHandlerPage = new ExcelHandlerPage(driver) : onExcelHandlerPage;
+        } catch (Exception e) {
+            Log.error("Instance creations of ExcelHandlerPage Failed ", e);
+            throw new FLException("Instance creations of ExcelHandlerPage Failed " + e.getMessage());
+        }
+    }
+
+    public E2EFlowDataPage getE2EFlowDataPage() {
+        try {
+            return (onE2EFlowDataPage == null) ? onE2EFlowDataPage = new E2EFlowDataPage(driver) : onE2EFlowDataPage;
+        } catch (Exception e) {
+            Log.error("Instance creations of E2EFlowDataPage Failed ", e);
+            throw new FLException("Instance creations of E2EFlowDataPage Failed " + e.getMessage());
+        }
+    }
+
+    public WizardFlowDataPage getWizardFlowDataPage() {
+        try {
+            return (onWizardFlowDataPage == null) ? onWizardFlowDataPage = new WizardFlowDataPage(driver) : onWizardFlowDataPage;
+        } catch (Exception e) {
+            Log.error("Instance creations of WizardFlowDataPage Failed ", e);
+            throw new FLException("Instance creations of WizardFlowDataPage Failed " + e.getMessage());
         }
     }
 

@@ -1,12 +1,14 @@
 package com.hexure.firelight.pages;
 
+import com.hexure.firelight.libraies.EnumsCommon;
 import com.hexure.firelight.libraies.FLUtilities;
+import com.hexure.firelight.libraies.TestContext;
 import lombok.Data;
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.Select;
 
 import java.util.List;
 
@@ -57,5 +59,25 @@ public class CreateApplicationPage extends FLUtilities {
 
     private void initElements(WebDriver driver) {
         PageFactory.initElements(driver, this);
+    }
+
+    public void createApplication(TestContext testContext, WebDriver driver, String product, String productType, String jurisdiction) {
+        clickElement(driver, getBtnApplication());
+        new Select(getDd_Jurisdiction()).selectByVisibleText(jurisdiction);
+        waitForPageToLoad(driver);
+        sleepInMilliSeconds(2000);
+        waitUntilDropDownListPopulated(driver, new Select(getDd_ProductType()));
+        captureScreenshot(driver, testContext, false);
+        new Select(getDd_ProductType()).selectByVisibleText(productType);
+        sleepInMilliSeconds(2000);
+        syncElement(driver, findElement(driver, String.format(list_OfProducts, product)), EnumsCommon.TOCLICKABLE.getText());
+        clickElement(driver, findElement(driver, String.format(list_OfProducts, product)));
+        waitForPageToLoad(driver);
+        clickElement(driver, getBtn_Create());
+        String newAppName = "AT " + testContext.getMapTestData().get("product") + " " + getDate("newAppName");
+        getTxtBox_newAppName().clear();
+        getTxtBox_newAppName().sendKeys(newAppName);
+        getBtn_CreateActivity().click();
+        waitForPageToLoad(driver);
     }
 }

@@ -4,6 +4,7 @@ public enum EnumsJSONProp {
     PRODUCT("product"),
     JURISDICTION("jurisdiction"),
     NEWPRODUCTNAME("newProductName");
+
     private final String text;
 
     EnumsJSONProp(String text) {
