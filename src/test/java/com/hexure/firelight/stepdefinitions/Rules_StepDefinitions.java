@@ -7,7 +7,7 @@ import com.hexure.firelight.pages.LoginPage;
 import com.hexure.firelight.pages.SoftAssertionHandlerPage;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
-import cucumber.api.java.en.Given;
+import io.cucumber.java.en.Given;
 import io.qameta.allure.Allure;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.poi.ss.usermodel.*;
@@ -185,6 +185,8 @@ public class Rules_StepDefinitions extends FLUtilities {
             if (module.equalsIgnoreCase(moduleNameValue) | module.equalsIgnoreCase("All")) {
                 wizardTesting(fieldName);
                 fieldsEvaluated++;
+                if(fieldsEvaluated>1)
+                    break;
             }
         }
     }
@@ -1853,8 +1855,8 @@ public class Rules_StepDefinitions extends FLUtilities {
         long seconds = ((durationMillis % (1000 * 60 * 60)) % (1000 * 60)) / 1000;
 
         difference = String.format("%dh %dm %ds", hours, minutes, seconds);
-        testContext.getScenario().write("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>Cucumber Report : " + LocalDate.now() + "</div>");
-        testContext.getScenario().write("<div width='100%' style='font-size:1.2vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>" + timeFormat.format(onLoginPage.getStartLocalTime()) + " - " + timeFormat.format(endLocalTime) + "(" + difference + ")</div>");
+        testContext.getScenario().log("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>Cucumber Report : " + LocalDate.now() + "</div>");
+        testContext.getScenario().log("<div width='100%' style='font-size:1.2vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>" + timeFormat.format(onLoginPage.getStartLocalTime()) + " - " + timeFormat.format(endLocalTime) + "(" + difference + ")</div>");
         onSoftAssertionHandlerPage.afterScenario(testContext, fieldsEvaluated);
     }
 
@@ -1958,7 +1960,3 @@ public class Rules_StepDefinitions extends FLUtilities {
         return false;
     }
 }
-
-
-
-

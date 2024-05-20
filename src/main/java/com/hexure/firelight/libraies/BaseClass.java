@@ -1,5 +1,6 @@
 package com.hexure.firelight.libraies;
 
+import io.github.bonigarcia.wdm.WebDriverManager;
 import org.apache.commons.io.FileUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -12,20 +13,16 @@ import org.openqa.selenium.edge.EdgeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.firefox.FirefoxProfile;
-import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.openqa.selenium.support.ui.FluentWait;
 
 import java.io.*;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
-import org.openqa.selenium.support.ui.FluentWait;
-
 
 public class BaseClass {
 
@@ -66,6 +63,7 @@ public class BaseClass {
             testContext.setAdminCacheTime(configProperties.getProperty("adminCacheTime"));
         }
     }
+
     private boolean isJenkinsExecution() {
         return configProperties.getProperty("execution.mode").trim().equalsIgnoreCase("jenkins");
     }
@@ -85,13 +83,16 @@ public class BaseClass {
             if (configProperties.getProperty("execution.type").trim().equalsIgnoreCase("local")) {
                 switch (testContext.getBrowser()) {
                     case "Chrome":
+                        WebDriverManager.chromedriver().setup();
                         driver = new ChromeDriver(getChromeOptions());
                         break;
                     case "Firefox":
-                        driver = new FirefoxDriver(getFirefoxOption());
+                        WebDriverManager.firefoxdriver().setup();
+                        driver = new FirefoxDriver(getFirefoxOptions());
                         driver.manage().window().maximize();
                         break;
                     case "Edge":
+                        WebDriverManager.edgedriver().setup();
                         driver = new EdgeDriver(getEdgeOptions());
                         driver.manage().window().maximize();
                         break;
@@ -107,7 +108,7 @@ public class BaseClass {
         }
 
         Log.info("Driver Loaded Successfully.");
-        driver.manage().timeouts().implicitlyWait(Integer.parseInt(configProperties.getProperty("implicit_wait")), TimeUnit.SECONDS);
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(Integer.parseInt(configProperties.getProperty("implicit_wait"))));
         driver.manage().deleteAllCookies();
         Log.info("Implicit Wait Set as " + configProperties.getProperty("implicit_wait") + " Seconds");
 
@@ -119,7 +120,7 @@ public class BaseClass {
             case "Chrome":
                 return getChromeOptions();
             case "Firefox":
-                return getFirefoxOption();
+                return getFirefoxOptions();
             case "Edge":
                 return getEdgeOptions();
             default:
@@ -142,7 +143,7 @@ public class BaseClass {
             throw new FLException("Properties File Could Not Find" + e.getMessage());
         } catch (IOException e) {
             Log.error("Reading Properties File Failed ", e);
-            throw new FLException("Reading Properties File Failed" + e.getMessage());
+            throw new FLException("Reading Properties File Failed " + e.getMessage());
         }
     }
 
@@ -150,8 +151,6 @@ public class BaseClass {
      * @return ChromeOptions object having different Chrome Browser properties to manipulate.
      */
     private ChromeOptions getChromeOptions() {
-        System.setProperty(configProperties.getProperty("chromeDriver.property"), configProperties.getProperty("chromeDriver.path"));
-
         Map<String, Object> preferences = new HashMap<>();
         preferences.put("autofill.profile_enabled", false);
         preferences.put("download.prompt_for_download", false);
@@ -162,17 +161,14 @@ public class BaseClass {
         ChromeOptions chromeOptions = new ChromeOptions();
         chromeOptions.setExperimentalOption("prefs", preferences);
         if (Boolean.valueOf(configProperties.getProperty("headlessExecution.switch")))
-            chromeOptions.addArguments("headless", "--disable-gpu", "--window-size=1920,1080","--zoom=0.8","--ignore-certificate-errors");
+            chromeOptions.addArguments("headless", "--disable-gpu", "--window-size=1920,1080", "--zoom=0.8", "--ignore-certificate-errors");
 
         chromeOptions.addArguments("disable-infobars");
         chromeOptions.addArguments("--start-maximized");
         chromeOptions.addArguments("--disable-notifications");
         chromeOptions.addArguments("force-device-scale-factor=0.80");
         chromeOptions.addArguments("high-dpi-support=0.80");
-
-        DesiredCapabilities capabilities = DesiredCapabilities.chrome();
-        capabilities.setCapability("applicationCacheEnabled", false);
-        chromeOptions.merge(capabilities);
+        chromeOptions.addArguments("--remote-allow-origins=*");
 
         return chromeOptions;
     }
@@ -180,8 +176,7 @@ public class BaseClass {
     /**
      * @return FirefoxOptions object having different Firefox Browser properties to manipulate.
      */
-    private FirefoxOptions getFirefoxOption() {
-        System.setProperty(configProperties.getProperty("firefoxDriver.property"), configProperties.getProperty("firefoxDriver.path"));
+    private FirefoxOptions getFirefoxOptions() {
         FirefoxOptions options = new FirefoxOptions();
         if (Boolean.valueOf(configProperties.getProperty("headlessExecution.switch")))
             options.addArguments("--headless");
@@ -196,7 +191,6 @@ public class BaseClass {
         profile.setPreference("browser.download.alwaysOpenPanel", false);
         profile.setPreference("services.sync.prefs.sync.browser.download.manager.showWhenStarting", false);
         profile.setPreference("pdfjs.disabled", true);
-//        TODO: Add Firefox profile options
 
         options.setProfile(profile);
 
@@ -207,19 +201,14 @@ public class BaseClass {
      * @return EdgeOptions object having different Edge Browser properties to manipulate.
      */
     protected EdgeOptions getEdgeOptions() {
-        System.setProperty(configProperties.getProperty("edgeDriver.property"), configProperties.getProperty("edgeDriver.path"));
         EdgeOptions options = new EdgeOptions();
 
-//        TODO: Add Edge options
-        DesiredCapabilities capabilities = DesiredCapabilities.edge();
-
-        capabilities.setCapability("disable-popup-blocking", true);
-        capabilities.setCapability("browser.show_hub_popup_on_download_start", true);
-        capabilities.setCapability("download.prompt_for_download", false);
-        capabilities.setCapability("plugins.always_open_pdf_externally", true);
-        capabilities.setCapability("download.extensions_to_open", "applications/pdf");
-        capabilities.setCapability("download.prompt_for_download", false);
-        options.merge(capabilities);
+        options.setCapability("disable-popup-blocking", true);
+        options.setCapability("browser.show_hub_popup_on_download_start", true);
+        options.setCapability("download.prompt_for_download", false);
+        options.setCapability("plugins.always_open_pdf_externally", true);
+        options.setCapability("download.extensions_to_open", "applications/pdf");
+        options.setCapability("download.prompt_for_download", false);
 
         return options;
     }
@@ -246,14 +235,12 @@ public class BaseClass {
 
         System.out.println("URL = " + url);
 
-        if(configProperties.getProperty("browser").equalsIgnoreCase("Edge"))
-        {
+        if (configProperties.getProperty("browser").equalsIgnoreCase("Edge")) {
             driver.get("edge://settings/content/pdfDocuments");
 
             // Execute JavaScript to enable the option
             JavascriptExecutor js = (JavascriptExecutor) driver;
             js.executeScript("document.querySelector('input[type=\"checkbox\"]').click();");
-
         }
         driver.get(url);
     }
@@ -445,8 +432,8 @@ public class BaseClass {
      */
     protected void closeBrowser(TestContext testContext) {
         if (testContext.getScenario().isFailed()) {
-            final byte[] screenshot = ((TakesScreenshot)driver).getScreenshotAs(OutputType.BYTES);
-            testContext.getScenario().embed(screenshot, "image/png");
+            final byte[] screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
+            testContext.getScenario().attach(screenshot, "image/png", "Screenshot on Failure");
             Log.info("TEST CASE " + testContext.getTestCaseID() + " is FAILED");
         } else {
             if (testContext.getTestCaseID() != null)
@@ -456,8 +443,8 @@ public class BaseClass {
         captureScreenshot(driver, testContext, true);
 
         try {
-            if (testContext.getDriver() != null) {
-                testContext.getDriver().quit();
+            if (driver != null) {
+                driver.quit();
                 Log.info("Driver Quit Successfully");
             }
             Log.info("<<<===== END OF TEST =====>>>");

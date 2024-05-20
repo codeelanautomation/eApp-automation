@@ -7,7 +7,7 @@ import com.hexure.firelight.libraies.Enums.EnumsJSONProp;
 import com.hexure.firelight.libraies.EnumsCommon;
 import com.hexure.firelight.libraies.FLException;
 import com.jayway.jsonpath.JsonPath;
-import cucumber.api.java.en.Given;
+import io.cucumber.java.en.Given;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.json.simple.JSONObject;
@@ -26,7 +26,6 @@ import java.util.regex.Pattern;
 
 import java.io.IOException;
 import java.util.Collections;
-
 
 public class ForeSightExcelToJSON_StepDefinitions {
 

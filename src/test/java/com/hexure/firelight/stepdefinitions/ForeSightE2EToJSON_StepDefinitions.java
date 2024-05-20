@@ -4,7 +4,7 @@ import com.hexure.firelight.libraies.Enums.EnumsExcelColumns;
 import com.hexure.firelight.libraies.Enums.EnumsJSONProp;
 import com.hexure.firelight.libraies.EnumsCommon;
 import com.hexure.firelight.libraies.FLException;
-import cucumber.api.java.en.Given;
+import io.cucumber.java.en.Given;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;

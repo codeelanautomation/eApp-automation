@@ -21,37 +21,29 @@ import org.apache.logging.log4j.LogManager;
 import javax.imageio.ImageIO;
 import java.io.*;
 import java.sql.*;
+import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.io.IOException;
 
 public class FLUtilities extends BaseClass {
     private static final Logger Log = LogManager.getLogger(FLUtilities.class);
 
     protected void syncElement(WebDriver driver, WebElement element, String conditionForWait) {
         try {
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
             switch (conditionForWait) {
                 case "ToVisible":
-                    new WebDriverWait(driver, 15)
-                            .until(ExpectedConditions.visibilityOf(element));
+                    wait.until((WebDriver d) -> ExpectedConditions.visibilityOf(element).apply(d));
                     break;
-
                 case "ToClickable":
-                    new WebDriverWait(driver, 15)
-                            .until(ExpectedConditions.elementToBeClickable(element));
+                    wait.until((WebDriver d) -> ExpectedConditions.elementToBeClickable(element).apply(d));
                     break;
-
                 case "ToInvisible":
-                    new WebDriverWait(driver, 15)
-                            .until(ExpectedConditions.invisibilityOf(element));
+                    wait.until((WebDriver d) -> ExpectedConditions.invisibilityOf(element).apply(d));
                     break;
-
                 default:
                     throw new FLException("Invalid Condition " + conditionForWait);
             }
         } catch (StaleElementReferenceException | NoSuchElementException e) {
-            // Handle the exception here (e.g., logging)
             System.out.println("No Such Element Exception is showing on searching element " + element);
         } catch (Exception e) {
             Log.error("Could Not Sync WebElement ", e);
@@ -61,15 +53,14 @@ public class FLUtilities extends BaseClass {
 
     protected void syncMultipleElement(WebDriver driver, List<WebElement> elementsList, String conditionForWait) {
         try {
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
             switch (conditionForWait) {
                 case "ToVisible":
-                    new WebDriverWait(driver, 15).until(ExpectedConditions.visibilityOfAllElements(elementsList));
+                    wait.until((WebDriver d) -> ExpectedConditions.visibilityOfAllElements(elementsList).apply(d));
                     break;
-
                 case "ToInvisible":
-                    new WebDriverWait(driver, 15).until(ExpectedConditions.invisibilityOfAllElements(elementsList));
+                    wait.until((WebDriver d) -> ExpectedConditions.invisibilityOfAllElements(elementsList).apply(d));
                     break;
-
                 default:
                     throw new FLException("Invalid Condition " + conditionForWait);
             }
@@ -106,7 +97,6 @@ public class FLUtilities extends BaseClass {
         throw new FLException("Failed to click WebElement after " + retryCount + " attempts");
     }
 
-
     protected void scrollToWebElement(WebDriver driver, WebElement element) {
         try {
             ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
@@ -116,10 +106,8 @@ public class FLUtilities extends BaseClass {
         }
     }
 
-
     protected void clickElementByJSE(WebDriver driver, WebElement element) {
         syncElement(driver, element, EnumsCommon.TOVISIBLE.getText());
-
         try {
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
         } catch (Exception e) {
@@ -137,7 +125,6 @@ public class FLUtilities extends BaseClass {
         }
     }
 
-
     protected void sendKeys(WebDriver driver, WebElement element, String stringToInput) {
         syncElement(driver, element, EnumsCommon.TOVISIBLE.getText());
         try {
@@ -146,7 +133,7 @@ public class FLUtilities extends BaseClass {
             element.sendKeys(stringToInput);
             element.sendKeys(Keys.TAB);
         } catch (StaleElementReferenceException | ElementClickInterceptedException e) {
-            syncElement(driver,element,EnumsCommon.TOCLICKABLE.getText());
+            syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
             // Scroll the element into view
             ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
             element.clear();
@@ -176,7 +163,6 @@ public class FLUtilities extends BaseClass {
             Log.error("Clicking WebElement From List Failed ", e);
             throw new FLException("Clicking WebElement From List Failed " + e.getMessage());
         }
-
     }
 
     protected void selectOptionFromListByCase(WebDriver driver, List<WebElement> webElementList, String optionValue, String actionType) {
@@ -194,7 +180,6 @@ public class FLUtilities extends BaseClass {
             Log.error("Clicking WebElement From List Failed ", e);
             throw new FLException("Clicking WebElement From List Failed " + e.getMessage());
         }
-
     }
 
     protected void sleepInMilliSeconds(int milliSeconds) {
@@ -208,13 +193,7 @@ public class FLUtilities extends BaseClass {
 
     protected void waitTilTextIsVisible(WebDriver driver, WebElement element) {
         try {
-            (new WebDriverWait(driver, 15)).until(new ExpectedCondition<Boolean>() {
-
-                public Boolean apply(WebDriver driver1) {
-
-                    return element.getText().length() != 0;
-                }
-            });
+            new WebDriverWait(driver, Duration.ofSeconds(15)).until(driver1 -> element.getText().length() != 0);
         } catch (Exception e) {
             Log.error("TEXT WAS NOT VISIBLE WITHIN GIVEN TIME");
             throw new FLException("TEXT WAS NOT VISIBLE WITHIN GIVEN TIME" + e);
@@ -222,7 +201,6 @@ public class FLUtilities extends BaseClass {
     }
 
     private void createConnection(TestContext testContext) {
-
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             System.out.println("Connecting to Database...");
@@ -231,26 +209,19 @@ public class FLUtilities extends BaseClass {
                 System.out.println("Connection Hashcode " + testContext.getConnection().hashCode());
                 System.out.println("Connected to the Database...");
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-        } catch (ClassNotFoundException ex) {
+        } catch (SQLException | ClassNotFoundException ex) {
             ex.printStackTrace();
         }
     }
 
     protected void waitUntilDropDownListPopulated(WebDriver driver, Select dropdown) {
         try {
-            FluentWait<WebDriver> wait = new FluentWait<WebDriver>(driver);
-            wait.pollingEvery(250, TimeUnit.MILLISECONDS);
-            wait.withTimeout(15, TimeUnit.SECONDS);
-            wait.ignoring(NoSuchElementException.class);
+            FluentWait<WebDriver> wait = new FluentWait<>(driver)
+                    .pollingEvery(Duration.ofMillis(250))
+                    .withTimeout(Duration.ofSeconds(15))
+                    .ignoring(NoSuchElementException.class);
 
-            Function<WebDriver, Boolean> function = arg0 -> {
-                return dropdown.getOptions().size() > 3;
-            };
-
-            wait.until(function);
-
+            wait.until(driver1 -> dropdown.getOptions().size() > 3);
         } catch (StaleElementReferenceException se) {
         } catch (Exception e) {
         }
@@ -294,9 +265,7 @@ public class FLUtilities extends BaseClass {
     }
 
     protected String getPDFText(String pdfFileName) {
-
         String pdfText;
-
         try {
             File pdfFile = new File(EnumsCommon.RELATIVE_DOWNLOADFILES_PATH.getText() + pdfFileName);
             PDDocument pdfDocument = PDDocument.load(new FileInputStream(pdfFile));
@@ -312,15 +281,12 @@ public class FLUtilities extends BaseClass {
             Log.error("Exception ", e);
             throw new FLException("Exception " + e.getMessage());
         }
-
         return pdfText;
     }
-
 
     protected void clickElement(WebDriver driver, String stringXpath) {
         WebElement element = driver.findElement(By.xpath(stringXpath));
         syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
-
         try {
             if (!element.isDisplayed()) {
                 scrollToWebElement(driver, element);
@@ -340,15 +306,13 @@ public class FLUtilities extends BaseClass {
             syncElement(driver, element, EnumsCommon.TOVISIBLE.getText());
             return element;
         } catch (NoSuchElementException e) {
-            // Handle the exception here (e.g., logging)
             System.out.println("No Such Element Exception is showing on searching element " + stringXpath);
-            return null; // or throw a custom exception
+            return null;
         }
     }
 
     public List<WebElement> findElements(WebDriver driver, String stringXpath) {
-        List<WebElement> element = driver.findElements(By.xpath(stringXpath));
-        return element;
+        return driver.findElements(By.xpath(stringXpath));
     }
 
     public void PDFBoxExtractImages(String pdfLocation, String pdfFleName, TestContext testContext) {
@@ -362,8 +326,7 @@ public class FLUtilities extends BaseClass {
             for (PDPage page : pageList) {
                 PDResources pdResources = page.getResources();
                 for (COSName object : pdResources.getXObjectNames()) {
-                    PDXObject pdxObject = null;
-                    pdxObject = pdResources.getXObject(object);
+                    PDXObject pdxObject = pdResources.getXObject(object);
                     if (pdxObject instanceof PDImageXObject) {
                         File file = new File(configProperties.get("imagesFolder.path") + testContext.getTestCaseID() + "/" + pdfFleName.replace(".pdf", "") + "/" + System.nanoTime() + ".png");
                         ImageIO.write(((PDImageXObject) pdxObject).getImage(), "png", file);
@@ -423,7 +386,6 @@ public class FLUtilities extends BaseClass {
             // Define a threshold for similarity
             double threshold = 0.7; // Adjust this as needed
             return mmr.maxVal > threshold;
-
         }
     }
 
@@ -451,8 +413,6 @@ public class FLUtilities extends BaseClass {
     }
 
     private boolean getCheckBoxAction(String action) {
-        return action.equalsIgnoreCase("yes") | action.equalsIgnoreCase("check") | action.equalsIgnoreCase("checked") | action.equalsIgnoreCase("selected");
+        return action.equalsIgnoreCase("yes") || action.equalsIgnoreCase("check") || action.equalsIgnoreCase("checked") || action.equalsIgnoreCase("selected");
     }
-
-
 }

@@ -1,28 +1,26 @@
 package com.hexure.firelight.runner;
 
-import cucumber.api.CucumberOptions;
-import cucumber.api.junit.Cucumber;
+import io.cucumber.junit.Cucumber;
+import io.cucumber.junit.CucumberOptions;
+import org.junit.runner.JUnitCore;
 import org.junit.runner.RunWith;
-
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
         features = {"classpath:"},
-        tags = {"@Test"},
+        tags = "@Test",
         glue = {"com.hexure.firelight.stepdefinitions"},
-        monochrome = true
+        monochrome = true,
+        publish = true
 )
 public class RunIntegrationTest {
 
     public static void main(String[] args) {
         // Add the UniqueTestCounter listener to your test run
-        org.junit.runner.JUnitCore core = new org.junit.runner.JUnitCore();
+        JUnitCore core = new JUnitCore();
         core.addListener(new UniqueTestCounter());
 
         // Run your tests
         core.run(RunIntegrationTest.class);
     }
-
-
 }
-

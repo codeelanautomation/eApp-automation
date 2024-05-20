@@ -7,8 +7,8 @@ import com.hexure.firelight.pages.CommonMethodsPage;
 import com.hexure.firelight.pages.SoftAssertionHandlerPage;
 import com.jayway.jsonpath.JsonPath;
 
-import cucumber.api.Scenario;
-import cucumber.api.java.en.Given;
+import io.cucumber.java.Scenario;
+import io.cucumber.java.en.Given;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -193,7 +193,7 @@ public class Flow_StepDefinitions extends FLUtilities {
         for (List<String> entry : entries)
             resultSet += "<tr style='color: green; font-weight: bold; background-color: #C5D88A;'> <td>" + entry.get(0) + "</td> <td>" + entry.get(1) + "</td> <td>" + entry.get(2) + "</td> <td>" + entry.get(3) + "</td> <td>" + entry.get(4) + "</td> <td>" + entry.get(5) + "</td> </tr>";
         resultSet += "</table>";
-        scenario.write(resultSet);
+        scenario.log(resultSet);
     }
 }
 

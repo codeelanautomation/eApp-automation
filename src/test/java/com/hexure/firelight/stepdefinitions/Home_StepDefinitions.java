@@ -5,16 +5,9 @@ import com.hexure.firelight.libraies.FLException;
 import com.hexure.firelight.libraies.FLUtilities;
 import com.hexure.firelight.libraies.TestContext;
 import com.hexure.firelight.pages.HomePage;
-import cucumber.api.java.en.Then;
+import io.cucumber.java.en.Then;
 import org.junit.Assert;
-import org.openqa.selenium.*;
-import org.openqa.selenium.edge.EdgeDriver;
-import org.openqa.selenium.remote.RemoteWebDriver;
-
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
+import org.openqa.selenium.WebDriver;
 
 public class Home_StepDefinitions extends FLUtilities {
     private final WebDriver driver;
