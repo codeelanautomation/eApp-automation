@@ -185,8 +185,6 @@ public class Rules_StepDefinitions extends FLUtilities {
             if (module.equalsIgnoreCase(moduleNameValue) | module.equalsIgnoreCase("All")) {
                 wizardTesting(fieldName);
                 fieldsEvaluated++;
-                if(fieldsEvaluated>1)
-                    break;
             }
         }
     }
