@@ -1,5 +1,8 @@
 package com.hexure.firelight.libraies.Enums;
 
+import lombok.Getter;
+
+@Getter
 public enum EnumsJSONProp {
     PRODUCT("product"),
     JURISDICTION("jurisdiction"),
@@ -11,7 +14,4 @@ public enum EnumsJSONProp {
         this.text = text;
     }
 
-    public String getText() {
-        return text;
-    }
 }
