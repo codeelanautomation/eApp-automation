@@ -28,9 +28,22 @@ import java.util.concurrent.TimeUnit;
 
 public class BaseClass {
 
-    private WebDriver driver = null;
     private static final Logger Log = LogManager.getLogger(BaseClass.class);
     protected static Properties configProperties = null;
+    private WebDriver driver = null;
+
+    private static ChromeOptions getOptions() {
+        Map<String, Object> preferences = new HashMap<>();
+        preferences.put("autofill.profile_enabled", false);
+        preferences.put("download.prompt_for_download", false);
+        preferences.put("download.extensions_to_open", "applications/pdf");
+        preferences.put("plugins.plugins_disabled", "Chrome PDF Viewer");
+        preferences.put("plugins.always_open_pdf_externally", true);
+
+        ChromeOptions chromeOptions = new ChromeOptions();
+        chromeOptions.setExperimentalOption("prefs", preferences);
+        return chromeOptions;
+    }
 
     /**
      * This method reads config.properties file and to set different variables at global level in the Framework.
@@ -86,8 +99,8 @@ public class BaseClass {
                         driver.manage().window().maximize();
                         break;
                     case "Edge":
-                            driver = new EdgeDriver(getEdgeOptions());
-                            driver.manage().window().maximize();
+                        driver = new EdgeDriver(getEdgeOptions());
+                        driver.manage().window().maximize();
                         break;
                     default:
                         throw new FLException("Invalid Value Provided For Browser");
@@ -146,16 +159,8 @@ public class BaseClass {
     private ChromeOptions getChromeOptions() {
         System.setProperty(configProperties.getProperty("chromeDriver.property"), configProperties.getProperty("chromeDriver.path"));
 
-        Map<String, Object> preferences = new HashMap<>();
-        preferences.put("autofill.profile_enabled", false);
-        preferences.put("download.prompt_for_download", false);
-        preferences.put("download.extensions_to_open", "applications/pdf");
-        preferences.put("plugins.plugins_disabled", "Chrome PDF Viewer");
-        preferences.put("plugins.always_open_pdf_externally", true);
-
-        ChromeOptions chromeOptions = new ChromeOptions();
-        chromeOptions.setExperimentalOption("prefs", preferences);
-        if (Boolean.valueOf(configProperties.getProperty("headlessExecution.switch")))
+        ChromeOptions chromeOptions = getOptions();
+        if (Boolean.parseBoolean(configProperties.getProperty("headlessExecution.switch")))
             chromeOptions.addArguments("headless", "--disable-gpu", "--window-size=1920,1080", "--zoom=0.8", "--ignore-certificate-errors");
 
         chromeOptions.addArguments("disable-infobars");
@@ -177,7 +182,7 @@ public class BaseClass {
     private FirefoxOptions getFirefoxOption() {
         System.setProperty(configProperties.getProperty("firefoxDriver.property"), configProperties.getProperty("firefoxDriver.path"));
         FirefoxOptions options = new FirefoxOptions();
-        if (Boolean.valueOf(configProperties.getProperty("headlessExecution.switch")))
+        if (Boolean.parseBoolean(configProperties.getProperty("headlessExecution.switch")))
             options.addArguments("--headless");
 
         FirefoxProfile profile = new FirefoxProfile();
@@ -347,7 +352,7 @@ public class BaseClass {
             waitForPageToLoad(driver);
         }
 
-        if (!Boolean.valueOf(testContext.getCaptureScreenshot()))
+        if (!Boolean.parseBoolean(testContext.getCaptureScreenshot()))
             return;
 
         try {
@@ -448,7 +453,7 @@ public class BaseClass {
 
         try {
             if (testContext.getDriver() != null) {
-                testContext.getDriver().quit();
+//                testContext.getDriver().quit();
                 Log.info("Driver Quit Successfully");
             }
             Log.info("<<<===== END OF TEST =====>>>");
