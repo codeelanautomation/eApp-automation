@@ -105,7 +105,7 @@ public class FLUtilities extends BaseClass {
             element.sendKeys(stringToInput);
             element.sendKeys(Keys.TAB);
         } catch (StaleElementReferenceException | ElementClickInterceptedException e) {
-            syncElement(driver,element,EnumsCommon.TOCLICKABLE.getText());
+            syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
             // Scroll the element into view
             ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
             element.clear();
@@ -131,7 +131,7 @@ public class FLUtilities extends BaseClass {
 
     protected void waitUntilDropDownListPopulated(WebDriver driver, Select dropdown) {
         try {
-            FluentWait<WebDriver> wait = new FluentWait<WebDriver>(driver);
+            FluentWait<WebDriver> wait = new FluentWait<>(driver);
             wait.pollingEvery(250, TimeUnit.MILLISECONDS);
             wait.withTimeout(15, TimeUnit.SECONDS);
             wait.ignoring(NoSuchElementException.class);
@@ -143,7 +143,9 @@ public class FLUtilities extends BaseClass {
             wait.until(function);
 
         } catch (StaleElementReferenceException se) {
+            throw new FLException("Element is not available in DOM " + se.getMessage());
         } catch (Exception e) {
+            throw new FLException("Error in populating dropdown " + e.getMessage());
         }
     }
 
@@ -177,8 +179,7 @@ public class FLUtilities extends BaseClass {
     }
 
     public List<WebElement> findElements(WebDriver driver, String stringXpath) {
-        List<WebElement> element = driver.findElements(By.xpath(stringXpath));
-        return element;
+        return driver.findElements(By.xpath(stringXpath));
     }
 
     protected void checkBoxSelectYesNO(String userAction, WebElement element) {
@@ -210,11 +211,11 @@ public class FLUtilities extends BaseClass {
 
 
     /**
-     * index of a given column in excel
+     * index of a given column in Excel
      *
-     * @param headerRow
-     * @param columnName
-     * @return
+     * @param headerRow  - Header row of an Excel sheet
+     * @param columnName - Column name of header row
+     * @return int, index of that Column
      */
     public int findColumnIndex(Row headerRow, String columnName) {
         Iterator<Cell> cellIterator = headerRow.cellIterator();
