@@ -8,6 +8,7 @@ import com.hexure.firelight.libraies.FLException;
 import com.hexure.firelight.libraies.FLUtilities;
 import com.jayway.jsonpath.JsonPath;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
@@ -26,6 +27,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class E2EFlowDataPage extends FLUtilities {
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -83,9 +85,8 @@ public class E2EFlowDataPage extends FLUtilities {
     public void createForesightTestDataInterface(String jsonFile, String excelFile) {
         String filePath = EnumsCommon.ABSOLUTE_FILES_PATH.getText() + excelFile;
         try (FileInputStream file = new FileInputStream(filePath);
-             XSSFWorkbook workbook = new XSSFWorkbook(file)) {
-
-            Sheet sheet = workbook.getSheet("Interface"); // Assuming data is in the first sheet
+            XSSFWorkbook workbook = new XSSFWorkbook(file)) {
+            Sheet sheet = workbook.getSheet("Interface");
             Iterator<Row> iterator = sheet.iterator();
             Row headerRow = iterator.next().getSheet().getRow(0);
 
@@ -139,8 +140,8 @@ public class E2EFlowDataPage extends FLUtilities {
     /**
      * Create input JSON for multiple sheets
      *
-     * @param excelFile
-     * @param product
+     * @param excelFile - Spec file
+     * @param product   - Product to be used to create FL application
      */
     public void createForesightTestData(String excelFile, String product) {
         String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + excelFile;
@@ -179,9 +180,9 @@ public class E2EFlowDataPage extends FLUtilities {
     /**
      * Create key value pair with columnName as key and cell value as value for a JSONObject jsonRows
      *
-     * @param headerRow
-     * @param currentRow
-     * @param jsonRows
+     * @param headerRow  - Header row of an Excel Spec
+     * @param currentRow - Pointer to a row under observation
+     * @param jsonRows   - JSONObject jsonRows
      */
     private void extractRowData(Row headerRow, Row currentRow, JSONObject jsonRows) {
         for (int i = 0; i < headerRow.getLastCellNum(); i++) {
@@ -199,8 +200,8 @@ public class E2EFlowDataPage extends FLUtilities {
     /**
      * Read ModuleJurisdcitionMapping sheet and create input json and put entries in JSONObject jsonRows
      *
-     * @param sheet
-     * @param jsonRows
+     * @param sheet    - Sheet name
+     * @param jsonRows - JSONObject jsonRows
      */
     private void processJurisdictionMappingSheet(Sheet sheet, JSONObject jsonRows) {
         Iterator<Row> iterator = sheet.iterator();
@@ -233,16 +234,15 @@ public class E2EFlowDataPage extends FLUtilities {
     /**
      * Read wizard spec sheet and create input json
      *
-     * @param sheet
-     * @param jsonRows
-     * @param fieldList
-     * @param product
+     * @param sheet     - Sheet name
+     * @param jsonRows  - JSONObject jsonRows
+     * @param fieldList - list of all the validated fields
+     * @param product   - Product to create FL application
      */
     private void processEAppWizardSpecSheet(Sheet sheet, JSONObject jsonRows, String fieldList, String product) {
         Row headerRow;
         Iterator<Row> iterator = sheet.iterator();
 
-        // Assuming the first row contains headers
         headerRow = iterator.next().getSheet().getRow(0);
 
         StringBuilder fieldListBuilder = new StringBuilder(fieldList);
@@ -261,6 +261,13 @@ public class E2EFlowDataPage extends FLUtilities {
                 }
             }
             tempJsonReplacement = new JSONObject(tempJson);
+            if(!tempJson.containsKey("ModuleSectionName"))
+                tempJson.put("ModuleSectionName","");
+            if(!tempJson.containsKey("CommonTag"))
+                tempJson.put("CommonTag","");
+            if(!tempJson.containsKey("Order"))
+                tempJson.put("Order","");
+
             if (tempJson.get("ModuleSectionName").equals("Replacements Module")) {
                 List<String> numberExchanges = new ArrayList<>(Arrays.asList(jsonRows.get("NumberofExchanges/Transfers/Rollovers").toString().trim().split(", ")));
                 numberExchanges.removeAll(Collections.singletonList("Blank"));
@@ -283,7 +290,7 @@ public class E2EFlowDataPage extends FLUtilities {
     /**
      * Delete existing feature and runner files
      *
-     * @param folderPath
+     * @param folderPath - Folder in which reports are saved
      */
     private void deleteRunnerFeature(String folderPath) {
         File folder = new File(folderPath);
@@ -308,16 +315,13 @@ public class E2EFlowDataPage extends FLUtilities {
      * handle "+" operator
      * handle ">=" and "<=" operators
      *
-     * @param cell
-     * @param jsonRows
-     * @return cell value
+     * @param cell     - Cell of an Excel
+     * @param jsonRows - JSONObject jsonRows
+     * @return cell value - Cell value of a cell under test
      */
     private String getCellValue(Cell cell, JSONObject jsonRows) {
         String excelValue = "";
-        StringBuilder newValue = new StringBuilder();
-        Pattern pattern = Pattern.compile("");
 
-        List<String> listRules;
         if (cell != null && cell.getCellType() == CellType.STRING && !(cell.getStringCellValue().trim().equalsIgnoreCase("None"))) {
             excelValue = cell.getStringCellValue().trim();
             excelValue = excelValue.replaceAll("//", "/");
@@ -328,8 +332,8 @@ public class E2EFlowDataPage extends FLUtilities {
             excelValue = excelValue.replaceAll("<>", " <> ");
             excelValue = excelValue.replaceAll("“", "");
             excelValue = excelValue.replaceAll("\"", "");
-            excelValue = excelValue.replaceAll("[\\s]+[.]+", ".");
-            excelValue = excelValue.replaceAll("[\\s]+", " ");
+            excelValue = excelValue.replaceAll("\\s+[.]+", ".");
+            excelValue = excelValue.replaceAll("\\s+", " ");
             excelValue = excelValue.replaceAll("> =", ">=");
             excelValue = excelValue.replaceAll("< =", "<=");
             excelValue.trim();
@@ -338,7 +342,7 @@ public class E2EFlowDataPage extends FLUtilities {
             if (excelValue.toLowerCase().contains("<>"))
                 excelValue = handleNotEqual(excelValue, jsonRows);
             if (excelValue.toLowerCase().contains("+"))
-                excelValue = handleAddition(excelValue, jsonRows);
+                excelValue = handleAddition(excelValue);
             if (excelValue.toLowerCase().contains(">=") | excelValue.toLowerCase().contains("<="))
                 excelValue = handleComparisonOperators(excelValue);
         } else if (cell != null && cell.getCellType() == CellType.NUMERIC)
@@ -367,7 +371,7 @@ public class E2EFlowDataPage extends FLUtilities {
         return excelValue;
     }
 
-    public String handleAddition(String excelValue, JSONObject jsonRows) {
+    public String handleAddition(String excelValue) {
         String conditionAnother = "";
         String expectedResult = "";
         String expectedOperator = "";
@@ -400,11 +404,11 @@ public class E2EFlowDataPage extends FLUtilities {
                 newValue.append(rule).append(";");
         }
         excelValue = newValue.substring(0, newValue.length() - 1);
-        return  excelValue;
+        return excelValue;
     }
 
     public String handleOrConditions(String excelValue) {
-        List<String> listRules = Arrays.asList(excelValue.split(";"));
+        String[] listRules = excelValue.split(";");
         StringBuilder newValue = new StringBuilder();
         Pattern pattern = Pattern.compile("");
 
@@ -441,10 +445,10 @@ public class E2EFlowDataPage extends FLUtilities {
         return excelValue;
     }
 
-    public  String handleNotEqual(String excelValue, JSONObject jsonRows) {
-        List<String> listRules = Arrays.asList(excelValue.split(";"));
+    public String handleNotEqual(String excelValue, JSONObject jsonRows) {
+        String[] listRules = excelValue.split(";");
         StringBuilder newValue = new StringBuilder();
-        Pattern pattern = Pattern.compile("");
+        Pattern pattern;
 
         for (String rule : listRules) {
             JSONObject values;
@@ -479,17 +483,17 @@ public class E2EFlowDataPage extends FLUtilities {
                 newValue.append(rule).append(";");
         }
         excelValue = newValue.substring(0, newValue.length() - 1);
-        return  excelValue;
+        return excelValue;
     }
 
     /**
      * Create feature file based on module and jurisdiction
      *
-     * @param client
-     * @param module
-     * @param product
-     * @param fileName
-     * @param state
+     * @param client   - Client name
+     * @param module   - module name
+     * @param product  - product name
+     * @param fileName - Spec from client
+     * @param state    - Jurisdiction to create FL application
      */
     public void createFeatureFile(String client, String module, String product, String fileName, String state) {
         ArrayList<String> lines = new ArrayList<>();
@@ -500,7 +504,7 @@ public class E2EFlowDataPage extends FLUtilities {
                 line = line.replaceAll("ModuleName", module).replaceAll("ModuleTag", module.replaceAll(" ", "")).replaceAll("Client", client);
                 line = line.replaceAll("productName", product).replaceAll("fileName", fileName).replaceAll("state", state);
                 lines.add(line);
-            }  //end if
+            }
             reader.close();
             File tempFile = new File(EnumsCommon.FEATUREFILESPATH.getText() + "ForesightTest/" + client + "_" + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + ".feature");
             tempFile.getParentFile().mkdirs();
@@ -517,9 +521,9 @@ public class E2EFlowDataPage extends FLUtilities {
     /**
      * Create runner file based on module and jurisdiction
      *
-     * @param client
-     * @param module
-     * @param state
+     * @param client - Client name
+     * @param module - module name
+     * @param state  - Jurisdiction to create FL application
      */
     public void createRunnerFile(String client, String module, String state) {
         ArrayList<String> lines = new ArrayList<>();
@@ -534,7 +538,7 @@ public class E2EFlowDataPage extends FLUtilities {
                 line = replaceLine(line, "public class RunFireLightTest {", "public class RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test" + " {");
                 line = replaceLine(line, "core.run(RunFireLightTest.class);", "\t\tcore.run(RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test" + ".class);");
                 lines.add(line);
-            }  //end if
+            }
             reader.close();
             File tempFile = new File(EnumsCommon.RUNNERFILESPATH.getText() + "ForeSightTest/RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test" + ".java");
             tempFile.getParentFile().mkdirs();
@@ -559,7 +563,7 @@ public class E2EFlowDataPage extends FLUtilities {
             while ((line = reader.readLine()) != null) {
                 line = replaceLine(line, "package com.hexure.firelight.runner;", "package com.hexure.firelight.runner.ForeSightTest;");
                 lines.add(line);
-            }  //end if
+            }
             reader.close();
             File tempFile = new File(EnumsCommon.RUNNERFILESPATH.getText() + "ForeSightTest/UniqueTestCounter.java");
             tempFile.getParentFile().mkdirs();
@@ -576,10 +580,10 @@ public class E2EFlowDataPage extends FLUtilities {
     /**
      * Replace line with given parameters
      *
-     * @param line
-     * @param toBeReplaced
-     * @param replacement
-     * @return
+     * @param line         - original line
+     * @param toBeReplaced - Substring which needs to be replaced
+     * @param replacement  - Replace by given string
+     * @return Replaced string - Replaced string
      */
     public String replaceLine(String line, String toBeReplaced, String replacement) {
         return line.contains(toBeReplaced) ? replacement : line;
@@ -589,20 +593,17 @@ public class E2EFlowDataPage extends FLUtilities {
         String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + "E2EFlow.xlsx";
         try (FileInputStream file = new FileInputStream(filePath);
              XSSFWorkbook workbook = new XSSFWorkbook(file)) {
-            Sheet sheet = workbook.getSheet(clientName); // Assuming data is in the first sheet
+            Sheet sheet = workbook.getSheet(clientName);
 
             Iterator<Row> iterator = sheet.iterator();
-
-            // Assuming the first row contains headers
             Row headerRow = iterator.next().getSheet().getRow(0);
             JSONObject jsonRows = new JSONObject();
             while (iterator.hasNext()) {
                 Row currentRow = iterator.next();
                 JSONObject tempJson = new JSONObject();
-                String secondData = "";
+                String secondData;
 
                 List<String> rowValue = Arrays.asList("jurisdiction", "ProductType");
-                // Create input file in json format
                 if (rowValue.stream().noneMatch(currentRow.getCell(2).getStringCellValue()::equalsIgnoreCase)) {
                     tempJson.putAll(addCellValueToJson(headerRow, currentRow, tempJson));
                     secondData = currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2EDATAITEMID.getText())).getStringCellValue().trim();

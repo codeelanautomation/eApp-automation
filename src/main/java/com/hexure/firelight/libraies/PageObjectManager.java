@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.WebDriver;
 
 public class PageObjectManager extends BaseClass {
+    private static final Logger Log = LogManager.getLogger(PageObjectManager.class);
     private final WebDriver driver;
     private LoginPage onLoginPage;
     private CreateApplicationPage onCreateApplicationPage;
@@ -15,7 +16,6 @@ public class PageObjectManager extends BaseClass {
     private E2EFlowDataPage onE2EFlowDataPage;
     private WizardFlowDataPage onWizardFlowDataPage;
     private SoftAssertionHandlerPage onSoftAssertionHandlerPage;
-    private static final Logger Log = LogManager.getLogger(PageObjectManager.class);
 
     public PageObjectManager(WebDriver driver) {
         this.driver = driver;

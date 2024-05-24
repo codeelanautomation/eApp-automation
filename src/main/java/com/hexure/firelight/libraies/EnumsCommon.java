@@ -1,5 +1,8 @@
 package com.hexure.firelight.libraies;
 
+import lombok.Getter;
+
+@Getter
 public enum EnumsCommon {
     TOVISIBLE("ToVisible"),
     ABSOLUTE_CLIENTFILES_PATH(System.getProperty("user.dir") + "\\src\\test\\resources\\testdata\\Client\\"),
@@ -21,7 +24,4 @@ public enum EnumsCommon {
         this.text = text;
     }
 
-    public String getText() {
-        return text;
-    }
 }

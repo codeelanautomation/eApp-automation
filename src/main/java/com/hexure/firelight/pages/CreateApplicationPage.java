@@ -4,6 +4,7 @@ import com.hexure.firelight.libraies.EnumsCommon;
 import com.hexure.firelight.libraies.FLUtilities;
 import com.hexure.firelight.libraies.TestContext;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
@@ -12,22 +13,22 @@ import org.openqa.selenium.support.ui.Select;
 
 import java.util.List;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class CreateApplicationPage extends FLUtilities {
     public String mandetoryFormList = "//div[@class='navDrawer__bundleName' and text()='%s']/..//span[@class='far fa-exclamation-triangle navDrawer__pageGraphic validation-summary-errors']/../..";
     public String WizardPageNameExpandmvc = "//*[@class='ITWizardPageName']";
     public String optionalFormList = "//*[@class=\"navDrawer__bundleName\" and text()=\"%s\"]/..//*[@class=\"far fa-file navDrawer__pageGraphic \" or @class=\"fas fa-file-alt navDrawer__pageGraphic \"]/../..";
-    public String list_OfProducts = "//div[@id='divProducts']/a//div[contains(text(),'%s')]";
-
+    public String listOfProducts = "//div[@id='divProducts']/a//div[contains(text(),'%s')]";
 
     @FindBy(xpath = "//td[@class='top']//span[text()='Application']")
     private WebElement btnApplication;
 
     @FindBy(id = "buildNew")
-    private WebElement btn_Create;
+    private WebElement btnCreate;
 
     @FindBy(id = "txtAppName")
-    private WebElement txtBox_newAppName;
+    private WebElement txtboxNewappname;
 
     @FindBy(xpath = "//a[@title='Close']")
     private WebElement btnClose;
@@ -36,13 +37,13 @@ public class CreateApplicationPage extends FLUtilities {
     private List<WebElement> lstBtnClose;
 
     @FindBy(xpath = "//*[@class='ITWizardPageName']")
-    private WebElement WizardPageNameExpand;
+    private WebElement wizardPageNameExpand;
 
     @FindBy(xpath = "//button[@id='cmdSave' or @id='cmdCreate']")
-    private WebElement btn_CreateActivity;
+    private WebElement btnCreateActivity;
 
     @FindBy(id = "Jurisdiction")
-    private WebElement dd_Jurisdiction;
+    private WebElement ddJurisdiction;
 
     @FindBy(id = "toolbar__home")
     private WebElement btnHome;
@@ -51,7 +52,7 @@ public class CreateApplicationPage extends FLUtilities {
     private WebElement btnPopupOK;
 
     @FindBy(id = "ProductType")
-    private WebElement dd_ProductType;
+    private WebElement ddProductType;
 
     public CreateApplicationPage(WebDriver driver) {
         initElements(driver);
@@ -63,21 +64,19 @@ public class CreateApplicationPage extends FLUtilities {
 
     public void createApplication(TestContext testContext, WebDriver driver, String product, String productType, String jurisdiction) {
         clickElement(driver, getBtnApplication());
-        new Select(getDd_Jurisdiction()).selectByVisibleText(jurisdiction);
+        new Select(getDdJurisdiction()).selectByVisibleText(jurisdiction);
         waitForPageToLoad(driver);
         sleepInMilliSeconds(2000);
-        waitUntilDropDownListPopulated(driver, new Select(getDd_ProductType()));
-        captureScreenshot(driver, testContext, false);
-        new Select(getDd_ProductType()).selectByVisibleText(productType);
+        new Select(getDdProductType()).selectByVisibleText(productType);
         sleepInMilliSeconds(2000);
-        syncElement(driver, findElement(driver, String.format(list_OfProducts, product)), EnumsCommon.TOCLICKABLE.getText());
-        clickElement(driver, findElement(driver, String.format(list_OfProducts, product)));
+        syncElement(driver, findElement(driver, String.format(listOfProducts, product)), EnumsCommon.TOCLICKABLE.getText());
+        clickElement(driver, findElement(driver, String.format(listOfProducts, product)));
         waitForPageToLoad(driver);
-        clickElement(driver, getBtn_Create());
+        clickElement(driver, getBtnCreate());
         String newAppName = "AT " + testContext.getMapTestData().get("product") + " " + getDate("newAppName");
-        getTxtBox_newAppName().clear();
-        getTxtBox_newAppName().sendKeys(newAppName);
-        getBtn_CreateActivity().click();
+        getTxtboxNewappname().clear();
+        getTxtboxNewappname().sendKeys(newAppName);
+        getBtnCreateActivity().click();
         waitForPageToLoad(driver);
     }
 }

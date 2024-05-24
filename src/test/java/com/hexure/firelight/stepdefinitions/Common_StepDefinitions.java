@@ -6,9 +6,8 @@ import com.hexure.firelight.libraies.TestContext;
 import com.hexure.firelight.pages.CommonMethodsPage;
 import com.hexure.firelight.pages.CreateApplicationPage;
 import com.hexure.firelight.pages.DataEntryPage;
-import com.hexure.firelight.pages.SoftAssertionHandlerPage;
-import cucumber.api.java.en.Given;
-import cucumber.api.java.en.Then;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
 import io.qameta.allure.Allure;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,7 +17,6 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
-import java.awt.*;
 import java.util.List;
 
 public class Common_StepDefinitions extends FLUtilities {
@@ -28,7 +26,6 @@ public class Common_StepDefinitions extends FLUtilities {
     private final CreateApplicationPage onCreateApplicationPage;
     private final DataEntryPage onDataEntryPage;
     private final CommonMethodsPage onCommonMethodsPage;
-    private final SoftAssertionHandlerPage onSoftAssertionHandlerPage;
 
     public Common_StepDefinitions(TestContext context) {
         testContext = context;
@@ -36,15 +33,14 @@ public class Common_StepDefinitions extends FLUtilities {
         onCreateApplicationPage = context.getPageObjectManager().getCreateApplicationPage();
         onDataEntryPage = context.getPageObjectManager().getDataEntryPage();
         onCommonMethodsPage = context.getPageObjectManager().getCommonMethodPage();
-        onSoftAssertionHandlerPage = testContext.getPageObjectManager().getSoftAssertionHandlerPage();
     }
 
     @Given("User is on FireLight login page for TestCase {string}")
-    public void userIsOnFLLoginPage(String testCaseID) throws AWTException {
+    public void userIsOnFLLoginPage(String testCaseID) {
         commonSetup(testCaseID);
     }
 
-    private void commonSetup(String testCaseID) throws AWTException {
+    private void commonSetup(String testCaseID) {
         testContext.setTestCaseID(testCaseID.split("_")[2]);
         testContext.setModuleName(testCaseID.split("_")[0]);
         testContext.setScreenshotFolderName(testCaseID.split("_")[1]);
@@ -55,8 +51,8 @@ public class Common_StepDefinitions extends FLUtilities {
         System.out.println("CaptureScreenshot = " + testContext.getCaptureScreenshot());
         System.out.println("ScreenshotFolder = " + testContext.getScreenshotFolderName());
         openLoginPage(driver, testContext);
-        testContext.getScenario().write("<div style='width: 5%; position: absolute; top: 5px; font-size: 2vw; border: none; color: green; text-align: center; font-weight: bold; background-color: #C5D88A; left: 50%; transform: translateX(-50%);'>" + testContext.getTestCaseID() + "</div>");
-        Log.info("TEST CASE " + testCaseID + " STARTED");
+        testContext.getScenario().log("<div style='width: 5%; position: absolute; top: 5px; font-size: 2vw; border: none; color: green; text-align: center; font-weight: bold; background-color: #C5D88A; left: 50%; transform: translateX(-50%);'>" + testContext.getTestCaseID() + "</div>");
+        Log.info("TEST CASE {} STARTED", testCaseID);
     }
 
     @Then("User clicks {string} button")
@@ -65,7 +61,7 @@ public class Common_StepDefinitions extends FLUtilities {
         captureScreenshot(driver, testContext, false);
         switch (whichButton) {
             case "Create":
-                clickElement(driver, onCreateApplicationPage.getBtn_Create());
+                clickElement(driver, onCreateApplicationPage.getBtnCreate());
                 break;
             case "Close":
                 if (!onCreateApplicationPage.getLstBtnClose().isEmpty())
@@ -81,9 +77,9 @@ public class Common_StepDefinitions extends FLUtilities {
     public void userEntersNewApplicationName() {
         String newAppName = "AT " + testContext.getMapTestData().get("product") + " " + getDate("newAppName");
         Allure.addAttachment("Application name is ", newAppName);
-        Log.info("Application name is " + newAppName + "for test case " + testContext.getTestCaseID());
-        onCreateApplicationPage.getTxtBox_newAppName().clear();
-        onCreateApplicationPage.getTxtBox_newAppName().sendKeys(newAppName);
+        Log.info("Application name is {} for test case {}", newAppName, testContext.getTestCaseID());
+        onCreateApplicationPage.getTxtboxNewappname().clear();
+        onCreateApplicationPage.getTxtboxNewappname().sendKeys(newAppName);
         addPropertyValueInJSON(testContext.getTestCaseID(), testContext, EnumsJSONProp.NEWPRODUCTNAME.getText(), newAppName);
         captureScreenshot(driver, testContext, false);
     }
@@ -98,7 +94,7 @@ public class Common_StepDefinitions extends FLUtilities {
     }
 
     @Then("User opens {string} Required for Form {string}")
-    public void openRequiredForForm(String formName, String formMenu) throws InterruptedException {
+    public void openRequiredForForm(String formName, String formMenu) {
         waitForPageToLoad(driver);
         JavascriptExecutor executor = (JavascriptExecutor) driver;
         String script = "return getComputedStyle(arguments[0]).getPropertyValue('color');";
@@ -115,7 +111,6 @@ public class Common_StepDefinitions extends FLUtilities {
             }
         }
         waitForPageToLoad(driver);
-//        Assert.assertEquals("Data entry page header name mismatched", formMenu, getElement(driver, onCommonMethods_reactPage.getDataEntryPageHeaderReact()).getText());
         Assert.assertEquals("Data entry page header name mismatched", formName, onDataEntryPage.getFormName().getAttribute("innerText"));
     }
 
@@ -130,7 +125,6 @@ public class Common_StepDefinitions extends FLUtilities {
             if (form.equals(formName)) {
                 element.click();
                 break;
-//                }
             }
         }
     }
@@ -145,7 +139,7 @@ public class Common_StepDefinitions extends FLUtilities {
     @Then("User clicks on Create button on Rename window")
     public void userClicksOnCreateButtonOnRenameWindow() {
         captureScreenshot(driver, testContext, false);
-        onCreateApplicationPage.getBtn_CreateActivity().click();
+        onCreateApplicationPage.getBtnCreateActivity().click();
     }
 
 }

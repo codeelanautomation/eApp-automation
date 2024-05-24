@@ -6,6 +6,7 @@ import com.hexure.firelight.libraies.TestContext;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -23,6 +24,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class WizardFlowDataPage extends FLUtilities {
     public CommonMethodsPage onCommonMethodsPage;
@@ -49,6 +51,7 @@ public class WizardFlowDataPage extends FLUtilities {
     List<String> displayConditions = new ArrayList<>();
     List<String> skippedInvalidElements = new ArrayList<>();
     String executedJurisdiction = "";
+    int fieldsEvaluated = 0;
 
     public WizardFlowDataPage(WebDriver driver) {
         initElements(driver);
@@ -56,6 +59,26 @@ public class WizardFlowDataPage extends FLUtilities {
 
     private void initElements(WebDriver driver) {
         PageFactory.initElements(driver, this);
+    }
+
+
+    /**
+     * This method will iterate over each field of a module and start validating it.
+     *
+     * @param module - module name of field under test
+     */
+    public void verifyFormDataWithInboundXml(String module) {
+        String moduleNameValue;
+        Set<String> fieldList = new LinkedHashSet<>(Arrays.asList(testContext.getMapTestData().get("fieldList").split(", ")));
+        for (String fieldName : fieldList) {
+            moduleNameValue = JsonPath.read(testContext.getMapTestData().get(fieldName).trim(), "$.ModuleSectionName").toString().trim();
+            if (module.equalsIgnoreCase(moduleNameValue) | module.equalsIgnoreCase("All")) {
+                wizardTesting(fieldName);
+                fieldsEvaluated++;
+                if(fieldName.equalsIgnoreCase("Owner_DOB"))
+                    break;
+            }
+        }
     }
 
     public void setPageObjects(TestContext testContext, WebDriver driver, String executedJurisdiction) {
@@ -68,20 +91,20 @@ public class WizardFlowDataPage extends FLUtilities {
     }
 
     /**
-     * @param field This will validate following sections if available : List Options, Rules Wizard, Length and Format.
-     *              Under RulesWizard, while testing default values, it validates placeholder and validation rules too.
-     *              For each rule, combinations of conditions are created along with logical operator.
-     *              Then each dependednt condition is set to validate the field under test.
-     *              <p>
-     *              Each rule will validate following parts:
-     *              A) Whether element with given commonTag exists. If it doesn't, it is added to invalidTags list. This is checked for the field under test and its dependent conditions
-     *              B) If commonTag exists in JSON.
-     *              C) If display rule is specified, it will first set all those dependent conditions.
-     *              D) Based on this display rule, whether Page for field under test is displayed.
-     *              E) Based on this display rule, whether field under test is displayed.
-     *              F) Based on this display rule, whether field under test is enabled.
-     *              G) If the field under test is radio button/dropdown, whether it contains given value to be set
-     *              H) All these checks C - F are checked for dependent conditions too
+     * @param field
+     * This will validate following sections if available : List Options, Rules Wizard, Length and Format.
+     * Under RulesWizard, while testing default values, it validates placeholder and validation rules too.
+     * For each rule, combinations of conditions are created along with logical operator.
+     * Then each dependednt condition is set to validate the field under test.
+     * Each rule will validate following parts:
+     * A) Whether element with given commonTag exists. If it doesn't, it is added to invalidTags list. This is checked for the field under test and its dependent conditions
+     * B) If commonTag exists in JSON.
+     * C) If display rule is specified, it will first set all those dependent conditions.
+     * D) Based on this display rule, whether Page for field under test is displayed.
+     * E) Based on this display rule, whether field under test is displayed.
+     * F) Based on this display rule, whether field under test is enabled.
+     * G) If the field under test is radio button/dropdown, whether it contains given value to be set
+     * H) All these checks C - F are checked for dependent conditions too
      */
     public void wizardTesting(String field) {
         String section = "";
@@ -115,13 +138,13 @@ public class WizardFlowDataPage extends FLUtilities {
                         displayConditions.clear();
                         try {
                             switch (rule) {
-                                /** Verify dropdown/radio button options in UI matches with the ones provided in spec. **/
+                                /* Verify dropdown/radio button options in UI matches with the ones provided in spec. **/
                                 case "ListOptions":
                                     mapConditions.clear();
                                     verifyListOptions(valueJson, field, order);
                                     break;
                                 case "RulesWizard":
-                                    /** Iterate over each rule of Rules Wizard column **/
+                                    /* Iterate over each rule of Rules Wizard column **/
                                     for (String distinctRule : JsonPath.read(valueJson, "$." + rule).toString().trim().split(";")) {
                                         distinctRule = distinctRule.replaceFirst("(\\d+\\.\\s*)?", "").trim().replaceFirst("\\.$", "").trim();
                                         System.out.println(order + ". " + field + " -> " + distinctRule);
@@ -134,35 +157,35 @@ public class WizardFlowDataPage extends FLUtilities {
                                             enableDisplayCondition(valueJson, displayConditions, howManyOperatorDisplayCondition);
                                             invalidTag = getInvalidTags(skippedInvalidElements, distinctRule);
                                             if (invalidTag.isEmpty()) {
-                                                /** Validate dropdown options or label of any text depending on given conditions **/
+                                                /* Validate dropdown options or label of any text depending on given conditions **/
                                                 if (Pattern.compile("(\\d+\\.\\s*)?(?i)If (.*?),? (?i)then (?i)(SHOW|HIDE) (Options|Option|Label as) (.*)\\.?").matcher(distinctRule).find()) {
                                                     mapConditions.clear();
-                                                    handleShowHideOptionsLabel(valueJson, mapConditions, order, field, distinctRule, wizardControlType);
+                                                    handleShowHideOptionsLabel(valueJson, order, field, distinctRule, wizardControlType);
                                                 } else if (Pattern.compile("(\\d+\\.\\s*)?(?i)If (.*?)(?:,)? (?i)then (.*)\\.?").matcher(distinctRule).find()) {
-                                                    /** Validates visibility coditions for a field based on some given conditions  **/
+                                                    /* Validates visibility coditions for a field based on some given conditions  **/
                                                     handleVisibilityRules(valueJson, mapConditions, order, field, distinctRule, wizardControlType);
                                                 } else if (Pattern.compile("(\\d+\\.\\s*)?(?i)(Default|Placeholder) = (.*)\\.?").matcher(distinctRule).find()) {
-                                                    /** Validates Default value of a field
-                                                     * Also validate Placeholder value if given in spec and validation rules for each field **/
+                                                    /* Validates Default value of a field
+                                                      Also validate Placeholder value if given in spec and validation rules for each field **/
                                                     handleDefaultPlaceholderRules(valueJson, mapConditions, order, field, distinctRule, wizardControlType, section);
                                                 } else if (Pattern.compile("(\\d+\\.\\s*)?(Age is calculated on age last birth date|(?i)Always enabled|(?i)Always disable|Optional)\\.?").matcher(distinctRule).find()) {
-                                                    /** validates all other cases for a field **/
+                                                    /* validates all other cases for a field **/
                                                     handleAllOtherRulesWizards(valueJson, mapConditions, order, field, distinctRule, wizardControlType);
                                                 } else {
                                                     System.out.println("Rule " + distinctRule + " does not match any criteria for field " + field);
-                                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Rule does not match any criteria for field", testContext);
+                                                    onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "Rule does not match any criteria for field");
                                                 }
                                             } else
-                                                onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
+                                                onSoftAssertionHandlerPage.assertSkippedElement(order, executedJurisdiction, moduleName, field, "Key " + invalidTag + " not a valid tag");
                                         } else
-                                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, reason, testContext);
+                                            onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, reason);
                                     }
                                     enableDisplayCondition(valueJson, displayEnableConditions, howManyOperatorEnableCondition);
                                     break;
-                                /** Validates length and Format of a field **/
+                                /* Validates length and Format of a field **/
                                 case "Length":
                                 case "Format":
-                                    handleLengthFormatRules(testContext, driver, valueJson, order, field, rule, wizardControlType, executedJurisdiction, moduleName);
+                                    handleLengthFormatRules(valueJson, order, field, rule, wizardControlType, executedJurisdiction, moduleName);
                                     break;
                                 default:
                                     throw new IllegalStateException("Unexpected value: " + rule);
@@ -174,18 +197,19 @@ public class WizardFlowDataPage extends FLUtilities {
                 } else {
                     if (!field.isEmpty())
                         skippedInvalidElements.add(field);
+
                     System.out.println("The skipped invalid elements" + skippedInvalidElements);
                 }
             } else {
                 if (!field.isEmpty()) skippedInvalidElements.add(field);
-                onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Either field is Lookup, hide for day 1 or has no wizard control type", testContext);
+                onSoftAssertionHandlerPage.assertSkippedElement(order, executedJurisdiction, moduleName, field, "Either field is Lookup, hide for day 1 or has no wizard control type");
             }
         } else
-            onSoftAssertionHandlerPage.assertSkippedElement(driver, "", executedJurisdiction, moduleName, field, "Field has No Tag", testContext);
+            onSoftAssertionHandlerPage.assertSkippedElement("", executedJurisdiction, moduleName, field, "Field has No Tag");
     }
 
 
-    public void handleLengthFormatRules(TestContext testContext, WebDriver driver, String valueJson, String order, String field, String rule, String wizardControlType, String executedJurisdiction, String moduleName) {
+    public void handleLengthFormatRules(String valueJson, String order, String field, String rule, String wizardControlType, String executedJurisdiction, String moduleName) {
         List<Object> invalidFlag = setInvalidTags(valueJson, "", "(\\S+)\\s*(=|<>|<|>)\\s*(.*)");
         List<String> invalidTag = (List<String>) invalidFlag.get(0);
         String attribute = "maxLength";
@@ -196,7 +220,7 @@ public class WizardFlowDataPage extends FLUtilities {
                 getAttributeValue(field, valueJson, order, wizardControlType, rule, attribute);
             }
         } else
-            onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
+            onSoftAssertionHandlerPage.assertSkippedElement(order, executedJurisdiction, moduleName, field, "Key " + invalidTag + " not a valid tag");
     }
 
     public void handleAllOtherRulesWizards(String valueJson, LinkedHashMap<String, List<String>> mapConditions, String order, String field, String distinctRule, String wizardControlType) {
@@ -226,7 +250,7 @@ public class WizardFlowDataPage extends FLUtilities {
                                 sendKeys(driver, getElement(valueJson, wizardControlType, null), birthDateFutureMonth.format(format));
                                 onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Age" + displayedText + " and birth date is " + birthDateFutureMonth.format(formatWithSlash), "24", String.valueOf(calculateAge(birthDateFutureMonth, todaysDate)), String.valueOf(calculateAge(birthDateFutureMonth, todaysDate)).equalsIgnoreCase("24"), testContext);
                             } else
-                                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON " + displayedText, testContext);
+                                onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON " + displayedText);
                         }
                     }
                     combinationConditions.clear();
@@ -251,7 +275,7 @@ public class WizardFlowDataPage extends FLUtilities {
                     break;
             }
         } else
-            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "There must be consecutive ANDs in display rule", testContext);
+            onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "There must be consecutive ANDs in display rule");
     }
 
     /**
@@ -267,7 +291,7 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Verify if key (commontag) exists in an input JSON
      *
-     * @param condition
+     * @param condition - commonTag specified in spec
      * @return Blank if key exists else key itself
      */
     public String findKeyExistsJSON(String condition) {
@@ -305,38 +329,38 @@ public class WizardFlowDataPage extends FLUtilities {
                                 howManyOperatorDisplayCondition = new HashMap<>(howManyOperator);
                             }
                         } else
-                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON " + displayedText, testContext);
+                            onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON " + displayedText);
                     }
                 }
                 combinationConditions.clear();
                 howManyOperator.clear();
             }
         } else
-            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "There must be consecutive ANDs in display rule", testContext);
+            onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "There must be consecutive ANDs in display rule");
     }
 
     public void setDefaultPlaceholderConditions(String valueJson, String wizardControlType, String requiredAttributeValue, String requiredFirstAttribute, String field, String distinctRule, String displayedText, String order, String key, String values, String section) {
         boolean conditionFlag = true;
         if (verifyAndMoveToPage(valueJson)) {
-                if (!getElements(valueJson, wizardControlType).isEmpty()) {
-                    if (requiredFirstAttribute.equalsIgnoreCase("Placeholder"))
-                        handlePlaceholderRules(valueJson, field, requiredAttributeValue, distinctRule, displayedText);
+            if (!getElements(valueJson, wizardControlType).isEmpty()) {
+                if (requiredFirstAttribute.equalsIgnoreCase("Placeholder"))
+                    handlePlaceholderRules(valueJson, field, requiredAttributeValue, distinctRule, displayedText);
+                else {
+                    verifyData(valueJson, field, requiredAttributeValue, "", distinctRule, displayedText, order);
+                    if (!key.isEmpty())
+                        conditionFlag = verifyStateCodeRules(key, howManyOperator.get(key), values);
+                    if (!conditionFlag)
+                        onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "Rule is applicable " + displayedText + " not when state code is " + executedJurisdiction);
                     else {
-                        verifyData(valueJson, field, requiredAttributeValue, "", distinctRule, displayedText, order);
-                        if(!key.isEmpty())
-                            conditionFlag = verifyStateCodeRules(key, howManyOperator.get(key), values);
-                        if (!conditionFlag)
-                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Rule is applicable " + displayedText + " not when state code is " + executedJurisdiction, testContext);
-                        else {
-                            if (valueJson.contains("ValidationRules"))
-                                handleValidationRules(valueJson, key, values, field, order, displayedText);
-                            handleSectionRules(valueJson, wizardControlType, section, order, field, displayedText);
-                        }
+                        if (valueJson.contains("ValidationRules"))
+                            handleValidationRules(valueJson, field, order, displayedText);
+                        handleSectionRules(valueJson, wizardControlType, section, order, field, displayedText);
                     }
-                } else
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Field does not exists" + displayedText, true, "true", true, testContext);
+                }
             } else
-                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, "true", true, testContext);
+                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Field does not exists" + displayedText, true, "true", true, testContext);
+        } else
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, "true", true, testContext);
     }
 
     public void handleVisibilityRules(String valueJson, LinkedHashMap<String, List<String>> mapConditions, String order, String field, String distinctRule, String wizardControlType) {
@@ -345,27 +369,16 @@ public class WizardFlowDataPage extends FLUtilities {
         List<String> expectedResults = Arrays.asList(listExpectedConditions.get(2).split(" (?i)AND "));
         mapConditions.clear();
         boolean hidden = false;
-        boolean conditionFlag = true;
+        boolean conditionFlag;
         String secondParamter = "";
         if (expectedResults.size() > 1)
             secondParamter = expectedResults.get(1);
         if (secondParamter.equalsIgnoreCase("hide")) hidden = true;
 
-        for (String eachCondition : condition.trim().split(("AND"))) {
-            List<String> listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)", "", eachCondition.trim());
-            conditionFlag = !(listFieldValueConditions.isEmpty());
-            if (!conditionFlag) {
-                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "There must be consecutive ANDs in display rule", testContext);
-                break;
-            }
-            String key = listFieldValueConditions.get(0).trim();
-            conditionFlag = setKeyDisplay(valueJson, key, order, field, distinctRule, "");
-            String expectedOperator = listFieldValueConditions.get(1).trim();
-            String[] conditionValues = listFieldValueConditions.get(2).trim().trim().split(", ");
-            howManyOperator.put(key, expectedOperator);
-            // Add the key-value pairs to the map
-            mapConditions = setMapConditions(conditionValues, key, mapConditions);
-        }
+        List<Object> tempMap = createMapConditions(condition, valueJson, howManyOperator, order, field, distinctRule, true, "");
+        conditionFlag = (Boolean) tempMap.get(0);
+        mapConditions = (LinkedHashMap<String, List<String>>) tempMap.get(1);
+
         combinationConditions.clear();
         if (conditionFlag) {
             List<String> allKeys = new ArrayList<>(mapConditions.keySet());
@@ -393,7 +406,7 @@ public class WizardFlowDataPage extends FLUtilities {
                         } else
                             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, hidden, hidden, testContext);
                     } else
-                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON " + displayedText, testContext);
+                        onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON " + displayedText);
                 }
             }
             combinationConditions.clear();
@@ -401,26 +414,18 @@ public class WizardFlowDataPage extends FLUtilities {
         }
     }
 
-    public void handleShowHideOptionsLabel(String valueJson, LinkedHashMap<String, List<String>> mapConditions, String order, String field, String distinctRule, String wizardControlType) {
+    public void handleShowHideOptionsLabel(String valueJson, String order, String field, String distinctRule, String wizardControlType) {
         List<String> listConditions;
         listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?(?i)If (.*?),? (?i)then (?i)(SHOW|HIDE) (Options|Option|Label as) (.*)\\.?", "", distinctRule);
         String condition = listConditions.get(1);
         String expectedResult = listConditions.get(2);
         String requiredSecondAttribute = listConditions.get(4);
-        boolean conditionFlag = true;
-        List<String> listFieldValueConditions;
+        boolean conditionFlag;
 
-        for (String eachCondition : condition.trim().split(("(?i)(AND)"))) {
-            listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*(=|<>|<|>)\\s*(.*)", "", eachCondition.trim());
-            conditionFlag = !(listFieldValueConditions.isEmpty());
-            if (!conditionFlag)
-                break;
-            String key = listFieldValueConditions.get(0).trim();
-            String expectedOperator = listFieldValueConditions.get(1).trim();
-            String[] conditionValues = listFieldValueConditions.get(2).trim().trim().split(", ");
-            howManyOperator.put(key, expectedOperator);
-            mapConditions = setMapConditions(conditionValues, key, mapConditions);
-        }
+        List<Object> tempMap = createMapConditions(condition, valueJson, howManyOperator, order, field, distinctRule, false, "");
+        conditionFlag = (Boolean) tempMap.get(0);
+        LinkedHashMap<String, List<String>> mapConditions = (LinkedHashMap<String, List<String>>) tempMap.get(1);
+
         if (conditionFlag) {
             List<String> allKeys = new ArrayList<>(mapConditions.keySet());
             generateCombinations(allKeys, new ArrayList<>(), mapConditions, "");
@@ -442,29 +447,67 @@ public class WizardFlowDataPage extends FLUtilities {
                                 if (expectedResult.equalsIgnoreCase("show"))
                                     onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, wizardControlType + " Options" + displayedText, actualOptions, expectedOptions, actualOptions.equals(expectedOptions), testContext);
                                 else
-                                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, wizardControlType + " Options" + displayedText, actualOptions, expectedOptions, !(actualOptions.containsAll(expectedOptions)), testContext);
+                                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, wizardControlType + " Options" + displayedText, actualOptions, expectedOptions, !(new HashSet<>(actualOptions).containsAll(expectedOptions)), testContext);
                                 break;
                             default:
                                 String expectedValue = getElementLabel(valueJson, wizardControlType).getText();
                                 onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Field is displayed under label" + displayedText, expectedValue, requiredSecondAttribute, expectedValue.replaceAll("’", "").equals(requiredSecondAttribute), testContext);
                         }
                     } else
-                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON " + displayedText, testContext);
+                        onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON " + displayedText);
                 }
             }
             combinationConditions.clear();
             howManyOperator.clear();
-        } else
-            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "There must be consecutive ANDs in display rule", testContext);
+        }
     }
 
+
+    public List<Object> createMapConditions(String condition, String valueJson, Map<String, String> operators, String order, String field, String distinctRule, boolean setDisplaykey, String conditionCombination) {
+        boolean conditionFlag = true;
+        LinkedHashMap<String, List<String>> mapConditions = new LinkedHashMap<>();
+        String tempCondition = "";
+        String tempOperator = "";
+        String[] tempValues = new String[0];
+
+        for (String eachCondition : condition.trim().split(("(?i)(AND)"))) {
+            if (Pattern.compile("(\\S+)\\s*(=|>=|<=|<>|<|>)\\s*(.*)").matcher(eachCondition.trim()).find()) {
+                List<String> listFieldValueConditions = getDisplayRuleConditions(valueJson, "(\\S+)\\s*(=|>=|<=|<>|<|>)\\s*(.*)", "", eachCondition.trim());
+                conditionFlag = !(listFieldValueConditions.isEmpty());
+                if (!conditionFlag) {
+                    onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "There must be consecutive ANDs in display rule");
+                    break;
+                }
+                String key = listFieldValueConditions.get(0).trim();
+                if (setDisplaykey)
+                    conditionFlag = setKeyDisplay(valueJson, key, order, field, distinctRule, conditionCombination);
+                String expectedOperator = listFieldValueConditions.get(1).trim();
+                String[] conditionValues = listFieldValueConditions.get(2).trim().trim().split(", ");
+                if (tempCondition.equalsIgnoreCase(key) & tempOperator.equals(">") & expectedOperator.equals("<")) {
+                    operators.put(key, "=");
+                    mapConditions.put(key, Arrays.asList(String.valueOf(Integer.parseInt(tempValues[0]) + 1), String.valueOf(Integer.parseInt(conditionValues[0]) - 1)));
+                } else {
+                    tempCondition = key;
+                    tempValues = conditionValues;
+                    tempOperator = expectedOperator;
+                    operators.put(key, expectedOperator);
+                    mapConditions = setMapConditions(conditionValues, key, mapConditions);
+                }
+            } else
+                conditionFlag = false;
+
+            if (!conditionFlag)
+                break;
+        }
+        return Arrays.asList(conditionFlag, mapConditions);
+    }
 
     /**
      * It sets precondition to display or enable any field based on its given Display rule.
      *
-     * @param valueJson
-     * @param conditions
-     * @param operators
+     * @param valueJson  - Input JSON of a field converted as a string
+     * @param conditions - Multiple conditions specified in spec
+     * @param operators  - Logical Operators used in each condition
      */
     public void enableDisplayCondition(String valueJson, List<String> conditions, Map<String, String> operators) {
         if (!conditions.isEmpty()) {
@@ -504,28 +547,28 @@ public class WizardFlowDataPage extends FLUtilities {
                                     verifyAndMoveToPage(valueJson);
                                     verifyOptions(valueJson, field, expectedOptions, displayedText, "List Options");
                                 } else
-                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, "List Options", "Key " + listConditionkeys + " does not exists in JSON " + displayedText, testContext);
+                                    onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, "List Options", "Key " + listConditionkeys + " does not exists in JSON " + displayedText);
                             }
                         }
                         combinationConditions.clear();
                         howManyOperator.clear();
                     }
                 } else
-                    onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
+                    onSoftAssertionHandlerPage.assertSkippedElement(order, executedJurisdiction, moduleName, field, "Key " + invalidTag + " not a valid tag");
             } else
-                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, "List Options", "There must be consecutive ANDs in display rule", testContext);
+                onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, "List Options", "There must be consecutive ANDs in display rule");
         } else
-            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, "List Options", "Data list does not contain \"" + options + "\"", testContext);
+            onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, "List Options", "Data list does not contain \"" + options + "\"");
     }
 
     /**
      * Perform action to Display or Enable a field
      *
-     * @param key
-     * @param values
-     * @param conditionalOperator
-     * @param valueJson
-     * @param operators
+     * @param key                 - commontag specified in spec
+     * @param values              - value to be set for any field as specified in a spec
+     * @param conditionalOperator - Updated Logical Operators used in each condition
+     * @param valueJson           - Input JSON of a field converted as a string
+     * @param operators           - Logical Operators used in each condition
      */
     public void setDisplayEnableConditions(String key, String values, String conditionalOperator, String valueJson, Map<String, String> operators) {
         if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
@@ -541,19 +584,19 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * A field may display or enable based on another fields. This method display/enable those dependent fields based on corresponding display rules.
      *
-     * @param valueJson
-     * @param key
-     * @param order
-     * @param field
-     * @param distinctRule
-     * @param conditionCombination
-     * @return
+     * @param valueJson            - Input JSON of a field converted as a string
+     * @param key                  - commontag specified in spec
+     * @param order                - order for field under test specified in spec
+     * @param field                - field under test
+     * @param distinctRule         - Rule to be validated
+     * @param conditionCombination - Combinations of multiple conditions
+     * @return boolean value if condition is set successfully
      */
     public boolean setKeyDisplay(String valueJson, String key, String order, String field, String distinctRule, String conditionCombination) {
         if (!(key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE") | key.matches("[0-9]+"))) {
             boolean conditionFlag = findKeyExistsJSON(key).isEmpty();
             if (!conditionFlag) {
-                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + key + " does not exists in JSON ", testContext);
+                onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "Key " + key + " does not exists in JSON ");
                 return false;
             }
             String tempJson = testContext.getMapTestData().get(key);
@@ -561,7 +604,7 @@ public class WizardFlowDataPage extends FLUtilities {
                 if (getElements(tempJson, JsonPath.read(tempJson, "$.WizardControlTypes").toString().trim()).isEmpty())
                     conditionFlag = verifyElementExists(tempJson, JsonPath.read(tempJson, "$.Order").toString().trim(), JsonPath.read(tempJson, "$.CommonTag").toString().trim(), false, conditionCombination);
                 if (!conditionFlag) {
-                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + key + " does not exists in UI ", testContext);
+                    onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "Key " + key + " does not exists in UI ");
                     return false;
                 }
             }
@@ -574,8 +617,8 @@ public class WizardFlowDataPage extends FLUtilities {
      * Verify if a given page exists.
      * If page exists, move to that page
      *
-     * @param valueJson
-     * @return
+     * @param valueJson - Input JSON of a field converted as a string
+     * @return true if page exists
      */
     public boolean verifyAndMoveToPage(String valueJson) {
         if (onCommonMethodsPage.verifyPage(driver, JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim())) {
@@ -594,12 +637,12 @@ public class WizardFlowDataPage extends FLUtilities {
      * If element is enabled, it sets the value else mark that rule as a skipped rule
      * it also sets invalid value for a field
      *
-     * @param result
-     * @param pattern
-     * @param valueJson
-     * @param order
-     * @param field
-     * @param distinctRule
+     * @param result       - Result/value to be set for any field
+     * @param pattern      - Pattern to be matched for any rule
+     * @param valueJson    - Input JSON of a field converted as a string
+     * @param order        - order for field under test specified in spec
+     * @param field        - field under test
+     * @param distinctRule - Rule to be validated
      * @return conditionFlag - false if any dependent condition fails such as page/field does not exists or rule not applicable else true
      * displayedText - Text to be displayed in cucumber report
      * listConditionkeys - if any key/commonTag does not exists in JSON or is skipped previously as it is not available in UI
@@ -627,7 +670,7 @@ public class WizardFlowDataPage extends FLUtilities {
             conditionFlag = verifyStateCodeRules(key, howManyOperator.get(key), values);
             displayedText += key + " " + howManyOperator.get(key) + " " + values + " and ";
             if (!conditionFlag)
-                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Rule is applicable " + displayedText + " not when state code is " + executedJurisdiction, testContext);
+                onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "Rule is applicable " + displayedText + " not when state code is " + executedJurisdiction);
             else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
                 String valueDependentJson = testContext.getMapTestData().get(key);
                 if (verifyAndMoveToPage(valueDependentJson)) {
@@ -636,10 +679,10 @@ public class WizardFlowDataPage extends FLUtilities {
                             conditionFlag = false;
                     } else {
                         conditionFlag = false;
-                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Field " + key + " is disabled " + displayedText, testContext);
+                        onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "Field " + key + " is disabled " + displayedText);
                     }
                 } else
-                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, " Validations -> Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, false, false, testContext);
+                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, " Validations -> Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, false, true, false, testContext);
             }
         }
         if (displayedText.trim().endsWith("and"))
@@ -650,8 +693,8 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Verify if element is disabled
      *
-     * @param valueDependentJson
-     * @param result
+     * @param valueDependentJson - Input JSON of a dependent field converted as a string
+     * @param result             - Result/value to be set for any field
      * @return true if element is enabled else false
      */
     public boolean verifyElementDisabled(String valueDependentJson, String result) {
@@ -668,14 +711,14 @@ public class WizardFlowDataPage extends FLUtilities {
      * This validates visibility rules for a field.
      * If based on multiple conditions, value for a field is set to another field or given value, it validates the same.
      *
-     * @param requiredAttribute
-     * @param valueJson
-     * @param wizardControlType
-     * @param order
-     * @param field
-     * @param secondAttribute
-     * @param distinctRule
-     * @param displayedText
+     * @param requiredAttribute - Required visibility attribute/condition to be validated
+     * @param valueJson         - Input JSON of a field converted as a string
+     * @param wizardControlType - Data type of field under test
+     * @param order             - order for field under test specified in spec
+     * @param field             - field under test
+     * @param distinctRule      - Rule to be validated
+     * @param secondAttribute   - Required second visibility attribute/condition to be validated
+     * @param displayedText     - Text to be displayed in Cucumber report
      */
     public void setVisibilityRules(String requiredAttribute, String valueJson, String wizardControlType, String order, String field, String secondAttribute, String distinctRule, String displayedText) {
         boolean expectedFlag;
@@ -708,7 +751,7 @@ public class WizardFlowDataPage extends FLUtilities {
                         onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, "true", true, testContext);
                 }
             } else
-                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON");
         } else {
             switch (requiredAttribute.toLowerCase()) {
                 case "show":
@@ -755,7 +798,7 @@ public class WizardFlowDataPage extends FLUtilities {
                     }
                     break;
                 default:
-                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Rule does not match any visibility condition", testContext);
+                    onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "Rule does not match any visibility condition");
             }
         }
     }
@@ -766,32 +809,17 @@ public class WizardFlowDataPage extends FLUtilities {
      * Owner_Type: Individual, Owner_DOB<60
      * Owner_Yype: UTMA/UGMA, Owner_DOB<60
      *
-     * @param valueJson
-     * @param pattern
-     * @param conditionCombination
+     * @param valueJson            - Input JSON of a field converted as a string
+     * @param conditionCombination - value specifying if used for Validation rules or rules wizard
      * @return true if conditions are specified correctly else false
      */
-    public boolean setCombinationConditions(String valueJson, String pattern, String conditionCombination) {
-        List<String> listFieldValueConditions;
-        String key;
-        String[] conditionValues;
-        String expectedOperator;
-        boolean conditionFlag;
-        LinkedHashMap<String, List<String>> mapConditions = new LinkedHashMap<>();
+    public boolean setCombinationConditions(String valueJson, String conditionCombination) {
+        LinkedHashMap<String, List<String>> mapConditions;
         List<String> allKeys;
 
-        for (String eachCondition : JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0].split(("AND"))) {
-            listFieldValueConditions = getDisplayRuleConditions(valueJson, pattern, "", eachCondition.trim());
-            conditionFlag = !(listFieldValueConditions.isEmpty());
-            if (!conditionFlag) return false;
+        List<Object> tempMap = createMapConditions(JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0], valueJson, howManyOperator, "", "", "", false, "");
+        mapConditions = (LinkedHashMap<String, List<String>>) tempMap.get(1);
 
-            key = listFieldValueConditions.get(0).trim();
-            expectedOperator = listFieldValueConditions.get(1).trim();
-            conditionValues = listFieldValueConditions.get(2).trim().trim().split(", ");
-            howManyOperator.put(key, expectedOperator);
-            // Add the key-value pairs to the map
-            mapConditions = setMapConditions(conditionValues, key, mapConditions);
-        }
         allKeys = new ArrayList<>(mapConditions.keySet());
         generateCombinations(allKeys, new ArrayList<>(), mapConditions, conditionCombination);
         return true;
@@ -800,12 +828,12 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * validates given section for each field
      *
-     * @param valueJson
-     * @param wizardControlType
-     * @param section
-     * @param order
-     * @param field
-     * @param displayedText
+     * @param valueJson         - Input JSON of a field converted as a string
+     * @param wizardControlType - Data type of field under test
+     * @param section           - Section of field under test
+     * @param order             - Order of a field under test
+     * @param field             - Field under test
+     * @param displayedText     - Text to be displayed in Cucumber report
      */
     public void handleSectionRules(String valueJson, String wizardControlType, String section, String order, String field, String displayedText) {
         section = section.replaceAll("X", "1");
@@ -816,9 +844,9 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Calculates age based on given DOB from currentDate
      *
-     * @param dob
-     * @param currentDate
-     * @return age as integer
+     * @param dob         - Date of birth
+     * @param currentDate - Today's date
+     * @return age as integer - Age
      */
     public int calculateAge(LocalDate dob, LocalDate currentDate) {
         return Period.between(dob, currentDate).getYears();
@@ -827,26 +855,25 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Verify options of a dropdown/radio button
      *
-     * @param valueJson
-     * @param field
-     * @param expectedOptions
-     * @param displayedText
-     * @param distinctRule
+     * @param valueJson       - Input JSON of a field converted as a string
+     * @param field           - Field under test
+     * @param expectedOptions - Expected options of a dropdown/radio button from Excel
+     * @param displayedText   - Text to be displayed in Cucumber report
+     * @param distinctRule    - Rule to be validated
      */
     public void verifyOptions(String valueJson, String field, List<String> expectedOptions, String displayedText, String distinctRule) {
         String dataType = JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim();
         List<String> actualOptions = getOptions(valueJson, dataType);
-        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, dataType + " Options" + displayedText, actualOptions, expectedOptions, actualOptions.containsAll(expectedOptions), testContext);
+        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, dataType + " Options" + displayedText, actualOptions, expectedOptions, new HashSet<>(actualOptions).containsAll(expectedOptions), testContext);
     }
 
     /**
      * Removes failed conditions from displayedText so that cucumber report shows correct dependent conditions
      *
-     * @param displayedText
-     * @return displayedText
+     * @param displayedText - Text to be displayed in Cucumber report
+     * @return displayedText - Updated Text to be displayed in Cucumber report if any condition fails
      */
     public String removeUnsetCondition(String displayedText) {
-        // Split the input string by "and" keyword
         String[] parts = displayedText.split("\\band\\b");
 
         // Concatenate the parts, excluding the last two "and" conditions
@@ -865,12 +892,12 @@ public class WizardFlowDataPage extends FLUtilities {
      * This method actually sets the value for each condition.
      * It checks if page exists, or value exists for given dropdown/radio button.
      *
-     * @param condition
-     * @param expectedOperator
-     * @param valueJson
-     * @param result
-     * @param distinctRule
-     * @param displayedText
+     * @param condition        - Condition specified in rule
+     * @param expectedOperator - Logical operators defined in condition
+     * @param valueJson        - Input JSON of a field converted as a string
+     * @param result           - Value to be set on a field mentioned in condition
+     * @param distinctRule     - Rule to be validated
+     * @param displayedText    - Text to be displayed in Cucumber report
      * @return true if a value is set for a given field
      */
     public boolean setDependentCondition(String condition, String expectedOperator, String valueJson, String result, String distinctRule, String displayedText) {
@@ -879,7 +906,7 @@ public class WizardFlowDataPage extends FLUtilities {
         if (verifyAndMoveToPage(valueDependentJson)) {
             if (getElements(valueDependentJson, conditionalWizard).isEmpty()) {
                 displayedText = removeUnsetCondition(displayedText);
-                onSoftAssertionHandlerPage.assertSkippedRules(driver, JsonPath.read(valueJson, "$.Order").toString().trim(), executedJurisdiction, moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), distinctRule, "Key " + condition + " does not exists in UI " + displayedText, testContext);
+                onSoftAssertionHandlerPage.assertSkippedRules(JsonPath.read(valueJson, "$.Order").toString().trim(), executedJurisdiction, moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), distinctRule, "Key " + condition + " does not exists in UI " + displayedText);
                 return false;
             }
 
@@ -887,13 +914,13 @@ public class WizardFlowDataPage extends FLUtilities {
                 result = "Blank";
                 if (conditionalWizard.equalsIgnoreCase("dropdown")) {
                     if (verifyValueExists(valueDependentJson, conditionalWizard, result)) {
-                        onSoftAssertionHandlerPage.assertSkippedRules(driver, JsonPath.read(valueJson, "$.Order").toString().trim(), executedJurisdiction, moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), distinctRule, "Value " + result + " does not exist for " + conditionalWizard + " " + condition, testContext);
+                        onSoftAssertionHandlerPage.assertSkippedRules(JsonPath.read(valueJson, "$.Order").toString().trim(), executedJurisdiction, moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), distinctRule, "Value " + result + " does not exist for " + conditionalWizard + " " + condition);
                         return false;
                     }
                 }
             } else if (conditionalWizard.equalsIgnoreCase("dropdown") | conditionalWizard.equalsIgnoreCase("radio button")) {
                 if (verifyValueExists(valueDependentJson, conditionalWizard, result)) {
-                    onSoftAssertionHandlerPage.assertSkippedRules(driver, JsonPath.read(valueJson, "$.Order").toString().trim(), executedJurisdiction, moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), distinctRule, "Value " + result + " does not exist for " + conditionalWizard + " " + condition, testContext);
+                    onSoftAssertionHandlerPage.assertSkippedRules(JsonPath.read(valueJson, "$.Order").toString().trim(), executedJurisdiction, moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), distinctRule, "Value " + result + " does not exist for " + conditionalWizard + " " + condition);
                     return false;
                 }
             }
@@ -911,7 +938,7 @@ public class WizardFlowDataPage extends FLUtilities {
             waitForPageToLoad(driver);
             sleepInMilliSeconds(2000);
         } else {
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order").toString().trim(), executedJurisdiction, moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), "", "Page " + JsonPath.read(valueDependentJson, "$.Page").toString().trim() + " does not exists " + displayedText, true, false, false, testContext);
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order").toString().trim(), executedJurisdiction, moduleName, JsonPath.read(valueJson, "$.CommonTag").toString().trim(), distinctRule, "Page " + JsonPath.read(valueDependentJson, "$.Page").toString().trim() + " does not exists " + displayedText, false, true, false, testContext);
             return false;
         }
         return true;
@@ -920,8 +947,8 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Set value in a given field
      *
-     * @param valueDependentJson
-     * @param result
+     * @param valueDependentJson - Input JSON of a field converted as a string
+     * @param result             - Value to be set on a field mentioned in condition
      */
     public void setValue(String valueDependentJson, String result) {
         waitForPageToLoad(driver);
@@ -967,8 +994,8 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Reset/Clear each field
      *
-     * @param valueDependentJson
-     * @param result
+     * @param valueDependentJson - Input JSON of a field converted as a string
+     * @param result             - Value to be set on a field mentioned in condition
      */
     public void resetValue(String valueDependentJson, String result) {
         waitForPageToLoad(driver);
@@ -1008,9 +1035,9 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Verify if rule is applicable to a given jurisdiction
      *
-     * @param key
-     * @param operator
-     * @param values
+     * @param key      - commonTag specified in rule
+     * @param operator - Logical operators specified in condition
+     * @param values   - values to be set on a field in specified condition
      * @return true if rule is applicable else false
      */
     private boolean verifyStateCodeRules(String key, String operator, String values) {
@@ -1026,7 +1053,7 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Set test data for a field
      *
-     * @param valueDependentJson
+     * @param valueDependentJson - Input JSON of a field converted as a string
      * @return testdata
      */
     public String setTestData(String valueDependentJson) {
@@ -1052,8 +1079,8 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * verify if an element exists
      *
-     * @param valueJson
-     * @param datatype
+     * @param valueJson - Input JSON of a field converted as a string
+     * @param datatype  - Datatype of a field
      * @return list of web element
      */
     public List<WebElement> getElements(String valueJson, String datatype) {
@@ -1078,10 +1105,10 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Create map for each key and values pair
      *
-     * @param conditionValues
-     * @param key
-     * @param mapConditions
-     * @return map
+     * @param conditionValues - String array of condition and its values
+     * @param key             - commontag specified in a condition
+     * @param mapConditions   - Key value pair of commonTag and its values
+     * @return map - Key value pair of commonTag and its values
      */
     public LinkedHashMap<String, List<String>> setMapConditions(String[] conditionValues, String key, LinkedHashMap<String, List<String>> mapConditions) {
         for (String value : conditionValues) {
@@ -1093,9 +1120,9 @@ public class WizardFlowDataPage extends FLUtilities {
     }
 
     /**
-     * @param valueJson
-     * @param datatype
-     * @param optionalValue
+     * @param valueJson     - Input JSON of a field converted as a string
+     * @param datatype      - Datatype of a field
+     * @param optionalValue - values to be set specified for radio buttons
      * @return webelement
      */
     public WebElement getElement(String valueJson, String datatype, String optionalValue) {
@@ -1134,10 +1161,10 @@ public class WizardFlowDataPage extends FLUtilities {
     }
 
     /**
-     * @param valueJson
-     * @param datatype
-     * @param section
-     * @return section of each webelement
+     * @param valueJson - Input JSON of a field converted as a string
+     * @param datatype  - Datatype of a field
+     * @param section   - section of a field under test
+     * @return section of each web element
      */
     public boolean getElementSection(String valueJson, String datatype, String section) {
         String commonTag = JsonPath.read(valueJson, "$.CommonTag").toString().trim();
@@ -1158,8 +1185,8 @@ public class WizardFlowDataPage extends FLUtilities {
     }
 
     /**
-     * @param valueJson
-     * @param datatype
+     * @param valueJson - Input JSON of a field converted as a string
+     * @param datatype  - Datatype of a field
      * @return label of each webelement
      */
     public WebElement getElementLabel(String valueJson, String datatype) {
@@ -1177,8 +1204,8 @@ public class WizardFlowDataPage extends FLUtilities {
     }
 
     /**
-     * @param valueJson
-     * @param dataType
+     * @param valueJson - Input JSON of a field converted as a string
+     * @param dataType  - Datatype of a field
      * @return dropdown or radio button options
      */
     public List<String> getOptions(String valueJson, String dataType) {
@@ -1203,10 +1230,10 @@ public class WizardFlowDataPage extends FLUtilities {
     }
 
     /**
-     * @param valueJson
-     * @param requiredPattern
-     * @param parameter
-     * @param distinctRule
+     * @param valueJson       - Input JSON of a field converted as a string
+     * @param requiredPattern - Pattern to be matched for any rule
+     * @param parameter       - If pattern is specified in a key of a valueJson
+     * @param distinctRule    - Rule to be validated
      * @return list of conditions based on given pattern and rule
      */
     public List<String> getDisplayRuleConditions(String valueJson, String requiredPattern, String parameter, String distinctRule) {
@@ -1229,13 +1256,13 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Verify default/invalid value of a field
      *
-     * @param valueJson
-     * @param field
-     * @param requiredAttributeValue
-     * @param attribute
-     * @param distinctRule
-     * @param displayedText
-     * @param order
+     * @param valueJson              - Input JSON of a field converted as a string
+     * @param field                  - Field under test
+     * @param requiredAttributeValue - Required attribute
+     * @param attribute              - Attribute to be checked
+     * @param distinctRule           - Rule to be validated
+     * @param displayedText          - Text to be displayed in cucumber report
+     * @param order                  - order of a field under test
      */
     public void verifyData(String valueJson, String field, String requiredAttributeValue, String attribute, String distinctRule, String displayedText, String order) {
         String expectedText;
@@ -1249,7 +1276,7 @@ public class WizardFlowDataPage extends FLUtilities {
                 printResults(field, requiredAttributeValue, expectedText, attribute, distinctRule, displayedText, order);
                 break;
             case "radio button":
-                if (!(requiredAttributeValue.toLowerCase().contains("checked") | requiredAttributeValue.equalsIgnoreCase("blank"))) {
+                if (!(requiredAttributeValue.toLowerCase().contains("checked") | requiredAttributeValue.toLowerCase().contains("selected") | requiredAttributeValue.equalsIgnoreCase("blank"))) {
                     expectedText = getElement(valueJson, "Radio Button", requiredAttributeValue).getAttribute("aria-checked");
                     if (expectedText.trim().equalsIgnoreCase("true"))
                         requiredAttributeValue = "true";
@@ -1312,9 +1339,9 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Add element to skippedInvalidElements list if it does not exist in UI
      *
-     * @param skippedInvalidElements
-     * @param valueJson
-     * @return
+     * @param skippedInvalidElements - List of invalid elements - Elements which does not exist on UI
+     * @param valueJson              - Input JSON of a field converted as a string
+     * @return List of invalid elements
      */
     public List<String> getInvalidTags(List<String> skippedInvalidElements, String valueJson) {
         return skippedInvalidElements.stream().filter(valueJson::contains).collect(Collectors.toList());
@@ -1323,13 +1350,13 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * add assertions
      *
-     * @param field
-     * @param requiredAttributeValue
-     * @param expectedText
-     * @param attribute
-     * @param distinctRule
-     * @param displayedText
-     * @param order
+     * @param field                  - field under test
+     * @param requiredAttributeValue - required attribute value
+     * @param expectedText           - expected results
+     * @param attribute              - attribute
+     * @param distinctRule           - rule to be validated
+     * @param displayedText          - text to be displayed in cucumber report
+     * @param order                  - order of a field under test
      */
     public void printResults(String field, String requiredAttributeValue, String expectedText, String attribute, String distinctRule, String displayedText, String order) {
         boolean flag = requiredAttributeValue.trim().equals(expectedText.trim());
@@ -1342,12 +1369,12 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * get value of an attribute maxlength or a mask for a field
      *
-     * @param field
-     * @param valueJson
-     * @param order
-     * @param wizardControlType
-     * @param rule
-     * @param attribute
+     * @param field             - field under test
+     * @param valueJson         - Input JSON of a field converted as a string
+     * @param order             - order of a field under test
+     * @param wizardControlType - Datatype of a field under test
+     * @param rule              - Rule to be validated
+     * @param attribute         - Attribute to be verified
      */
     public void getAttributeValue(String field, String valueJson, String order, String wizardControlType, String rule, String attribute) {
         String listConditionkeys;
@@ -1361,9 +1388,9 @@ public class WizardFlowDataPage extends FLUtilities {
                 else
                     onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, rule, rule + " Validations -> Field does not exists", true, "true", true, testContext);
             } else
-                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, rule, rule + " Validations -> Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists", true, false, false, testContext);
+                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, rule, rule + " Validations -> Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists", false, true, false, testContext);
         } else {
-            conditionFlag = setCombinationConditions(valueJson, "([^\\s]+)\\s* (=|<>|>|<) (.*)", "");
+            conditionFlag = setCombinationConditions(valueJson, "");
             if (conditionFlag) {
                 for (List<String> result : combinationConditions) {
                     List<String> flagInvalidKeys = setDependentConditions(result, "([^\\s]+)\\s*: \\s*(.*?)(?:;|$)", valueJson, order, field, rule);
@@ -1378,30 +1405,30 @@ public class WizardFlowDataPage extends FLUtilities {
                                     if (verifyElementDisabled(valueJson, ""))
                                         getLength(valueJson, attribute, rule, field, displayedText);
                                     else
-                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, "Length", "Field is disabled", testContext);
+                                        onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, "Length", "Field is disabled");
                                 } else
                                     onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, rule, rule + " Validations -> Field does not exists" + displayedText, true, "true", true, testContext);
                             } else
-                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, rule, rule + " Validations -> Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, false, false, testContext);
+                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, rule, rule + " Validations -> Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, false, true, false, testContext);
                         } else
-                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, rule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                            onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, rule, "Key " + listConditionkeys + " does not exists in JSON");
                     }
                 }
                 combinationConditions.clear();
                 howManyOperator.clear();
             } else
-                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, rule, "There must be consecutive ANDs in display rule", testContext);
+                onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, rule, "There must be consecutive ANDs in display rule");
         }
     }
 
     /**
      * Enter digits and verify format for a field
      *
-     * @param valueJson
-     * @param attribute
-     * @param rule
-     * @param field
-     * @param displayedText
+     * @param field         - field under test
+     * @param valueJson     - Input JSON of a field converted as a string
+     * @param rule          - Rule to be validated
+     * @param attribute     - Attribute to be verified
+     * @param displayedText - text to be displayed in cucumber report
      */
     public void getLength(String valueJson, String attribute, String rule, String field, String displayedText) {
         boolean expectedFlag;
@@ -1433,11 +1460,11 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Enter digits of different length to test length and format of each field
      *
-     * @param valueJson
-     * @param rule
-     * @param field
-     * @param displayedText
-     * @param combinationConditions
+     * @param field                 - field under test
+     * @param valueJson             - Input JSON of a field converted as a string
+     * @param rule                  - Rule to be validated
+     * @param displayedText         - text to be displayed in cucumber report
+     * @param combinationConditions - Combination of different conditions specified in a rule
      */
     public void handleTextLengthFields(String valueJson, String rule, String field, String displayedText, List<List<String>> combinationConditions) {
         int attributeValue = Integer.parseInt(JsonPath.read(valueJson, "$.Length").toString().trim());
@@ -1507,11 +1534,11 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Verify placeholder for a given field
      *
-     * @param valueJson
-     * @param field
-     * @param requiredAttributeValue
-     * @param distinctRule
-     * @param displayedText
+     * @param field                  - field under test
+     * @param valueJson              - Input JSON of a field converted as a string
+     * @param distinctRule           - Rule to be validated
+     * @param requiredAttributeValue - required placeholder value
+     * @param displayedText          - text to be displayed in cucumber report
      */
     public void handlePlaceholderRules(String valueJson, String field, String requiredAttributeValue, String distinctRule, String displayedText) {
         String expectedAttribute = getElement(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes"), "").getAttribute("placeholder");
@@ -1523,14 +1550,12 @@ public class WizardFlowDataPage extends FLUtilities {
      * Handle validation rules.
      * Iterate over each validation rule and validate the same
      *
-     * @param valueJson
-     * @param dependentCondition
-     * @param dependentResult
-     * @param field
-     * @param order
-     * @param displayedText
+     * @param valueJson          - Input JSON of a field converted as a string
+     * @param field              - field under test
+     * @param order              - order of a field under test
+     * @param displayedText      - text to be displayed in cucumber report
      */
-    public void handleValidationRules(String valueJson, String dependentCondition, String dependentResult, String field, String order, String displayedText) {
+    public void handleValidationRules(String valueJson, String field, String order, String displayedText) {
         String displayedTextNew = displayedText;
         for (String distinctRule : JsonPath.read(valueJson, "$.ValidationRules").toString().trim().split((";"))) {
             displayedText = displayedTextNew;
@@ -1539,18 +1564,13 @@ public class WizardFlowDataPage extends FLUtilities {
             String condition, key, values;
             String expectedOperator = "";
             String listConditionkeys;
-            LinkedHashMap<String, List<String>> mapConditions = new LinkedHashMap<>();
+            LinkedHashMap<String, List<String>> mapConditions;
             List<String> allKeys;
             boolean conditionFlag;
             List<String> listFieldValueConditions;
-            String[] conditionValues;
             String conditionalOperator;
             String wizardControlType = JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim();
             String requiredErrorMessage;
-
-            if (!(dependentCondition.isEmpty() | dependentCondition.equals("FLI_ISSUED_STATE_CODE")))
-                setDependentCondition(dependentCondition, howManyOperator.get(dependentCondition), valueJson, dependentResult, distinctRule, displayedText);
-            verifyAndMoveToPage(valueJson);
 
             if (Pattern.compile("(\\d+\\.\\s*)?(?i)If (.*?) results in an age that is less than (.*?) or greater than (.*?),? (?i)then (.*?): (.*)").matcher(distinctRule).find()) {
                 List<String> listConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?(?i)If (.*?) results in an age that is less than (.*?) or greater than (.*?),? (?i)then (.*?): (.*)", "", distinctRule);
@@ -1573,119 +1593,95 @@ public class WizardFlowDataPage extends FLUtilities {
                     error = clickRedBubble(valueJson);
                     onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, "Validation Rule -> Error message when " + displayedText + " and age is " + calculateAge(dob, todaysDate) + " and DOB is " + dob.format(formatWithSlash), error, requiredErrorMessage, calculateAge(dob, todaysDate) < Integer.parseInt(maxValue), testContext);
                 } else
-                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                    onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON");
             } else if (Pattern.compile("(\\d+\\.\\s*)?(?i)If (.*?)(?:,)? (?i)then (.*?): (.*)\\.?").matcher(distinctRule).find()) {
-                /** Validate error message based on dependent conditions **/
+                /* Validate error message based on dependent conditions **/
                 List<String> listExpectedConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?(?i)If (.*?)(?:,)? (?i)then (.*?): (.*)\\.?", "", distinctRule);
                 condition = listExpectedConditions.get(1).trim().replaceAll("FLI_EFFECTIVE_DATE - ", "");
                 requiredErrorMessage = listExpectedConditions.get(3);
                 listConditionkeys = "";
                 boolean hidden = false;
-                conditionFlag = true;
-                boolean conditionAnotherFlag = true;
-                String tempCondition = "";
-                String tempOperator = "";
-                String[] tempValues = new String[0];
                 boolean conditionFlagCompare = true;
                 List<String> dateFields = Arrays.asList("dob", "date", "mm/dd/yyyy");
 
-                for (String eachCondition : condition.trim().split(("AND"))) {
-                    if (Pattern.compile("(\\S+)\\s*(=|>=|<=|<>|<|>)\\s*(.*)").matcher(eachCondition.trim()).find()) {
-                        listFieldValueConditions = getDisplayRuleConditions(valueJson, "(\\S+)\\s*(=|>=|<=|<>|<|>)\\s*(.*)", "", eachCondition.trim());
-                        key = listFieldValueConditions.get(0).trim();
-                        conditionAnotherFlag = setKeyDisplay(valueJson, key, order, field, distinctRule, "ValidationRules");
-                        expectedOperator = listFieldValueConditions.get(1).trim();
-                        conditionValues = listFieldValueConditions.get(2).trim().trim().split(", ");
-                        if (tempCondition.equalsIgnoreCase(key) & tempOperator.equals(">") & expectedOperator.equals("<")) {
-                            howManyOperatorValidations.put(key, "=");
-                            mapConditions.put(key, Arrays.asList(String.valueOf(Integer.parseInt(tempValues[0]) + 1), String.valueOf(Integer.parseInt(conditionValues[0]) - 1)));
-                        } else {
-                            tempCondition = key;
-                            tempValues = conditionValues;
-                            tempOperator = expectedOperator;
-                            howManyOperatorValidations.put(key, expectedOperator);
-                            // Add the key-value pairs to the map
-                            mapConditions = setMapConditions(conditionValues, key, mapConditions);
-                        }
-                    } else
-                        conditionFlag = false;
-                }
+                List<Object> tempMap = createMapConditions(condition, valueJson, howManyOperatorValidations, order, field, distinctRule, true, "ValidationRules");
+                conditionFlag = (Boolean) tempMap.get(0);
+                mapConditions = (LinkedHashMap<String, List<String>>) tempMap.get(1);
+
                 combinationConditionsValidations.clear();
-                if (conditionAnotherFlag) {
-                    if (conditionFlag) {
-                        allKeys = new ArrayList<>(mapConditions.keySet());
-                        generateCombinations(allKeys, new ArrayList<>(), mapConditions, "ValidationRules");
 
-                        for (List<String> result : combinationConditionsValidations) {
-                            displayedText = displayedTextNew;
-                            for (String condition1 : result) {
-                                listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*: (.*)", "", condition1.trim());
-                                key = listFieldValueConditions.get(0).trim();
-                                values = listFieldValueConditions.get(1).trim();
-                                listConditionkeys = findKeyExistsJSON(key);  // This listConditionkeys is verifying whether key exists in JSON
-                                conditionFlag = true;
+                if (conditionFlag) {
+                    allKeys = new ArrayList<>(mapConditions.keySet());
+                    generateCombinations(allKeys, new ArrayList<>(), mapConditions, "ValidationRules");
 
-                                if (findKeyExistsJSON(values).isEmpty() && dateFields.contains(JsonPath.read(testContext.getMapTestData().get(key).trim(), "$.WizardControlTypes").toString().trim().toLowerCase())) {
-                                    if (!setDependentCondition(values, "=", valueJson, todaysDate.format(format), distinctRule, displayedText))
-                                        conditionFlag = false;
-                                    values = "current date";
-                                }
-                                if (listConditionkeys.matches("[0-9]+")) {
-                                    conditionFlagCompare = compareValues(key, values);
-                                    listConditionkeys = listConditionkeys.replaceAll("[0-9]+", "");
-                                } else {
-                                    if (!(listConditionkeys.isEmpty() | listConditionkeys.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")))
-                                        break;
-                                    listConditionkeys = listConditionkeys.replaceAll("FLI_ISSUED_STATE_CODE", "");
-                                    conditionalOperator = howManyOperatorValidations.get(key);
-                                    List<String> valuesOperator = adjustValuesAndOperator(key, values, howManyOperatorValidations);
-                                    values = valuesOperator.get(0);
-                                    conditionalOperator = (valuesOperator.get(1).equalsIgnoreCase("")) ? conditionalOperator : valuesOperator.get(1);
-                                    conditionFlag = verifyStateCodeRules(key, howManyOperatorValidations.get(key), values);
-                                    displayedText += " and " + key + howManyOperatorValidations.get(key) + values;
-                                    if (!conditionFlag)
-                                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Rule is applicable " + displayedText + " not when state code is " + executedJurisdiction, testContext);
-                                    else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
-                                        String inputValue;
-                                        if (!(values.equalsIgnoreCase("blank")) & (values.equalsIgnoreCase("invalid") | values.equalsIgnoreCase("current date") | dateFields.contains(JsonPath.read(testContext.getMapTestData().get(key).trim(), "$.WizardControlTypes").toString().trim().toLowerCase()))) {
-                                            inputValue = getInvalidValue(values, expectedOperator, valueJson, field, distinctRule, requiredErrorMessage, testContext);
-                                            displayedText += " and input is " + inputValue;
-                                            conditionalOperator = "=";
-                                        } else
-                                            inputValue = values;
-                                        if (inputValue.equalsIgnoreCase("fail")) {
-                                            conditionFlag = false;
-                                            onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "No value found for " + values + displayedText, testContext);
-                                        } else if (!setDependentCondition(key, conditionalOperator, valueJson, inputValue, distinctRule, displayedText))
-                                            conditionFlag = false;
-                                    }
-                                }
+                    for (List<String> result : combinationConditionsValidations) {
+                        displayedText = displayedTextNew;
+                        for (String condition1 : result) {
+                            listFieldValueConditions = getDisplayRuleConditions(valueJson, "([^\\s]+)\\s*: (.*)", "", condition1.trim());
+                            key = listFieldValueConditions.get(0).trim();
+                            values = listFieldValueConditions.get(1).trim();
+                            listConditionkeys = findKeyExistsJSON(key);
+                            conditionFlag = true;
+
+                            if (findKeyExistsJSON(values).isEmpty() && dateFields.contains(JsonPath.read(testContext.getMapTestData().get(key).trim(), "$.WizardControlTypes").toString().trim().toLowerCase())) {
+                                if (!setDependentCondition(values, "=", valueJson, todaysDate.format(format), distinctRule, displayedText))
+                                    conditionFlag = false;
+                                values = "current date";
                             }
-
-                            if (conditionFlag) {
-                                if (listConditionkeys.isEmpty()) {
-                                    if (displayedText.trim().endsWith("and"))
-                                        displayedText = displayedText.substring(0, displayedText.length() - 4);
-                                    if (verifyAndMoveToPage(valueJson)) {
-                                        if (!getElements(valueJson, wizardControlType).isEmpty()) {
-                                            handleErrorMessage(valueJson, requiredErrorMessage, field, distinctRule, displayedText, conditionFlagCompare);
-                                        } else
-                                            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Field does not exists" + displayedText, true, "true", true, testContext);
+                            if (listConditionkeys.matches("[0-9]+")) {
+                                conditionFlagCompare = compareValues(key, values);
+                                listConditionkeys = listConditionkeys.replaceAll("[0-9]+", "");
+                            } else {
+                                if (!(listConditionkeys.isEmpty() | listConditionkeys.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")))
+                                    break;
+                                listConditionkeys = listConditionkeys.replaceAll("FLI_ISSUED_STATE_CODE", "");
+                                conditionalOperator = howManyOperatorValidations.get(key);
+                                List<String> valuesOperator = adjustValuesAndOperator(key, values, howManyOperatorValidations);
+                                values = valuesOperator.get(0);
+                                conditionalOperator = (valuesOperator.get(1).equalsIgnoreCase("")) ? conditionalOperator : valuesOperator.get(1);
+                                conditionFlag = verifyStateCodeRules(key, howManyOperatorValidations.get(key), values);
+                                displayedText += " and " + key + howManyOperatorValidations.get(key) + values;
+                                if (!conditionFlag)
+                                    onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "Rule is applicable " + displayedText + " not when state code is " + executedJurisdiction);
+                                else if (!key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
+                                    String inputValue;
+                                    if (!(values.equalsIgnoreCase("blank")) & (values.equalsIgnoreCase("invalid") | values.equalsIgnoreCase("current date") | dateFields.contains(JsonPath.read(testContext.getMapTestData().get(key).trim(), "$.WizardControlTypes").toString().trim().toLowerCase()))) {
+                                        inputValue = getInvalidValue(values, expectedOperator, valueJson, field, distinctRule, requiredErrorMessage, testContext);
+                                        displayedText += " and input is " + inputValue;
+                                        conditionalOperator = "=";
                                     } else
-                                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, hidden, hidden, testContext);
-                                } else
-                                    onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON", testContext);
+                                        inputValue = values;
+                                    if (inputValue.equalsIgnoreCase("fail")) {
+                                        conditionFlag = false;
+                                        onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "No value found for " + values + displayedText);
+                                    } else if (!setDependentCondition(key, conditionalOperator, valueJson, inputValue, distinctRule, displayedText))
+                                        conditionFlag = false;
+                                }
                             }
                         }
-                        combinationConditionsValidations.clear();
-                        mapConditions.clear();
-                        howManyOperatorValidations.clear();
-                    } else
-                        onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Condition " + condition + " does not match expected criteria", testContext);
+
+                        if (conditionFlag) {
+                            if (listConditionkeys.isEmpty()) {
+                                if (displayedText.trim().endsWith("and"))
+                                    displayedText = displayedText.substring(0, displayedText.length() - 4);
+                                if (verifyAndMoveToPage(valueJson)) {
+                                    if (!getElements(valueJson, wizardControlType).isEmpty()) {
+                                        handleErrorMessage(valueJson, requiredErrorMessage, field, distinctRule, displayedText, conditionFlagCompare);
+                                    } else
+                                        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Field does not exists" + displayedText, true, "true", true, testContext);
+                                } else
+                                    onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists" + displayedText, true, hidden, hidden, testContext);
+                            } else
+                                onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "Key " + listConditionkeys + " does not exists in JSON");
+                        }
+                    }
+                    combinationConditionsValidations.clear();
+                    mapConditions.clear();
+                    howManyOperatorValidations.clear();
                 }
             } else {
                 System.out.println("Rule " + distinctRule + " does not match any criteria for field " + field);
-                onSoftAssertionHandlerPage.assertSkippedRules(driver, order, executedJurisdiction, moduleName, field, distinctRule, "Validation rules does not match any criteria", testContext);
+                onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, distinctRule, "Validation rules does not match any criteria");
             }
         }
     }
@@ -1693,8 +1689,8 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Compare integer values
      *
-     * @param key
-     * @param values
+     * @param key    - common tag
+     * @param values - different values of a field to be compared
      * @return true if condition is satisfied else false
      */
     public boolean compareValues(String key, String values) {
@@ -1712,12 +1708,12 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * validates error message
      *
-     * @param valueJson
-     * @param requiredErrorMessage
-     * @param field
-     * @param distinctRule
-     * @param displayedText
-     * @param conditionFlagCompare
+     * @param valueJson            - Input JSON of a field converted as a string
+     * @param requiredErrorMessage - required error message to be validated
+     * @param field                - field under test
+     * @param distinctRule         - rule to be validated
+     * @param displayedText        - text to be displayed in cucumber report
+     * @param conditionFlagCompare - boolean if key is a digit instead of a commonTag. used for replacement modules to verify error messages if 1 > 5 etc
      */
     public void handleErrorMessage(String valueJson, String requiredErrorMessage, String field, String distinctRule, String displayedText, boolean conditionFlagCompare) {
         String inputValue = "";
@@ -1732,7 +1728,8 @@ public class WizardFlowDataPage extends FLUtilities {
                 onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, "Validation Rule -> Value Validation " + displayedText, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
             sendKeys(driver, getElement(valueJson, "single line textbox", null), "");
         } else {
-            if (!conditionFlagCompare) requiredErrorMessage = "";
+            if (!conditionFlagCompare)
+                requiredErrorMessage = "";
             onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, distinctRule, "Validation Rule -> " + displayedText, error, requiredErrorMessage, error.contains(requiredErrorMessage), testContext);
             if (JsonPath.read(valueJson, "$.WizardControlTypes").toString().equals("Radio Button")) {
                 resetValue(valueJson, inputValue);
@@ -1743,13 +1740,13 @@ public class WizardFlowDataPage extends FLUtilities {
     }
 
     /**
-     * @param expectedResult
-     * @param expectedOperator
-     * @param valueJson
-     * @param field
-     * @param distinctRule
-     * @param requiredErrorMessage
-     * @param testContext
+     * @param expectedResult       - Expected result to be set on a condition
+     * @param expectedOperator     - Logical operator specified in a condition
+     * @param valueJson            - Input JSON of a field converted as a string
+     * @param field                - field under test
+     * @param distinctRule         - rule to be validated
+     * @param requiredErrorMessage - Required error message to validate invalid emails
+     * @param testContext          - test context for a test case
      * @return invalidValue for a given field
      */
     public String getInvalidValue(String expectedResult, String expectedOperator, String valueJson, String field, String distinctRule, String requiredErrorMessage, TestContext testContext) {
@@ -1813,7 +1810,7 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Click red bubble
      *
-     * @param valueJson
+     * @param valueJson - Input JSON of a field converted as a string
      * @return error message
      */
     public String clickRedBubble(String valueJson) {
@@ -1831,7 +1828,6 @@ public class WizardFlowDataPage extends FLUtilities {
             WebElement errorElement = getElement(valueJson, "errortype", JsonPath.read(valueJson, "$.WizardControlTypes").toString());
             error = errorElement.getText();
         } catch (NullPointerException e) {
-            // Handle null pointer exception
             error = "";
         }
         return error;
@@ -1840,11 +1836,11 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * validate invalid values for an email field
      *
-     * @param valueJson
-     * @param field
-     * @param requiredErrorMessage
-     * @param distinctRule
-     * @return invalidValue
+     * @param valueJson            - Input JSON of a field converted as a string
+     * @param field                - field under test
+     * @param requiredErrorMessage - required error message to validate invalid email scenarios
+     * @param distinctRule         - rule to be validated
+     * @return invalid email value
      */
     public String validateInvalidEmail(String valueJson, String field, String requiredErrorMessage, String distinctRule) {
         List<String> invalidEmails = Arrays.asList(testContext.getMapTestData().get("InvalidEmail").trim().split(","));
@@ -1861,8 +1857,8 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Read options from given spec
      *
-     * @param options
-     * @return
+     * @param options - "List Options" value specified in spec
+     * @return - Expected options specified in spec
      */
     public List<String> getExpectedOptions(String options) {
         List<String> expectedOptions = new ArrayList<>();
@@ -1875,7 +1871,7 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * calculate execution time for cucumber report
      */
-    public void printFinalResults(int fieldsEvaluated) {
+    public void printFinalResults() {
         long endTime;
         LocalTime endLocalTime;
         endTime = System.currentTimeMillis();
@@ -1886,14 +1882,13 @@ public class WizardFlowDataPage extends FLUtilities {
         long seconds = ((durationMillis % (1000 * 60 * 60)) % (1000 * 60)) / 1000;
 
         difference = String.format("%dh %dm %ds", hours, minutes, seconds);
-        testContext.getScenario().write("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>Cucumber Report : " + LocalDate.now() + "</div>");
-        testContext.getScenario().write("<div width='100%' style='font-size:1.2vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>" + timeFormat.format(onLoginPage.getStartLocalTime()) + " - " + timeFormat.format(endLocalTime) + "(" + difference + ")</div>");
+        testContext.getScenario().log("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>Cucumber Report : " + LocalDate.now() + "</div>");
+        testContext.getScenario().log("<div width='100%' style='font-size:1.2vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>" + timeFormat.format(onLoginPage.getStartLocalTime()) + " - " + timeFormat.format(endLocalTime) + "(" + difference + ")</div>");
         onSoftAssertionHandlerPage.afterScenario(testContext, fieldsEvaluated);
     }
 
     private void generateCombinations(List<String> keys, List<String> combination, Map<String, List<String>> keyValuesMap, String conditionCombination) {
         if (keys.isEmpty()) {
-            // Print the combination
             if (conditionCombination.equals("ValidationRules"))
                 combinationConditionsValidations.add(combination);
             else
@@ -1903,10 +1898,8 @@ public class WizardFlowDataPage extends FLUtilities {
         String currentKey = keys.get(0);
         List<String> currentValues = keyValuesMap.get(currentKey);
         for (String value : currentValues) {
-            // Add the current key-value pair to the combination
             List<String> newCombination = new ArrayList<>(combination);
             newCombination.add(currentKey + ": " + value);
-            // Recur with the remaining keys
             generateCombinations(keys.subList(1, keys.size()), newCombination, keyValuesMap, conditionCombination);
         }
     }
@@ -1914,9 +1907,9 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Find if commonTag exists in skipped elements
      *
-     * @param valueJson
-     * @param conditionCombination
-     * @param pattern
+     * @param valueJson            - Input JSON of a field converted as a string
+     * @param conditionCombination - Combination of different conditions
+     * @param pattern              - Pattern to be matched with given condition
      * @return invalid common tag. Return true if display rule is given in specified format else false
      */
     public List<Object> setInvalidTags(String valueJson, String conditionCombination, String pattern) {
@@ -1925,7 +1918,7 @@ public class WizardFlowDataPage extends FLUtilities {
         if (valueJson.contains("DisplayRules")) {
             invalidTag = getInvalidTags(skippedInvalidElements, JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0]);
             if (Pattern.compile(pattern).matcher(JsonPath.read(valueJson, "$.DisplayRules").toString().trim().split(";")[0]).find())
-                conditionFlag = setCombinationConditions(valueJson, pattern, conditionCombination);
+                conditionFlag = setCombinationConditions(valueJson, conditionCombination);
         }
         return Arrays.asList(invalidTag, conditionFlag);
     }
@@ -1933,11 +1926,11 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * Verify if an element exists on a UI based on display rules
      *
-     * @param valueJson
-     * @param order
-     * @param field
-     * @param assertionFlag
-     * @param conditionCombination
+     * @param valueJson            - Input JSON of a field converted as a string
+     * @param order                - order of a field under test
+     * @param field                - field under test
+     * @param assertionFlag        - boolean value if assertion needs to be printed on cucumber report
+     * @param conditionCombination - combination of different conditions
      * @return true if exists else false
      */
     public boolean verifyElementExists(String valueJson, String order, String field, boolean assertionFlag, String conditionCombination) {
@@ -1975,7 +1968,7 @@ public class WizardFlowDataPage extends FLUtilities {
                         if (key.equalsIgnoreCase("FLI_ISSUED_STATE_CODE")) {
                             if (!((howManyOperator.get(key).equalsIgnoreCase("=") & values.equalsIgnoreCase(jurisdictionStatesCode)) | (howManyOperator.get(key).equalsIgnoreCase("<>") & !(values.equalsIgnoreCase(jurisdictionStatesCode))))) {
                                 if (assertionFlag)
-                                    onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Either field does not exists or not applicable for jurisdiction " + executedJurisdiction, testContext);
+                                    onSoftAssertionHandlerPage.assertSkippedElement(order, executedJurisdiction, moduleName, field, "Either field does not exists or not applicable for jurisdiction " + executedJurisdiction);
                                 return false;
                             }
                         } else {
@@ -1988,9 +1981,9 @@ public class WizardFlowDataPage extends FLUtilities {
                         if (!getElements(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes")).isEmpty())
                             return !getElements(valueJson, JsonPath.read(valueJson, "$.WizardControlTypes")).isEmpty();
                         else if (assertionFlag)
-                            onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Either Wizard Control type or Common tag is incorrect", testContext);
+                            onSoftAssertionHandlerPage.assertSkippedElement(order, executedJurisdiction, moduleName, field, "Either Wizard Control type or Common tag is incorrect");
                     } else if (assertionFlag)
-                        onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists " + displayedText, testContext);
+                        onSoftAssertionHandlerPage.assertSkippedElement(order, executedJurisdiction, moduleName, field, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists " + displayedText);
                 } else if (assertionFlag)
                     onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, JsonPath.read(valueJson, "$.CommonTag"), "Display rule -> " + JsonPath.read(valueJson, "$.DisplayRules").toString().trim(), "Key " + listConditionkeys + " does not exists in JSON", false, "true", false, testContext);
                 if (conditionCombination.equalsIgnoreCase("ValidationRules"))
@@ -1999,18 +1992,18 @@ public class WizardFlowDataPage extends FLUtilities {
                     combinationConditions.clear();
                 howManyOperator.clear();
             } else if (assertionFlag)
-                onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "Key " + invalidTag + " not a valid tag", testContext);
+                onSoftAssertionHandlerPage.assertSkippedElement(order, executedJurisdiction, moduleName, field, "Key " + invalidTag + " not a valid tag");
         } else if (assertionFlag)
-            onSoftAssertionHandlerPage.assertSkippedElement(driver, order, executedJurisdiction, moduleName, field, "There must be consecutive ANDs in display rule", testContext);
+            onSoftAssertionHandlerPage.assertSkippedElement(order, executedJurisdiction, moduleName, field, "There must be consecutive ANDs in display rule");
         return false;
     }
 
     /**
      * set value based on a given operator
      *
-     * @param key
-     * @param values
-     * @param operators
+     * @param key       - commonTag or a field
+     * @param values    - Given values which needs to handled based on operator
+     * @param operators - Logical operators
      * @return list of values and updated logical operator
      */
     private List<String> adjustValuesAndOperator(String key, String values, Map<String, String> operators) {

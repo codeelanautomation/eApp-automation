@@ -1,7 +1,9 @@
 package com.hexure.firelight.pages;
 
+import com.hexure.firelight.libraies.FLException;
 import com.hexure.firelight.libraies.FLUtilities;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.openqa.selenium.WebDriver;
@@ -9,6 +11,7 @@ import org.openqa.selenium.support.PageFactory;
 
 import java.io.File;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class ExcelHandlerPage extends FLUtilities {
     public ExcelHandlerPage(WebDriver driver) {
@@ -44,8 +47,7 @@ public class ExcelHandlerPage extends FLUtilities {
 
             return excelValue.trim();
         } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+            throw new FLException("File is inaccessible" + e.getMessage());
         }
     }
 

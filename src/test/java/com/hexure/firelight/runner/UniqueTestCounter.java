@@ -13,7 +13,7 @@ public class UniqueTestCounter extends RunListener {
     private int actualTestCount = 0;
 
     @Override
-    public void testStarted(Description description) throws Exception {
+    public void testStarted(Description description) {
         String testIdentifier = description.getClassName() + "#" + description.getMethodName();
         if (!executedTests.contains(testIdentifier)) {
             actualTestCount++;
@@ -22,7 +22,7 @@ public class UniqueTestCounter extends RunListener {
     }
 
     @Override
-    public void testFinished(Description description) throws Exception {
+    public void testFinished(Description description) {
         Allure.addAttachment("Actual Test Count", String.valueOf(actualTestCount));
     }
 }

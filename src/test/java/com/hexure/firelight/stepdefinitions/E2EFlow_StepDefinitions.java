@@ -7,7 +7,7 @@ import com.hexure.firelight.pages.CommonMethodsPage;
 import com.hexure.firelight.pages.ExcelHandlerPage;
 import com.hexure.firelight.pages.SoftAssertionHandlerPage;
 import com.jayway.jsonpath.JsonPath;
-import cucumber.api.java.en.Given;
+import io.cucumber.java.en.Given;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.ss.usermodel.Row;
@@ -23,12 +23,12 @@ import java.util.List;
 
 
 public class E2EFlow_StepDefinitions extends FLUtilities {
+    private static final Logger Log = LogManager.getLogger(E2EFlow_StepDefinitions.class);
     private final TestContext testContext;
     private final WebDriver driver;
     private final CommonMethodsPage onCommonMethodsPage;
     private final ExcelHandlerPage onExcelHandlerPage;
     private final SoftAssertionHandlerPage onSoftAssertionHandlerPage;
-    private static final Logger Log = LogManager.getLogger(E2EFlow_StepDefinitions.class);
 
     public E2EFlow_StepDefinitions(TestContext context) {
         testContext = context;
@@ -52,14 +52,12 @@ public class E2EFlow_StepDefinitions extends FLUtilities {
             Sheet sheet = workbook.getSheet(clientName);
             Iterator<Row> iterator = sheet.iterator();
             List<List<String>> listInputFields;
-            // Assuming the fifth row contains headers
             Row headerRow = iterator.next();
 
             int wizardColumnIndex = onExcelHandlerPage.findColumnIndex(headerRow, EnumsCommon.E2EWIZARDNAME.getText());
             int dataItemIDColumnIndex = onExcelHandlerPage.findColumnIndex(headerRow, EnumsCommon.E2EDATAITEMID.getText());
             int titleColumnIndex = onExcelHandlerPage.findColumnIndex(headerRow, EnumsCommon.E2ETITLE.getText());
 
-            int count = 1;
             for (int rowIndex = 3; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 wizardName = onExcelHandlerPage.getExcelColumnValue(excelFilePath, clientName, rowIndex, wizardColumnIndex);
                 dataItemID = onExcelHandlerPage.getExcelColumnValue(excelFilePath, clientName, rowIndex, dataItemIDColumnIndex);
@@ -73,7 +71,7 @@ public class E2EFlow_StepDefinitions extends FLUtilities {
                         valueJson = testContext.getMapTestData().get(wizardName + "|" + titleName).trim();
                     formName = JsonPath.read(valueJson, "$.FormName").toString().trim();
                     testData = JsonPath.read(valueJson, "$.TestData").toString().trim();
-                    onCommonMethodsPage.setE2EValue(driver, formName, wizardName, valueJson, dataItemID, testData, count, titleName);
+                    onCommonMethodsPage.setE2EValue(driver, formName, wizardName, valueJson, dataItemID, testData, titleName);
                 }
             }
             listInputFields = onCommonMethodsPage.getListInputFields();

@@ -1,13 +1,12 @@
 package com.hexure.firelight.stepdefinitions;
 
-import com.hexure.firelight.libraies.EnumsCommon;
 import com.hexure.firelight.libraies.FLUtilities;
 import com.hexure.firelight.libraies.TestContext;
-import com.hexure.firelight.pages.*;
+import com.hexure.firelight.pages.CreateApplicationPage;
+import com.hexure.firelight.pages.WizardFlowDataPage;
 import com.jayway.jsonpath.JsonPath;
-import cucumber.api.java.en.Given;
+import io.cucumber.java.en.Given;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.support.ui.Select;
 
 import java.util.*;
 
@@ -18,7 +17,6 @@ public class Rules_StepDefinitions extends FLUtilities {
     public WizardFlowDataPage onWizardFlowDataPage;
     String jurisdictionStatesCode = "";
     List<String> skippedInvalidElements = new ArrayList<>();
-    int fieldsEvaluated = 0;
     String executedJurisdiction = "";
 
     public Rules_StepDefinitions(TestContext context) {
@@ -55,7 +53,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             jurisdictionStatesCode = JsonPath.read(moduleJurisdictionMapping, "$.State").toString().trim();
             createApplication(jurisdiction1, product, productType, module);
         }
-        onWizardFlowDataPage.printFinalResults(fieldsEvaluated);
+        onWizardFlowDataPage.printFinalResults();
     }
 
     /**
@@ -72,29 +70,12 @@ public class Rules_StepDefinitions extends FLUtilities {
     public void validateWizard(String module) {
         if (!onCreateApplicationPage.getLstBtnClose().isEmpty())
             clickElement(driver, onCreateApplicationPage.getBtnClose());
-        verifyFormDataWithInboundXml(module);
+        onWizardFlowDataPage.setPageObjects(testContext, driver, executedJurisdiction);
+        onWizardFlowDataPage.verifyFormDataWithInboundXml(module);
         waitForPageToLoad(driver);
         clickElement(driver, onCreateApplicationPage.getBtnHome());
         clickElement(driver, onCreateApplicationPage.getBtnPopupOK());
         waitForPageToLoad(driver);
-    }
-
-    /**
-     * This method will iterate over each field of a module and start validating it.
-     *
-     * @param module
-     */
-    public void verifyFormDataWithInboundXml(String module) {
-        String moduleNameValue;
-        Set<String> fieldList = new LinkedHashSet<>(Arrays.asList(testContext.getMapTestData().get("fieldList").split(", ")));
-        onWizardFlowDataPage.setPageObjects(testContext, driver, executedJurisdiction);
-        for (String fieldName : fieldList) {
-            moduleNameValue = JsonPath.read(testContext.getMapTestData().get(fieldName).trim(), "$.ModuleSectionName").toString().trim();
-            if (module.equalsIgnoreCase(moduleNameValue) | module.equalsIgnoreCase("All")) {
-                onWizardFlowDataPage.wizardTesting(fieldName);
-                fieldsEvaluated++;
-            }
-        }
     }
 
 }

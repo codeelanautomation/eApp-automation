@@ -5,7 +5,7 @@ import com.hexure.firelight.libraies.EnumsCommon;
 import com.hexure.firelight.libraies.FLUtilities;
 import com.hexure.firelight.libraies.TestContext;
 import com.hexure.firelight.pages.CreateApplicationPage;
-import cucumber.api.java.en.Then;
+import io.cucumber.java.en.Then;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.ui.Select;
@@ -24,7 +24,7 @@ public class CreateApplication_StepDefinitions extends FLUtilities {
     @Then("User selects Jurisdiction {string}")
     public void userSelectsJurisdiction(String jurisdiction) {
         captureScreenshot(driver, testContext, false);
-        new Select(onCreateApplicationPage.getDd_Jurisdiction()).selectByVisibleText(jurisdiction);
+        new Select(onCreateApplicationPage.getDdJurisdiction()).selectByVisibleText(jurisdiction);
         //TODO: remove below line if not required
         addPropertyValueInJSON(testContext.getTestCaseID(), testContext, EnumsJSONProp.JURISDICTION.getText(), jurisdiction);
     }
@@ -38,9 +38,9 @@ public class CreateApplication_StepDefinitions extends FLUtilities {
     public void userSelectsProductTypeDropdown(String productType) {
         waitForPageToLoad(driver);
         sleepInMilliSeconds(2000);
-        waitUntilDropDownListPopulated(driver, new Select(onCreateApplicationPage.getDd_ProductType()));
+        waitUntilDropDownListPopulated(driver, new Select(onCreateApplicationPage.getDdProductType()));
         captureScreenshot(driver, testContext, false);
-        new Select(onCreateApplicationPage.getDd_ProductType()).selectByVisibleText(productType);
+        new Select(onCreateApplicationPage.getDdProductType()).selectByVisibleText(productType);
     }
 
     @Then("User selects {string} Dropdown from JSON")
@@ -52,11 +52,11 @@ public class CreateApplication_StepDefinitions extends FLUtilities {
     public void UserOpensGivenProductForApp(String product) {
         captureScreenshot(driver, testContext, false);
         sleepInMilliSeconds(2000);
-        syncElement(driver, findElement(driver, String.format(onCreateApplicationPage.list_OfProducts, product)), EnumsCommon.TOCLICKABLE.getText());
+        syncElement(driver, findElement(driver, String.format(onCreateApplicationPage.listOfProducts, product)), EnumsCommon.TOCLICKABLE.getText());
         try {
-            clickElement(driver, findElement(driver, String.format(onCreateApplicationPage.list_OfProducts, product)));
+            clickElement(driver, findElement(driver, String.format(onCreateApplicationPage.listOfProducts, product)));
         } catch (StaleElementReferenceException e) {
-            clickElement(driver, findElement(driver, String.format(onCreateApplicationPage.list_OfProducts, product)));
+            clickElement(driver, findElement(driver, String.format(onCreateApplicationPage.listOfProducts, product)));
         }
         addPropertyValueInJSON(testContext.getTestCaseID(), testContext, EnumsJSONProp.PRODUCT.getText(), product);
     }

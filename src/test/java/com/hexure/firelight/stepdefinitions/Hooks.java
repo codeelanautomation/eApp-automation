@@ -1,13 +1,15 @@
 package com.hexure.firelight.stepdefinitions;
 
-import com.hexure.firelight.libraies.FLUtilities;
 import com.hexure.firelight.libraies.PageObjectManager;
+import com.hexure.firelight.libraies.FLUtilities;
 import com.hexure.firelight.libraies.TestContext;
-import cucumber.api.Scenario;
-import cucumber.api.java.After;
-import cucumber.api.java.Before;
+import io.cucumber.java.Scenario;
+import io.cucumber.java.Before;
+import io.cucumber.java.After;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class Hooks extends FLUtilities {
     private TestContext testContext;

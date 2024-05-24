@@ -3,6 +3,7 @@ package com.hexure.firelight.pages;
 import com.hexure.firelight.libraies.FLUtilities;
 import com.jayway.jsonpath.JsonPath;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -15,10 +16,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class CommonMethodsPage extends FLUtilities {
-    List<List<String>> listInputFields = new ArrayList<>();
-
     public String selectField = "//select[@data-dataitemid='%s']";
     public String textareaField = "//textarea[@data-dataitemid='%s']";
     public String labelField = "//div[@data-dataitemid='%s']";
@@ -42,6 +42,9 @@ public class CommonMethodsPage extends FLUtilities {
     public String fieldWithTitleAttribute = "//*[@title=\"%s\"]|//*[@aria-label=\"%s\"]";
     public String mandatoryFormElement = "//*[@class='navDrawer__bundleName' and text()=\"%s\"]//..//a";
 
+    int count = 1;
+    List<List<String>> listInputFields = new ArrayList<>();
+
     @FindBy(xpath = "//*[@id='ToggleMessagesLink']")
     private WebElement redColorErrorValidationBubble;
 
@@ -55,19 +58,19 @@ public class CommonMethodsPage extends FLUtilities {
     private WebElement pageHeader;
 
     @FindBy(id = "imgOpenWiz")
-    private WebElement WizardPageNameExpand;
+    private WebElement wizardPageNameExpand;
 
     @FindBy(id = "imgCloseWiz")
-    private WebElement WizardPageNameCollapse;
+    private WebElement wizardPageNameCollapse;
 
     @FindBy(id = "imgExpand")
-    private List<WebElement> List_WizardPageNameExpand;
+    private List<WebElement> listWizardPageNameExpand;
 
     @FindBy(id = "imgCloseWiz")
-    private List<WebElement> List_WizardPageNameCollapse;
+    private List<WebElement> listWizardPageNameCollapse;
 
     @FindBy(xpath = "//div[@class='react-datepicker']")
-    private List<WebElement> grid_DatePicker;
+    private List<WebElement> gridDatePicker;
 
     public CommonMethodsPage(WebDriver driver) {
         initElements(driver);
@@ -77,12 +80,11 @@ public class CommonMethodsPage extends FLUtilities {
         PageFactory.initElements(driver, this);
     }
 
-
     /**
      * move to a given page
      *
-     * @param pageHeader
-     * @param formHeader
+     * @param pageHeader - Page name
+     * @param formHeader - Form name
      */
     public void moveToPage(WebDriver driver, String pageHeader, String formHeader) {
         waitForPageToLoad(driver);
@@ -107,14 +109,14 @@ public class CommonMethodsPage extends FLUtilities {
     /**
      * Verify if a page exists
      *
-     * @param pageHeader
-     * @param formHeader
+     * @param pageHeader - Page name
+     * @param formHeader - Form name
      * @return true if page exists else false
      */
     public boolean verifyPage(WebDriver driver, String pageHeader, String formHeader) {
         boolean flag = false;
         waitForPageToLoad(driver);
-        if (!getList_WizardPageNameExpand().isEmpty())
+        if (!getListWizardPageNameExpand().isEmpty())
             clickElementByJSE(driver, getWizardPageNameExpand());
         List<WebElement> mandetoryFormList = findElements(driver, String.format(getMandatoryFormElement(), formHeader));
         for (WebElement element : mandetoryFormList) {
@@ -124,12 +126,12 @@ public class CommonMethodsPage extends FLUtilities {
                 break;
             }
         }
-        if (!getList_WizardPageNameCollapse().isEmpty())
+        if (!getListWizardPageNameCollapse().isEmpty())
             clickElementByJSE(driver, getWizardPageNameCollapse());
         return flag;
     }
 
-    public void setE2EValue(WebDriver driver, String formName, String wizardName, String valueJson, String dataItemID, String testData, int count, String titleName) {
+    public void setE2EValue(WebDriver driver, String formName, String wizardName, String valueJson, String dataItemID, String testData, String titleName) {
         moveToPage(driver, formName, wizardName);
         String controlType = JsonPath.read(valueJson, "$.ControlType").toString().trim().toLowerCase();
         switch (controlType) {

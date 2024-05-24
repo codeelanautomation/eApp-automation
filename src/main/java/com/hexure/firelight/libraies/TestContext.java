@@ -1,6 +1,6 @@
 package com.hexure.firelight.libraies;
 
-import cucumber.api.Scenario;
+import io.cucumber.java.Scenario;
 import lombok.Data;
 import org.openqa.selenium.WebDriver;
 

@@ -3,7 +3,7 @@ package com.hexure.firelight.stepdefinitions;
 import com.hexure.firelight.libraies.FLUtilities;
 import com.hexure.firelight.libraies.TestContext;
 import com.hexure.firelight.pages.LoginPage;
-import cucumber.api.java.en.Then;
+import io.cucumber.java.en.Then;
 import org.junit.Assert;
 import org.openqa.selenium.WebDriver;
 
@@ -22,10 +22,10 @@ public class Login_StepDefinitions extends FLUtilities {
     public void userOnLoginPageEntersValidUsernameAsAndPasswordAndClicksLoginButton(String userName) {
         testContext.setCurrentTestUserName(userName);
         System.out.println("Current Test UserName = " + testContext.getCurrentTestUserName());
-        onLoginPage.getTxtbox_userName().sendKeys(configProperties.getProperty(testContext.getCurrentTestUserName()));
-        onLoginPage.getTxtbox_Password().sendKeys(configProperties.getProperty(testContext.getCurrentTestUserName() + "-password"));
+        onLoginPage.getTxtboxUserName().sendKeys(configProperties.getProperty(testContext.getCurrentTestUserName()));
+        onLoginPage.getTxtboxPassword().sendKeys(configProperties.getProperty(testContext.getCurrentTestUserName() + "-password"));
         captureScreenshot(driver, testContext, false);
-        clickElement(driver, onLoginPage.getBtn_SignIn());
+        clickElement(driver, onLoginPage.getBtnSignIn());
     }
 
     @Then("User verifies the {string} page should be open")

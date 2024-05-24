@@ -1,47 +1,36 @@
 package com.hexure.firelight.libraies;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.FluentWait;
-import org.openqa.selenium.support.ui.Select;
-import org.openqa.selenium.support.ui.WebDriverWait;
-
+import org.openqa.selenium.support.ui.*;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import java.time.Duration;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 public class FLUtilities extends BaseClass {
     private static final Logger Log = LogManager.getLogger(FLUtilities.class);
 
     protected void syncElement(WebDriver driver, WebElement element, String conditionForWait) {
         try {
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
             switch (conditionForWait) {
                 case "ToVisible":
-                    new WebDriverWait(driver, 15)
-                            .until(ExpectedConditions.visibilityOf(element));
+                    wait.until((WebDriver d) -> ExpectedConditions.visibilityOf(element).apply(d));
                     break;
-
                 case "ToClickable":
-                    new WebDriverWait(driver, 15)
-                            .until(ExpectedConditions.elementToBeClickable(element));
+                    wait.until((WebDriver d) -> ExpectedConditions.elementToBeClickable(element).apply(d));
                     break;
-
                 case "ToInvisible":
-                    new WebDriverWait(driver, 15)
-                            .until(ExpectedConditions.invisibilityOf(element));
+                    wait.until((WebDriver d) -> ExpectedConditions.invisibilityOf(element).apply(d));
                     break;
-
                 default:
                     throw new FLException("Invalid Condition " + conditionForWait);
             }
         } catch (StaleElementReferenceException | NoSuchElementException e) {
-            // Handle the exception here (e.g., logging)
             System.out.println("No Such Element Exception is showing on searching element " + element);
         } catch (Exception e) {
             Log.error("Could Not Sync WebElement ", e);
@@ -75,7 +64,6 @@ public class FLUtilities extends BaseClass {
         throw new FLException("Failed to click WebElement after " + retryCount + " attempts");
     }
 
-
     protected void scrollToWebElement(WebDriver driver, WebElement element) {
         try {
             ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
@@ -85,10 +73,8 @@ public class FLUtilities extends BaseClass {
         }
     }
 
-
     protected void clickElementByJSE(WebDriver driver, WebElement element) {
-        syncElement(driver, element, EnumsCommon.TOVISIBLE.getText());
-
+        syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
         try {
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
         } catch (Exception e) {
@@ -131,17 +117,12 @@ public class FLUtilities extends BaseClass {
 
     protected void waitUntilDropDownListPopulated(WebDriver driver, Select dropdown) {
         try {
-            FluentWait<WebDriver> wait = new FluentWait<>(driver);
-            wait.pollingEvery(250, TimeUnit.MILLISECONDS);
-            wait.withTimeout(15, TimeUnit.SECONDS);
-            wait.ignoring(NoSuchElementException.class);
+            FluentWait<WebDriver> wait = new FluentWait<>(driver)
+                    .pollingEvery(Duration.ofMillis(250))
+                    .withTimeout(Duration.ofSeconds(15))
+                    .ignoring(NoSuchElementException.class);
 
-            Function<WebDriver, Boolean> function = arg0 -> {
-                return dropdown.getOptions().size() > 3;
-            };
-
-            wait.until(function);
-
+            wait.until(driver1 -> dropdown.getOptions().size() > 3);
         } catch (StaleElementReferenceException se) {
             throw new FLException("Element is not available in DOM " + se.getMessage());
         } catch (Exception e) {
@@ -152,7 +133,6 @@ public class FLUtilities extends BaseClass {
     protected void clickElement(WebDriver driver, String stringXpath) {
         WebElement element = driver.findElement(By.xpath(stringXpath));
         syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
-
         try {
             if (!element.isDisplayed()) {
                 scrollToWebElement(driver, element);
@@ -172,9 +152,8 @@ public class FLUtilities extends BaseClass {
             syncElement(driver, element, EnumsCommon.TOVISIBLE.getText());
             return element;
         } catch (NoSuchElementException e) {
-            // Handle the exception here (e.g., logging)
             System.out.println("No Such Element Exception is showing on searching element " + stringXpath);
-            return null; // or throw a custom exception
+            return null;
         }
     }
 
@@ -206,7 +185,7 @@ public class FLUtilities extends BaseClass {
     }
 
     private boolean getCheckBoxAction(String action) {
-        return action.equalsIgnoreCase("yes") | action.equalsIgnoreCase("check") | action.equalsIgnoreCase("checked") | action.equalsIgnoreCase("selected");
+        return action.equalsIgnoreCase("yes") || action.equalsIgnoreCase("check") || action.equalsIgnoreCase("checked") || action.equalsIgnoreCase("selected");
     }
 
 
