@@ -367,8 +367,8 @@
                     </systemProperties>
 
                     <parallel>classes</parallel>
-                    <threadCount>5</threadCount>
-                    <rerunFailingTestsCount>3</rerunFailingTestsCount>
+                    <threadCount>6</threadCount>
+                    <rerunFailingTestsCount>4</rerunFailingTestsCount>
                     <perCoreThreadCount>false</perCoreThreadCount>
                     <!--                    <useUnlimitedThreads>true</useUnlimitedThreads>-->
                     <testFailureIgnore>false</testFailureIgnore>

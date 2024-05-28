@@ -148,9 +148,8 @@ public class FLUtilities extends BaseClass {
 
     public WebElement findElement(WebDriver driver, String stringXpath) {
         try {
-            WebElement element = driver.findElement(By.xpath(stringXpath));
-            syncElement(driver, element, EnumsCommon.TOVISIBLE.getText());
-            return element;
+            syncElement(driver, driver.findElement(By.xpath(stringXpath)), EnumsCommon.TOVISIBLE.getText());
+            return driver.findElement(By.xpath(stringXpath));
         } catch (NoSuchElementException e) {
             System.out.println("No Such Element Exception is showing on searching element " + stringXpath);
             return null;

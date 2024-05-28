@@ -75,8 +75,6 @@ public class WizardFlowDataPage extends FLUtilities {
             if (module.equalsIgnoreCase(moduleNameValue) | module.equalsIgnoreCase("All")) {
                 wizardTesting(fieldName);
                 fieldsEvaluated++;
-                if(fieldName.equalsIgnoreCase("Owner_DOB"))
-                    break;
             }
         }
     }
@@ -1126,6 +1124,7 @@ public class WizardFlowDataPage extends FLUtilities {
      * @return webelement
      */
     public WebElement getElement(String valueJson, String datatype, String optionalValue) {
+        waitForPageToLoad(driver);
         String commonTag = JsonPath.read(valueJson, "$.CommonTag").toString().trim();
         switch (datatype.toLowerCase()) {
             case "dropdown":
@@ -1872,10 +1871,8 @@ public class WizardFlowDataPage extends FLUtilities {
      * calculate execution time for cucumber report
      */
     public void printFinalResults() {
-        long endTime;
-        LocalTime endLocalTime;
-        endTime = System.currentTimeMillis();
-        endLocalTime = LocalTime.now();
+        long endTime = System.currentTimeMillis();
+        LocalTime endLocalTime = LocalTime.now();
         long durationMillis = endTime - onLoginPage.getStartTime();
         long hours = durationMillis / (1000 * 60 * 60);
         long minutes = (durationMillis % (1000 * 60 * 60)) / (1000 * 60);

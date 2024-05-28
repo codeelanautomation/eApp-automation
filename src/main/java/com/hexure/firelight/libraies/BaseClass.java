@@ -457,7 +457,7 @@ public class BaseClass {
     public void waitForPageToLoad(WebDriver driver) {
         FluentWait<WebDriver> wait = new FluentWait<>(driver)
                 .withTimeout(Duration.ofSeconds(60)) // Maximum wait time
-                .pollingEvery(Duration.ofMillis(500)); // Polling interval
+                .pollingEvery(Duration.ofMillis(100)); // Polling interval
 
         // Wait until document ready state is 'complete'
         wait.until(webDriver -> {
