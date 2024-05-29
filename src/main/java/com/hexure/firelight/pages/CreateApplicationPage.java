@@ -68,8 +68,6 @@ public class CreateApplicationPage extends FLUtilities {
         waitForPageToLoad(driver);
         sleepInMilliSeconds(2000);
         new Select(getDdProductType()).selectByVisibleText(productType);
-        sleepInMilliSeconds(2000);
-        syncElement(driver, findElement(driver, String.format(listOfProducts, product)), EnumsCommon.TOCLICKABLE.getText());
         clickElement(driver, findElement(driver, String.format(listOfProducts, product)));
         waitForPageToLoad(driver);
         clickElement(driver, getBtnCreate());

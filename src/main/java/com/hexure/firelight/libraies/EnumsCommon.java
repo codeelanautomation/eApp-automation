@@ -4,7 +4,6 @@ import lombok.Getter;
 
 @Getter
 public enum EnumsCommon {
-    TOVISIBLE("ToVisible"),
     ABSOLUTE_CLIENTFILES_PATH(System.getProperty("user.dir") + "\\src\\test\\resources\\testdata\\Client\\"),
     FIELD("Common Tag"),
     JURISDICTION("Jurisdiction"),
@@ -12,6 +11,7 @@ public enum EnumsCommon {
     E2ETITLE("Title"),
     E2ETESTDATA("Test Data"),
     E2EWIZARDNAME("Wizard Name"),
+    TOVISIBLE("ToVisible"),
     TOCLICKABLE("ToClickable"),
     ABSOLUTE_FILES_PATH(System.getProperty("user.dir") + "\\src\\test\\resources\\testdata\\"),
     FIREFOXBROWSER("Firefox"),

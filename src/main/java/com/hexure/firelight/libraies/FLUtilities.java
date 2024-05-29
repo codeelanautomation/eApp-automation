@@ -7,6 +7,7 @@ import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.*;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.List;
@@ -16,7 +17,10 @@ public class FLUtilities extends BaseClass {
 
     protected void syncElement(WebDriver driver, WebElement element, String conditionForWait) {
         try {
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+            FluentWait<WebDriver> wait = new FluentWait<>(driver)
+                    .pollingEvery(Duration.ofMillis(200))
+                    .withTimeout(Duration.ofSeconds(15))
+                    .ignoring(NoSuchElementException.class);
             switch (conditionForWait) {
                 case "ToVisible":
                     wait.until((WebDriver d) -> ExpectedConditions.visibilityOf(element).apply(d));
