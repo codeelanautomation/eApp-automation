@@ -13,3 +13,6 @@ execution.mode=local
    It will generate input JSON along with required feature/runner files.
 6. Run command : mvn clean test
 7. Once executed, check the cucumber report in path -> target/cucumber-report.
+8. Publishing Cucumber Reports on Cloud forever
+   a) Run cmd as Administrator -  setx /M CUCUMBER_PUBLISH_TOKEN "token code"
+   b) Restart your machine
