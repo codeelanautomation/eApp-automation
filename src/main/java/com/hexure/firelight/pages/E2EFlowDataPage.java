@@ -95,7 +95,10 @@ public class E2EFlowDataPage extends FLUtilities {
             int modulesIndex = findColumnIndex(headerRow, "Modules");
             int filenameIndex = findColumnIndex(headerRow, "FileName");
             int executeIndex = findColumnIndex(headerRow, "Execute");
-            int JurisdictionWiseReportIndex = findColumnIndex(headerRow, "JurisdictionWiseReport");
+            int jurisdictionWiseReportIndex = findColumnIndex(headerRow, "JurisdictionWiseReport");
+            int inboundTypeIndex = findColumnIndex(headerRow, "Inbound Type");
+            int inboundIndex = findColumnIndex(headerRow, "Inbound");
+            int outboundIndex = findColumnIndex(headerRow, "Outbound");
 
             deleteRunnerFeature(EnumsCommon.RUNNERFILESPATH.getText() + "ForeSightTest");
             deleteRunnerFeature(EnumsCommon.FEATUREFILESPATH.getText() + "ForesightTest");
@@ -107,7 +110,10 @@ public class E2EFlowDataPage extends FLUtilities {
                 String modules = getCellValue(currentRow.getCell(modulesIndex));
                 String filename = getCellValue(currentRow.getCell(filenameIndex));
                 String execute = getCellValue(currentRow.getCell(executeIndex));
-                String jurisdictionWiseReport = getCellValue(currentRow.getCell(JurisdictionWiseReportIndex));
+                String jurisdictionWiseReport = getCellValue(currentRow.getCell(jurisdictionWiseReportIndex));
+                String inboundType = getCellValue(currentRow.getCell(inboundTypeIndex));
+                String inbound = getCellValue(currentRow.getCell(inboundIndex));
+                String outbound = getCellValue(currentRow.getCell(outboundIndex));
 
                 if (execute.equalsIgnoreCase("yes")) {
                     if (!masterJson.containsKey(filename.replaceAll(".xlsx", "")))
@@ -119,7 +125,8 @@ public class E2EFlowDataPage extends FLUtilities {
                             createRunnerFile(clientName, modules, state);
                         }
                     } else {
-                        createFeatureFile(clientName, modules, product, filename, "All");
+                        if(inboundType.equalsIgnoreCase("Direct Login"))
+                            createFeatureFile(clientName, modules, product, filename, "All");
                         createRunnerFile(clientName, modules, "All");
                     }
                 }
