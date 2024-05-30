@@ -131,6 +131,16 @@ public class CommonMethodsPage extends FLUtilities {
         return flag;
     }
 
+    /**
+     * Set the value for E2E flow
+     * @param driver
+     * @param formName
+     * @param wizardName
+     * @param valueJson
+     * @param dataItemID
+     * @param testData
+     * @param titleName
+     */
     public void setE2EValue(WebDriver driver, String formName, String wizardName, String valueJson, String dataItemID, String testData, String titleName) {
         moveToPage(driver, formName, wizardName);
         String controlType = JsonPath.read(valueJson, "$.ControlType").toString().trim().toLowerCase();

@@ -114,7 +114,7 @@ public class WizardFlowDataPage extends FLUtilities {
         List<String> rulesList = Arrays.asList("ListOptions", "RulesWizard", "Length", "Format");
 
         String valueJson = testContext.getMapTestData().get(field).trim();
-        if (valueJson.contains("CommonTag")) {
+        if (valueJson.contains("CommonTag") && !(JsonPath.read(valueJson, "$.CommonTag").toString().trim().equals(""))) {
             order = JsonPath.read(valueJson, "$.Order").toString().trim();
             moduleName = JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim();
             String commonTag = JsonPath.read(valueJson, "$.CommonTag").toString().trim();
