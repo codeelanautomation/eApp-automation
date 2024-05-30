@@ -85,7 +85,7 @@ public class E2EFlowDataPage extends FLUtilities {
     public void createForesightTestDataInterface(String jsonFile, String excelFile) {
         String filePath = EnumsCommon.ABSOLUTE_FILES_PATH.getText() + excelFile;
         try (FileInputStream file = new FileInputStream(filePath);
-            XSSFWorkbook workbook = new XSSFWorkbook(file)) {
+             XSSFWorkbook workbook = new XSSFWorkbook(file)) {
             Sheet sheet = workbook.getSheet("Interface");
             Iterator<Row> iterator = sheet.iterator();
             Row headerRow = iterator.next().getSheet().getRow(0);
@@ -151,10 +151,14 @@ public class E2EFlowDataPage extends FLUtilities {
         try (FileInputStream file = new FileInputStream(filePath);
              XSSFWorkbook workbook = new XSSFWorkbook(file)) {
 
-            processSheet(workbook.getSheet("Data List"), jsonRows);
-            processSheet(workbook.getSheet("Ceding Carrier Custom List"), jsonRows);
-            processJurisdictionMappingSheet(workbook.getSheet("ModulesJurisdictionMapping"), jsonRows);
-            processEAppWizardSpecSheet(workbook.getSheet("E-App Wizard Spec"), jsonRows, fieldList, product);
+            if (verifySheetExists(workbook, "Data List"))
+                processSheet(workbook.getSheet("Data List"), jsonRows);
+            if (verifySheetExists(workbook, "Ceding Carrier Custom List"))
+                processSheet(workbook.getSheet("Ceding Carrier Custom List"), jsonRows);
+            if (verifySheetExists(workbook, "ModulesJurisdictionMapping"))
+                processJurisdictionMappingSheet(workbook.getSheet("ModulesJurisdictionMapping"), jsonRows);
+            if (verifySheetExists(workbook, "E-App Wizard Spec"))
+                processEAppWizardSpecSheet(workbook.getSheet("E-App Wizard Spec"), jsonRows, fieldList, product);
 
             masterJson.put(excelFile.replaceAll(".xlsx", ""), jsonRows);
             masterJson.put("commonTestData", getJsonObject());
@@ -165,6 +169,16 @@ public class E2EFlowDataPage extends FLUtilities {
         } catch (Exception e) {
             throw new FLException("Reading Properties File Failed" + e.getMessage());
         }
+    }
+
+    public boolean verifySheetExists(XSSFWorkbook workbook, String sheetName) {
+        for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+            if (workbook.getSheetAt(i).getSheetName().contentEquals(sheetName)) {
+                //use  Writeableworkbookobj.getSheet(); to return the specific sheet and write the data into the sheet
+                return true;
+            }
+        }
+        return false;
     }
 
     private void processSheet(Sheet sheet, JSONObject jsonRows) {
@@ -261,12 +275,12 @@ public class E2EFlowDataPage extends FLUtilities {
                 }
             }
             tempJsonReplacement = new JSONObject(tempJson);
-            if(!tempJson.containsKey("ModuleSectionName"))
-                tempJson.put("ModuleSectionName","");
-            if(!tempJson.containsKey("CommonTag"))
-                tempJson.put("CommonTag","");
-            if(!tempJson.containsKey("Order"))
-                tempJson.put("Order","");
+            if (!tempJson.containsKey("ModuleSectionName"))
+                tempJson.put("ModuleSectionName", "");
+            if (!tempJson.containsKey("CommonTag"))
+                tempJson.put("CommonTag", "");
+            if (!tempJson.containsKey("Order"))
+                tempJson.put("Order", "");
 
             if (tempJson.get("ModuleSectionName").equals("Replacements Module")) {
                 List<String> numberExchanges = new ArrayList<>(Arrays.asList(jsonRows.get("NumberofExchanges/Transfers/Rollovers").toString().trim().split(", ")));
@@ -324,7 +338,6 @@ public class E2EFlowDataPage extends FLUtilities {
 
         if (cell != null && cell.getCellType() == CellType.STRING && !(cell.getStringCellValue().trim().equalsIgnoreCase("None"))) {
             excelValue = cell.getStringCellValue().trim();
-            excelValue = excelValue.replaceAll("//", "/");
             excelValue = excelValue.replaceAll("[^\\x00-\\x7F^–]", "");
             excelValue = excelValue.replaceAll("–", "-");
             excelValue = excelValue.replaceAll("\n", ";");
