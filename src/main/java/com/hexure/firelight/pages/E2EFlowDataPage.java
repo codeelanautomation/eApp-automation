@@ -40,16 +40,23 @@ public class E2EFlowDataPage extends FLUtilities {
     }
 
     public static String getCellValue(Cell cell) {
-        String excelValue;
+        // Initialize a string to store the cell value
+        String excelValue ="";
 
+        // Check if the cell is not null and its type is STRING
         if (cell != null && cell.getCellType() == CellType.STRING) {
+            // Get the string value of the cell and trim any leading or trailing whitespace
             excelValue = cell.getStringCellValue().trim();
-            if (excelValue.contains("//"))
+
+            // If the string contains double slashes ("//"), replace them with a single slash ("/")
+            if (excelValue.contains("//")) {
                 excelValue = excelValue.replaceAll("//", "/");
+            }
+            // Check if the cell is not null and its type is NUMERIC
         } else if (cell != null && cell.getCellType() == CellType.NUMERIC) {
+            // Convert the numeric value of the cell to a string and trim any leading or trailing whitespace
             excelValue = String.valueOf(((XSSFCell) cell).getRawValue()).trim();
-        } else {
-            excelValue = "";
+            // If the cell is null or neither STRING nor NUMERIC
         }
         return excelValue;
     }
@@ -74,22 +81,33 @@ public class E2EFlowDataPage extends FLUtilities {
 
     public JSONObject addCellValueToJson(Row headerRow, Row currentRow, JSONObject tempJson) {
         for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+            // Get the corresponding cell from the current row
             Cell cell = currentRow.getCell(i);
             String excelValue = getCellValue(cell);
+            // Check if the cell value is not empty
             if (!excelValue.isEmpty())
+                // Get the header name for the current column, remove spaces from it, and use it as the JSON key
                 tempJson.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), excelValue);
         }
         return tempJson;
     }
 
     public void createForesightTestDataInterface(String jsonFile, String excelFile) {
+        // Define the file path using a common absolute path and the provided Excel file name
         String filePath = EnumsCommon.ABSOLUTE_FILES_PATH.getText() + excelFile;
+
+        // Use try-with-resources to ensure the FileInputStream and XSSFWorkbook are closed properly
         try (FileInputStream file = new FileInputStream(filePath);
              XSSFWorkbook workbook = new XSSFWorkbook(file)) {
+
+            // Get the sheet named "Interface" from the workbook
             Sheet sheet = workbook.getSheet("Interface");
             Iterator<Row> iterator = sheet.iterator();
+
+            // Retrieve the header row
             Row headerRow = iterator.next().getSheet().getRow(0);
 
+            // Find the column indexes for specific headers in the header row
             int clientNameIndex = findColumnIndex(headerRow, "Client Name");
             int productIndex = findColumnIndex(headerRow, "Product");
             int modulesIndex = findColumnIndex(headerRow, "Modules");
@@ -100,11 +118,15 @@ public class E2EFlowDataPage extends FLUtilities {
             int inboundIndex = findColumnIndex(headerRow, "Inbound");
             int outboundIndex = findColumnIndex(headerRow, "Outbound");
 
+            // Delete existing runner and feature files
             deleteRunnerFeature(EnumsCommon.RUNNERFILESPATH.getText() + "ForeSightTest");
             deleteRunnerFeature(EnumsCommon.FEATUREFILESPATH.getText() + "ForesightTest");
+
+            // Iterate through the rows of the sheet, starting from the second row
             while (iterator.hasNext()) {
                 Row currentRow = iterator.next();
 
+                // Retrieve cell values from the current row based on the header indexes
                 String clientName = getCellValue(currentRow.getCell(clientNameIndex));
                 String product = getCellValue(currentRow.getCell(productIndex));
                 String modules = getCellValue(currentRow.getCell(modulesIndex));
@@ -115,32 +137,47 @@ public class E2EFlowDataPage extends FLUtilities {
                 String inbound = getCellValue(currentRow.getCell(inboundIndex));
                 String outbound = getCellValue(currentRow.getCell(outboundIndex));
 
+                // Check if the 'Execute' column value is 'yes'
                 if (execute.equalsIgnoreCase("yes")) {
-                    if (!masterJson.containsKey(filename.replaceAll(".xlsx", "")))
+                    // If the filename is not already a key in masterJson, create foresight test data
+                    if (!masterJson.containsKey(filename.replaceAll(".xlsx", ""))) {
                         createForesightTestData(filename, product);
+                    }
+
+                    // Read the JSON data for the current client
                     JSONObject jsonTemp = JsonPath.read(masterJson, "$." + clientName);
+
+                    // If the module exists in JSON test data for a client and JurisdictionWiseReport is 'Yes'
                     if (jsonTemp.containsKey(modules) && jurisdictionWiseReport.equalsIgnoreCase("Yes")) {
+                        // Iterate through the states and create feature and runner files for each state
                         for (String state : jsonTemp.get(modules).toString().trim().split(", ")) {
                             createFeatureFile(clientName, modules, product, filename, state);
                             createRunnerFile(clientName, modules, state);
                         }
                     } else {
                         if(inboundType.equalsIgnoreCase("Direct Login"))
-                            createFeatureFile(clientName, modules, product, filename, "All");
+                        // Create feature and runner files for all jurisdictions
+                        createFeatureFile(clientName, modules, product, filename, "All");
                         createRunnerFile(clientName, modules, "All");
                     }
                 }
             }
+
+            // Write the JSON test data to the specified JSON file
             FileWriter jsonTestData = new FileWriter(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
             BufferedWriter writer = new BufferedWriter(jsonTestData);
             writer.write(gson.toJson(jsonObject));
             writer.close();
+
+            // Create a unique counter which will keep track of rerun count
             createUniqueCounter();
 
         } catch (IOException e) {
-            throw new FLException("File is inaccessible" + e.getMessage());
+            // Handle exceptions related to file access
+            throw new FLException("File is inaccessible: " + e.getMessage());
         } catch (Exception e) {
-            throw new FLException("Reading Properties File Failed" + e.getMessage());
+            // Handle any other exceptions that may occur
+            throw new FLException("Reading Properties File Failed: " + e.getMessage());
         }
     }
 
@@ -155,9 +192,11 @@ public class E2EFlowDataPage extends FLUtilities {
         JSONObject jsonRows = new JSONObject();
         String fieldList = "";
 
+        // Read excel file to create test data
         try (FileInputStream file = new FileInputStream(filePath);
              XSSFWorkbook workbook = new XSSFWorkbook(file)) {
 
+            // Verify if sheet exists, create test data for that sheet
             if (verifySheetExists(workbook, "Data List"))
                 processSheet(workbook.getSheet("Data List"), jsonRows);
             if (verifySheetExists(workbook, "Ceding Carrier Custom List"))
@@ -167,6 +206,7 @@ public class E2EFlowDataPage extends FLUtilities {
             if (verifySheetExists(workbook, "E-App Wizard Spec"))
                 processEAppWizardSpecSheet(workbook.getSheet("E-App Wizard Spec"), jsonRows, fieldList, product);
 
+            // JSON entry for a client with all processed sheets
             masterJson.put(excelFile.replaceAll(".xlsx", ""), jsonRows);
             masterJson.put("commonTestData", getJsonObject());
             jsonObject.put("testData", masterJson);
@@ -178,12 +218,17 @@ public class E2EFlowDataPage extends FLUtilities {
         }
     }
 
+    /**
+     * Verify if sheet exists in a workbook
+     * @param workbook - Excel file name
+     * @param sheetName - Sheet name
+     * @return true if sheet exists
+     */
     public boolean verifySheetExists(XSSFWorkbook workbook, String sheetName) {
         for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-            if (workbook.getSheetAt(i).getSheetName().contentEquals(sheetName)) {
+            if (workbook.getSheetAt(i).getSheetName().contentEquals(sheetName))
                 //use  Writeableworkbookobj.getSheet(); to return the specific sheet and write the data into the sheet
                 return true;
-            }
         }
         return false;
     }
@@ -209,6 +254,8 @@ public class E2EFlowDataPage extends FLUtilities {
         for (int i = 0; i < headerRow.getLastCellNum(); i++) {
             Cell cell = currentRow.getCell(i);
             String excelValue = getCellValue(cell, jsonRows);
+
+            // If key exists, add value to existing key else create new key value pair
             if (!excelValue.isEmpty()) {
                 if (jsonRows.containsKey(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")))
                     jsonRows.put(headerRow.getCell(i).getStringCellValue().replaceAll(" ", ""), jsonRows.get(headerRow.getCell(i).getStringCellValue().replaceAll(" ", "")).toString() + ", " + excelValue);
@@ -220,6 +267,7 @@ public class E2EFlowDataPage extends FLUtilities {
 
     /**
      * Read ModuleJurisdcitionMapping sheet and create input json and put entries in JSONObject jsonRows
+     * Key - jurisdicition and values - All modules eligible for that jurisdcition
      *
      * @param sheet    - Sheet name
      * @param jsonRows - JSONObject jsonRows
@@ -229,10 +277,12 @@ public class E2EFlowDataPage extends FLUtilities {
         Row headerRow = iterator.next().getSheet().getRow(0);
         StringBuilder states = new StringBuilder();
 
+        // iterating over all rows of a sheet
         while (iterator.hasNext()) {
             Row currentRow = iterator.next();
             JSONObject tempJson = new JSONObject();
 
+            // Create key value pair of Jurisdicton and corresponding modules
             for (int i = 0; i < headerRow.getLastCellNum(); i++) {
                 Cell cell = currentRow.getCell(i);
                 String excelValue = getCellValue(cell, jsonRows);
@@ -242,6 +292,7 @@ public class E2EFlowDataPage extends FLUtilities {
             }
             jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.JURISDICTION.getText())).getStringCellValue().trim(), tempJson);
 
+            // All modules are valid for Alabama, so another key value pair with key as module and value as list of valid jurisdictions are created with Alabama as one of the value
             String[] jurisdictionModules = tempJson.get("Module").toString().trim().split(", ");
             for (String jurisdictionModule : jurisdictionModules) {
                 jsonRows.putIfAbsent(jurisdictionModule, "Alabama");
@@ -289,6 +340,7 @@ public class E2EFlowDataPage extends FLUtilities {
             if (!tempJson.containsKey("Order"))
                 tempJson.put("Order", "");
 
+            // For replacements module, create fields for given number of transfers/exchanges
             if (tempJson.get("ModuleSectionName").equals("Replacements Module")) {
                 List<String> numberExchanges = new ArrayList<>(Arrays.asList(jsonRows.get("NumberofExchanges/Transfers/Rollovers").toString().trim().split(", ")));
                 numberExchanges.removeAll(Collections.singletonList("Blank"));
@@ -370,6 +422,12 @@ public class E2EFlowDataPage extends FLUtilities {
         return excelValue;
     }
 
+    /**
+     * Handle >= and <= operators. Using boundary value analysis, create multiple values needed to test
+     *
+     * @param excelValue
+     * @return
+     */
     public String handleComparisonOperators(String excelValue) {
         String expectedOperator = "";
         Pattern pattern;
@@ -391,6 +449,12 @@ public class E2EFlowDataPage extends FLUtilities {
         return excelValue;
     }
 
+    /**
+     * Handle addition operator.
+     *
+     * @param excelValue
+     * @return
+     */
     public String handleAddition(String excelValue) {
         String conditionAnother = "";
         String expectedResult = "";
@@ -427,6 +491,13 @@ public class E2EFlowDataPage extends FLUtilities {
         return excelValue;
     }
 
+    /**
+     * Handle OR conditions
+     *
+     * Split rules in multiple rules if OR exists in the rules
+     * @param excelValue
+     * @return
+     */
     public String handleOrConditions(String excelValue) {
         String[] listRules = excelValue.split(";");
         StringBuilder newValue = new StringBuilder();
@@ -465,6 +536,13 @@ public class E2EFlowDataPage extends FLUtilities {
         return excelValue;
     }
 
+    /**
+     * Handle Not Equal to operator and convert not equal operator to equal to operator.
+     *
+     * @param excelValue
+     * @param jsonRows
+     * @return
+     */
     public String handleNotEqual(String excelValue, JSONObject jsonRows) {
         String[] listRules = excelValue.split(";");
         StringBuilder newValue = new StringBuilder();
@@ -554,7 +632,7 @@ public class E2EFlowDataPage extends FLUtilities {
                 line = line.replaceAll("com.hexure.firelight.runner", "com.hexure.firelight.runner.ForeSightTest");
                 line = line.replaceAll("ModuleName", module).replaceAll("ModuleTag", module.replaceAll(" ", "")).replaceAll("Client", client).replaceAll("State", state.replaceAll(" ", ""));
                 line = replaceLine(line, "features = {", "\t\tfeatures = {\"src/test/resources/features/ForesightTest/" + client + "_" + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + ".feature\"},");
-                line = replaceLine(line, "tags = {", "\t\ttags = {\"@" + module.replaceAll(" ", "") + "\"},");
+                line = replaceLine(line, "tags = ", "\t\ttags = \"@" + module.replaceAll(" ", "") + "\",");
                 line = replaceLine(line, "public class RunFireLightTest {", "public class RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test" + " {");
                 line = replaceLine(line, "core.run(RunFireLightTest.class);", "\t\tcore.run(RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test" + ".class);");
                 lines.add(line);
