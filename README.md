@@ -16,3 +16,4 @@ execution.mode=local
 8. Publishing Cucumber Reports on Cloud forever
    a) Run cmd as Administrator -  setx /M CUCUMBER_PUBLISH_TOKEN "token code"
    b) Restart your machine
+9. Enter this command for save allure report under target folder-> allure generate --single-file allure-results

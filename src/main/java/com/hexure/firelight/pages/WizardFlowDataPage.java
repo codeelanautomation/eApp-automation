@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 @Data
 public class WizardFlowDataPage extends FLUtilities {
     public CommonMethodsPage onCommonMethodsPage;
+    public CreateApplicationPage onCreateApplicationPage;
     public LoginPage onLoginPage;
     public SoftAssertionHandlerPage onSoftAssertionHandlerPage;
     public TestContext testContext;
@@ -81,6 +82,7 @@ public class WizardFlowDataPage extends FLUtilities {
 
     public void setPageObjects(TestContext testContext, WebDriver driver, String executedJurisdiction) {
         onCommonMethodsPage = testContext.getPageObjectManager().getCommonMethodPage();
+        onCreateApplicationPage = testContext.getPageObjectManager().getCreateApplicationPage();
         onSoftAssertionHandlerPage = testContext.getPageObjectManager().getSoftAssertionHandlerPage();
         onLoginPage = testContext.getPageObjectManager().getLoginPage();
         this.testContext = testContext;
@@ -1815,8 +1817,9 @@ public class WizardFlowDataPage extends FLUtilities {
     public String clickRedBubble(String valueJson) {
         waitForPageToLoad(driver);
         String error;
-        waitForPageToLoad(driver);
         try {
+            if (!onCreateApplicationPage.getLstBtnClose().isEmpty())
+                clickElement(driver, onCreateApplicationPage.getBtnClose());
             if (onCommonMethodsPage.getListErrors().isEmpty())
                 clickElement(driver, onCommonMethodsPage.getRedColorErrorValidationBubble());
             if (!(JsonPath.read(valueJson, "$.WizardControlTypes").toString().equals("Checkbox") | JsonPath.read(valueJson, "$.WizardControlTypes").toString().equals("Radio Button"))) {
@@ -1879,8 +1882,7 @@ public class WizardFlowDataPage extends FLUtilities {
         long seconds = ((durationMillis % (1000 * 60 * 60)) % (1000 * 60)) / 1000;
 
         difference = String.format("%dh %dm %ds", hours, minutes, seconds);
-        testContext.getScenario().log("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>Cucumber Report : " + LocalDate.now() + "</div>");
-        testContext.getScenario().log("<div width='100%' style='font-size:1.2vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>" + timeFormat.format(onLoginPage.getStartLocalTime()) + " - " + timeFormat.format(endLocalTime) + "(" + difference + ")</div>");
+        //testContext.getScenario().attach("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>Cucumber Report : " + LocalDate.now() + "</div>" + "<div width='100%' style='font-size:1.2vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>" + timeFormat.format(onLoginPage.getStartLocalTime()) + " - " + timeFormat.format(endLocalTime) + "(" + difference + ")</div>", "text/html", "Cucumber Report");
         onSoftAssertionHandlerPage.afterScenario(testContext, fieldsEvaluated);
     }
 
