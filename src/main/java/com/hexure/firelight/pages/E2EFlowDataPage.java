@@ -627,8 +627,7 @@ public class E2EFlowDataPage extends FLUtilities {
                 line = line.replaceAll("ModuleName", module).replaceAll("ModuleTag", module.replaceAll(" ", "")).replaceAll("Client", client).replaceAll("State", state.replaceAll(" ", ""));
                 line = replaceLine(line, "features = {", "\t\tfeatures = {\"src/test/resources/features/ForesightTest/" + client + "_" + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + ".feature\"},");
                 line = replaceLine(line, "tags = ", "\t\ttags = \"@" + module.replaceAll(" ", "") + "\",");
-                line = replaceLine(line, "public class RunFireLightTest {", "public class RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test" + " {");
-                line = replaceLine(line, "core.run(RunFireLightTest.class);", "\t\tcore.run(RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test" + ".class);");
+                line = line.replaceAll("RunFireLightTest", "RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test");
                 lines.add(line);
             }
             reader.close();
