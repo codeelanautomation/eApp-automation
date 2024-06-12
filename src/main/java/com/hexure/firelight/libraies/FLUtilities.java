@@ -68,8 +68,7 @@ public class FLUtilities extends BaseClass {
 
     protected void scrollToWebElement(WebDriver driver, WebElement element) {
         try {
-            Actions actions = new Actions(driver);
-            actions.moveToElement(element).perform();
+            ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center', inline: 'nearest'});", element);
         } catch (Exception e) {
             Log.error("Could Not Scroll WebElement ", e);
             throw new FLException("Could Not Scroll WebElement " + e.getMessage());
