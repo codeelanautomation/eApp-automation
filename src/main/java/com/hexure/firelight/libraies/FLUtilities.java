@@ -19,7 +19,7 @@ public class FLUtilities extends BaseClass {
         try {
             FluentWait<WebDriver> wait = new FluentWait<>(driver)
                     .pollingEvery(Duration.ofMillis(200))
-                    .withTimeout(Duration.ofSeconds(15))
+                    .withTimeout(Duration.ofSeconds(Integer.parseInt(configProperties.getProperty("explicit_wait"))))
                     .ignoring(NoSuchElementException.class);
             switch (conditionForWait) {
                 case "ToVisible":
@@ -47,15 +47,13 @@ public class FLUtilities extends BaseClass {
         for (int attempt = 0; attempt < retryCount; attempt++) {
             syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
             try {
-                if (!element.isDisplayed()) {
-                    scrollToWebElement(driver, element);
-                }
+                scrollToWebElement(driver, element);
                 element.click();
                 return; // Exit the method if click is successful
             } catch (StaleElementReferenceException | ElementClickInterceptedException e) {
                 // Retry after a brief delay
                 try {
-                    Thread.sleep(500); // Add a delay of 500 milliseconds between retries
+                    Thread.sleep(200); // Add a delay of 500 milliseconds between retries
                 } catch (InterruptedException ignored) {
                     Thread.currentThread().interrupt();
                 }
@@ -70,7 +68,7 @@ public class FLUtilities extends BaseClass {
 
     protected void scrollToWebElement(WebDriver driver, WebElement element) {
         try {
-            ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
+            ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center', inline: 'nearest'});", element);
         } catch (Exception e) {
             Log.error("Could Not Scroll WebElement ", e);
             throw new FLException("Could Not Scroll WebElement " + e.getMessage());
@@ -175,20 +173,25 @@ public class FLUtilities extends BaseClass {
     }
 
     protected boolean verifyCheckBoxSelectYesNO(String userAction, WebElement element) {
-        boolean flag = true;
+        // Perform the action of selecting/deselecting the checkbox
         checkBoxSelectYesNO(userAction, element);
-        if (getCheckBoxAction(userAction)) {
-            if (element.getAttribute("aria-checked").equals("false"))
-                flag = false;
-        } else {
-            if (element.getAttribute("aria-checked").equals("true"))
-                flag = false;
-        }
-        return flag;
+
+        // Determine the expected state based on user action
+        boolean expectedState = getCheckBoxAction(userAction);
+
+        // Get the actual state from the element's attribute
+        boolean actualState = element.getAttribute("aria-checked").equals("true");
+
+        // Compare the expected state with the actual state
+        return expectedState == actualState;
     }
 
+
     private boolean getCheckBoxAction(String action) {
-        return action.equalsIgnoreCase("yes") || action.equalsIgnoreCase("check") || action.equalsIgnoreCase("checked") || action.equalsIgnoreCase("selected");
+        return action.equalsIgnoreCase("yes") ||
+               action.equalsIgnoreCase("check") ||
+               action.equalsIgnoreCase("checked") ||
+               action.equalsIgnoreCase("selected");
     }
 
 

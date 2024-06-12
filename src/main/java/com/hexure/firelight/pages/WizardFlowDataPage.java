@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 @Data
 public class WizardFlowDataPage extends FLUtilities {
     public CommonMethodsPage onCommonMethodsPage;
+    public CreateApplicationPage onCreateApplicationPage;
     public LoginPage onLoginPage;
     public SoftAssertionHandlerPage onSoftAssertionHandlerPage;
     public TestContext testContext;
@@ -81,6 +82,7 @@ public class WizardFlowDataPage extends FLUtilities {
 
     public void setPageObjects(TestContext testContext, WebDriver driver, String executedJurisdiction) {
         onCommonMethodsPage = testContext.getPageObjectManager().getCommonMethodPage();
+        onCreateApplicationPage = testContext.getPageObjectManager().getCreateApplicationPage();
         onSoftAssertionHandlerPage = testContext.getPageObjectManager().getSoftAssertionHandlerPage();
         onLoginPage = testContext.getPageObjectManager().getLoginPage();
         this.testContext = testContext;
@@ -1815,8 +1817,9 @@ public class WizardFlowDataPage extends FLUtilities {
     public String clickRedBubble(String valueJson) {
         waitForPageToLoad(driver);
         String error;
-        waitForPageToLoad(driver);
         try {
+            if (!onCreateApplicationPage.getLstBtnClose().isEmpty())
+                clickElement(driver, onCreateApplicationPage.getBtnClose());
             if (onCommonMethodsPage.getListErrors().isEmpty())
                 clickElement(driver, onCommonMethodsPage.getRedColorErrorValidationBubble());
             if (!(JsonPath.read(valueJson, "$.WizardControlTypes").toString().equals("Checkbox") | JsonPath.read(valueJson, "$.WizardControlTypes").toString().equals("Radio Button"))) {
