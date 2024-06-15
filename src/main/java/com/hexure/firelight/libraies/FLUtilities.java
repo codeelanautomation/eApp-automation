@@ -43,49 +43,48 @@ public class FLUtilities extends BaseClass {
     }
 
     protected void clickElement(WebDriver driver, WebElement element) {
-        int retryCount = 4;
-        for (int attempt = 0; attempt < retryCount; attempt++) {
-            syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
+        syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
+        try {
+            scrollToWebElement(driver, element);
+            element.click();
+        } catch (Exception e) {
             try {
-                scrollToWebElement(driver, element);
-                element.click();
-                return; // Exit the method if click is successful
-            } catch (StaleElementReferenceException | ElementClickInterceptedException e) {
-                // Retry after a brief delay
+                Log.info("Retrying click using Actions class");
+                new Actions(driver).moveToElement(element).click().perform();
+            } catch (Exception ex) {
+                Log.warn("Retrying click using moveByOffset due to failure", ex);
                 try {
-                    Thread.sleep(200); // Add a delay of 500 milliseconds between retries
-                } catch (InterruptedException ignored) {
-                    Thread.currentThread().interrupt();
+                    new Actions(driver).moveToElement(element).moveByOffset(10, 10).click().perform();
+                } catch (Exception finalEx) {
+                    Log.error("Could not click WebElement using Actions and moveByOffset", finalEx);
+                    throw new FLException("Could not click WebElement using Actions and moveByOffset: " + finalEx.getMessage());
                 }
-            } catch (Exception e) {
-                Log.error("Could not click WebElement ", e);
-                throw new FLException("Could not click WebElement: " + e.getMessage());
             }
         }
-        // If all retry attempts fail, throw an exception
-        throw new FLException("Failed to click WebElement after " + retryCount + " attempts");
     }
 
     protected void scrollToWebElement(WebDriver driver, WebElement element) {
         try {
-            ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center', inline: 'nearest'});", element);
+            ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
         } catch (Exception e) {
             Log.error("Could Not Scroll WebElement ", e);
-            throw new FLException("Could Not Scroll WebElement " + e.getMessage());
+            throw new FLException("Could Not Scroll WebElement " + e.getMessage() + element);
         }
     }
 
     protected void clickElementByJSE(WebDriver driver, WebElement element) {
+        waitForPageToLoad(driver);
         syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
         try {
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
         } catch (Exception e) {
             Log.error("Clicking WebElement By JavaScriptExecutor Failed ", e);
-            throw new FLException("Clicking WebElement By JavaScriptExecutor Failed " + e.getMessage());
+            throw new FLException("Clicking WebElement By JavaScriptExecutor Failed " + e.getMessage() + element);
         }
     }
 
     protected void sendKeys(WebDriver driver, WebElement element, String stringToInput) {
+        waitForPageToLoad(driver);
         syncElement(driver, element, EnumsCommon.TOVISIBLE.getText());
         try {
             element.clear();
@@ -136,12 +135,7 @@ public class FLUtilities extends BaseClass {
         WebElement element = driver.findElement(By.xpath(stringXpath));
         syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
         try {
-            if (!element.isDisplayed()) {
-                scrollToWebElement(driver, element);
-                element.click();
-            } else {
-                element.click();
-            }
+            new Actions(driver).moveToElement(element).click().perform();
         } catch (Exception e) {
             Log.error("Could Not Click WebElement ", e);
             throw new FLException("Could Not Click WebElement " + e.getMessage());

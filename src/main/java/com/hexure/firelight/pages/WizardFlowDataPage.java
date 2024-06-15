@@ -198,7 +198,7 @@ public class WizardFlowDataPage extends FLUtilities {
                     if (!field.isEmpty())
                         skippedInvalidElements.add(field);
 
-                    System.out.println("The skipped invalid elements" + skippedInvalidElements);
+//                    System.out.println("The skipped invalid elements" + skippedInvalidElements);
                 }
             } else {
                 if (!field.isEmpty()) skippedInvalidElements.add(field);
@@ -1210,6 +1210,7 @@ public class WizardFlowDataPage extends FLUtilities {
      * @return dropdown or radio button options
      */
     public List<String> getOptions(String valueJson, String dataType) {
+        waitForPageToLoad(driver);
         List<String> actualOptions = new ArrayList<>();
         switch (dataType.toLowerCase()) {
             case "dropdown":

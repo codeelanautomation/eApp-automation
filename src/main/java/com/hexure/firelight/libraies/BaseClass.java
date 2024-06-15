@@ -454,14 +454,17 @@ public class BaseClass {
      * @param driver The WebDriver reference
      */
     public void waitForPageToLoad(WebDriver driver) {
+        String loaderClassName = "ITSpinner";
         FluentWait<WebDriver> wait = new FluentWait<>(driver)
                 .withTimeout(Duration.ofSeconds(60)) // Maximum wait time
-                .pollingEvery(Duration.ofMillis(100)); // Polling interval
+                .pollingEvery(Duration.ofMillis(100)) // Polling interval
+                .ignoring(Exception.class);
 
-        // Wait until document ready state is 'complete'
-        wait.until(webDriver -> {
-            JavascriptExecutor jsExecutor = (JavascriptExecutor) webDriver;
-            return jsExecutor.executeScript("return document.readyState").equals("complete");
+        wait.until(webdriver -> {
+            Long loaderCount = (Long) ((JavascriptExecutor) driver).executeScript(
+                    "return document.getElementsByClassName('" + loaderClassName + "').length;");
+            System.out.println("The loader Count is "+loaderCount);
+            return loaderCount == 0;
         });
     }
 

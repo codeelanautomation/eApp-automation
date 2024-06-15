@@ -95,7 +95,7 @@ public class CommonMethodsPage extends FLUtilities {
             for (WebElement element : mandetoryFormList) {
                 String form = element.getAttribute("innerText");
                 if (form.equals(pageHeader)) {
-                    clickElement(driver, getFormHeader());
+//                    clickElement(driver, getFormHeader());
                     clickElement(driver, element);
                     flag = true;
                     break;
