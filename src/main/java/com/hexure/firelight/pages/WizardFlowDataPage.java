@@ -91,20 +91,19 @@ public class WizardFlowDataPage extends FLUtilities {
     }
 
     /**
-     * @param field
-     * This will validate following sections if available : List Options, Rules Wizard, Length and Format.
-     * Under RulesWizard, while testing default values, it validates placeholder and validation rules too.
-     * For each rule, combinations of conditions are created along with logical operator.
-     * Then each dependednt condition is set to validate the field under test.
-     * Each rule will validate following parts:
-     * A) Whether element with given commonTag exists. If it doesn't, it is added to invalidTags list. This is checked for the field under test and its dependent conditions
-     * B) If commonTag exists in JSON.
-     * C) If display rule is specified, it will first set all those dependent conditions.
-     * D) Based on this display rule, whether Page for field under test is displayed.
-     * E) Based on this display rule, whether field under test is displayed.
-     * F) Based on this display rule, whether field under test is enabled.
-     * G) If the field under test is radio button/dropdown, whether it contains given value to be set
-     * H) All these checks C - F are checked for dependent conditions too
+     * @param field This will validate following sections if available : List Options, Rules Wizard, Length and Format.
+     *              Under RulesWizard, while testing default values, it validates placeholder and validation rules too.
+     *              For each rule, combinations of conditions are created along with logical operator.
+     *              Then each dependednt condition is set to validate the field under test.
+     *              Each rule will validate following parts:
+     *              A) Whether element with given commonTag exists. If it doesn't, it is added to invalidTags list. This is checked for the field under test and its dependent conditions
+     *              B) If commonTag exists in JSON.
+     *              C) If display rule is specified, it will first set all those dependent conditions.
+     *              D) Based on this display rule, whether Page for field under test is displayed.
+     *              E) Based on this display rule, whether field under test is displayed.
+     *              F) Based on this display rule, whether field under test is enabled.
+     *              G) If the field under test is radio button/dropdown, whether it contains given value to be set
+     *              H) All these checks C - F are checked for dependent conditions too
      */
     public void wizardTesting(String field) {
         String section = "";
@@ -198,7 +197,7 @@ public class WizardFlowDataPage extends FLUtilities {
                     if (!field.isEmpty())
                         skippedInvalidElements.add(field);
 
-                    System.out.println("The skipped invalid elements" + skippedInvalidElements);
+//                    System.out.println("The skipped invalid elements" + skippedInvalidElements);
                 }
             } else {
                 if (!field.isEmpty()) skippedInvalidElements.add(field);
@@ -1210,6 +1209,7 @@ public class WizardFlowDataPage extends FLUtilities {
      * @return dropdown or radio button options
      */
     public List<String> getOptions(String valueJson, String dataType) {
+        waitForPageToLoad(driver);
         List<String> actualOptions = new ArrayList<>();
         switch (dataType.toLowerCase()) {
             case "dropdown":
@@ -1551,10 +1551,10 @@ public class WizardFlowDataPage extends FLUtilities {
      * Handle validation rules.
      * Iterate over each validation rule and validate the same
      *
-     * @param valueJson          - Input JSON of a field converted as a string
-     * @param field              - field under test
-     * @param order              - order of a field under test
-     * @param displayedText      - text to be displayed in cucumber report
+     * @param valueJson     - Input JSON of a field converted as a string
+     * @param field         - field under test
+     * @param order         - order of a field under test
+     * @param displayedText - text to be displayed in cucumber report
      */
     public void handleValidationRules(String valueJson, String field, String order, String displayedText) {
         String displayedTextNew = displayedText;
