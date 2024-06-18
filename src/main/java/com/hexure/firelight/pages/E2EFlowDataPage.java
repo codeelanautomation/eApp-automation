@@ -16,6 +16,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.PageFactory;
 
@@ -94,6 +95,7 @@ public class E2EFlowDataPage extends FLUtilities {
     public void createForesightTestDataInterface(String jsonFile, String excelFile, XmlUtilityPage onXMLUtilityPage) {
         // Define the file path using a common absolute path and the provided Excel file name
         String filePath = EnumsCommon.ABSOLUTE_FILES_PATH.getText() + excelFile;
+        JSONParser parser = new JSONParser();
 
         // Use try-with-resources to ensure the FileInputStream and XSSFWorkbook are closed properly
         try (FileInputStream file = new FileInputStream(filePath);
@@ -155,11 +157,19 @@ public class E2EFlowDataPage extends FLUtilities {
                 String org = getCellValue(currentRow.getCell(orgIndex));
                 String host = getCellValue(currentRow.getCell(hostIndex));
 
+                Object obj = parser.parse(new FileReader(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile));
+
+                JSONObject jsonTestData =  (JSONObject) obj;
+                JSONObject jsonData =  (JSONObject) jsonTestData.get("testData");
+
                 // Check if the 'Execute' column value is 'yes'
                 if (execute.equalsIgnoreCase("yes")) {
                     // If the filename is not already a key in masterJson, create foresight test data
-                    if (!masterJson.containsKey(clientName))
-                        createForesightTestData(clientName, inboundFilename, product, inboundXmlFileName, onXMLUtilityPage);
+                    if (!masterJson.containsKey(clientName)) {
+                        createForesightTestData(clientName, inboundFilename, product, inboundXmlFileName, onXMLUtilityPage, "", jsonData);
+                        if(!outbound.equalsIgnoreCase(""))
+                            createForesightTestData(clientName, outboundFilename, product, outboundXmlFileName, onXMLUtilityPage, "Outbound", jsonData);
+                    }
                     tempClientData = (JSONObject) masterJson.get(clientName);
                     if (inbound.equalsIgnoreCase(clientName + "Inbound")) {
                         tempClientData.put("username", username);
@@ -222,10 +232,11 @@ public class E2EFlowDataPage extends FLUtilities {
      * @param excelFile - Spec file
      * @param product   - Product to be used to create FL application
      */
-    public void createForesightTestData(String clientName, String excelFile, String product, String xmlFileName, XmlUtilityPage onXMLUtilityPage) {
+    public void createForesightTestData(String clientName, String excelFile, String product, String xmlFileName, XmlUtilityPage onXMLUtilityPage, String suffixOutbound, JSONObject jsonData) {
         String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + excelFile;
         JSONObject jsonRows = new JSONObject();
         String fieldList = "";
+        JSONObject tempClientData = new JSONObject();
 
         // Read excel file to create test data
         try (FileInputStream file = new FileInputStream(filePath);
@@ -239,11 +250,18 @@ public class E2EFlowDataPage extends FLUtilities {
             if (verifySheetExists(workbook, "ModulesJurisdictionMapping"))
                 processJurisdictionMappingSheet(workbook.getSheet("ModulesJurisdictionMapping"), jsonRows);
             if (verifySheetExists(workbook, "E-App Wizard Spec"))
-                processEAppWizardSpecSheet(workbook.getSheet("E-App Wizard Spec"), jsonRows, fieldList, product, xmlFileName, onXMLUtilityPage);
+                processEAppWizardSpecSheet(workbook.getSheet("E-App Wizard Spec"), jsonRows, fieldList, product, xmlFileName, onXMLUtilityPage, suffixOutbound);
 
             // JSON entry for a client with all processed sheets
 //            entryMasterJson(clientName, inbound, outbound, jsonRows);
-            masterJson.put(clientName, jsonRows);
+            if(masterJson.containsKey(clientName)) {
+                tempClientData = (JSONObject) masterJson.get(clientName);
+                for (Object temp : jsonRows.keySet()) {
+                    tempClientData.putIfAbsent(temp.toString(), jsonRows.get(temp.toString()));
+                }
+                masterJson.put(clientName, tempClientData);
+            } else
+                masterJson.put(clientName, jsonRows);
             masterJson.put("commonTestData", getJsonObject());
             jsonObject.put("testData", masterJson);
 
@@ -357,13 +375,15 @@ public class E2EFlowDataPage extends FLUtilities {
      * @param fieldList - list of all the validated fields
      * @param product   - Product to create FL application
      */
-    private void processEAppWizardSpecSheet(Sheet sheet, JSONObject jsonRows, String fieldList, String product, String xmlFileName, XmlUtilityPage onXMLUtilityPage) {
+    private void processEAppWizardSpecSheet(Sheet sheet, JSONObject jsonRows, String fieldList, String product, String xmlFileName, XmlUtilityPage onXMLUtilityPage, String suffixOutbound) {
         Row headerRow;
         Iterator<Row> iterator = sheet.iterator();
 
         headerRow = iterator.next().getSheet().getRow(0);
-
+        String outboundFieldList = "";
         StringBuilder fieldListBuilder = new StringBuilder(fieldList);
+        StringBuilder outboundFieldListBuilder = new StringBuilder(fieldList);
+
         while (iterator.hasNext()) {
             Row currentRow = iterator.next();
             JSONObject tempJson = new JSONObject();
@@ -407,13 +427,20 @@ public class E2EFlowDataPage extends FLUtilities {
                     tempJson = new JSONObject(tempJsonReplacement);
                 }
             } else {
-                jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim(), tempJson);
-                fieldListBuilder.append(", ").append(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim());
+                jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim() + suffixOutbound, tempJson);
+                if (!suffixOutbound.equalsIgnoreCase(""))
+                    outboundFieldListBuilder.append(", ").append(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim() + suffixOutbound);
+                else
+                    fieldListBuilder.append(", ").append(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim());
             }
         }
         fieldList = fieldListBuilder.toString();
         jsonRows.put("product", product);
         jsonRows.put("fieldList", fieldList.replaceFirst(", ", ""));
+        if (!suffixOutbound.equalsIgnoreCase("")) {
+            outboundFieldList = outboundFieldListBuilder.toString();
+            jsonRows.put("outboundFieldList", outboundFieldList.replaceFirst(", ", ""));
+        }
     }
 
     public String getAllXMLPaths(String rules) {
