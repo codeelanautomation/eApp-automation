@@ -91,17 +91,20 @@ public class FLUtilities extends BaseClass {
             clickElement(driver, element);
             element.sendKeys(stringToInput);
             element.sendKeys(Keys.TAB);
-        } catch (StaleElementReferenceException | ElementClickInterceptedException e) {
-            syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
-            // Scroll the element into view
-            ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
-            element.clear();
-            // Move to the element using Actions class
-            new Actions(driver).moveToElement(element).sendKeys(stringToInput).perform();
-            element.sendKeys(Keys.TAB);
         } catch (Exception e) {
-            Log.error("SendKeys Failed ", e);
-            throw new FLException(stringToInput + " could not be entered in element" + e.getMessage());
+            try {
+                waitForPageToLoad(driver);
+                syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
+                // Scroll the element into view
+                ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
+                element.clear();
+                // Move to the element using Actions class
+                new Actions(driver).moveToElement(element).sendKeys(stringToInput).perform();
+                element.sendKeys(Keys.TAB);
+            } catch (Exception e1) {
+                Log.error("SendKeys Failed ", e1);
+                throw new FLException(stringToInput + " could not be entered in element" + e1.getMessage());
+            }
         }
         waitForPageToLoad(driver);
         sleepInMilliSeconds(1000);
