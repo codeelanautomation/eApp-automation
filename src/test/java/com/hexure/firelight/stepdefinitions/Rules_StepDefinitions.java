@@ -3,17 +3,27 @@ package com.hexure.firelight.stepdefinitions;
 import com.hexure.firelight.libraies.FLUtilities;
 import com.hexure.firelight.libraies.TestContext;
 import com.hexure.firelight.pages.CreateApplicationPage;
+import com.hexure.firelight.pages.ImportXMLDataPage;
 import com.hexure.firelight.pages.WizardFlowDataPage;
 import com.jayway.jsonpath.JsonPath;
 import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.Select;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 public class Rules_StepDefinitions extends FLUtilities {
     private final TestContext testContext;
     private final WebDriver driver;
     private final CreateApplicationPage onCreateApplicationPage;
+    private final ImportXMLDataPage onImportXMLDataPage;
     public WizardFlowDataPage onWizardFlowDataPage;
     String jurisdictionStatesCode = "";
     List<String> skippedInvalidElements = new ArrayList<>();
@@ -24,6 +34,7 @@ public class Rules_StepDefinitions extends FLUtilities {
         driver = context.getDriver();
         onCreateApplicationPage = testContext.getPageObjectManager().getCreateApplicationPage();
         onWizardFlowDataPage = testContext.getPageObjectManager().getWizardFlowDataPage();
+        onImportXMLDataPage = testContext.getPageObjectManager().getImportXMLDataPage();
     }
 
     /**
@@ -53,7 +64,6 @@ public class Rules_StepDefinitions extends FLUtilities {
             jurisdictionStatesCode = JsonPath.read(moduleJurisdictionMapping, "$.State").toString().trim();
             createApplication(jurisdiction1, product, productType, module);
         }
-        onWizardFlowDataPage.printFinalResults();
     }
 
     /**
@@ -65,18 +75,28 @@ public class Rules_StepDefinitions extends FLUtilities {
         executedJurisdiction = jurisdiction;
         onCreateApplicationPage.createApplication(testContext, driver, product, productType, jurisdiction);
         validateWizard(module);
-    }
-
-    public void validateWizard(String module) {
-        if (!onCreateApplicationPage.getLstBtnClose().isEmpty())
-            clickElement(driver, onCreateApplicationPage.getBtnClose());
-        onWizardFlowDataPage.setPageObjects(testContext, driver, executedJurisdiction);
-        onWizardFlowDataPage.verifyFormDataWithInboundXml(module);
         waitForPageToLoad(driver);
         clickElement(driver, onCreateApplicationPage.getBtnHome());
         clickElement(driver, onCreateApplicationPage.getBtnPopupOK());
         waitForPageToLoad(driver);
     }
+
+    @Then("Verify data on UI is populated as given in inbound XML and validate rules for {string} modules")
+    public void validateWizard(String module) {
+        if (!onCreateApplicationPage.getLstBtnClose().isEmpty())
+            clickElement(driver, onCreateApplicationPage.getBtnClose());
+        onWizardFlowDataPage.setPageObjects(testContext, driver, executedJurisdiction);
+        onWizardFlowDataPage.verifyFormDataWithInboundXml(module);
+        onWizardFlowDataPage.printFinalResults();
+    }
+
+    @Then("Import client XML file in app")
+    public void importXML() {
+        onImportXMLDataPage.setCredentialsAndXmlData(driver, testContext);
+//                "QE Test Page for 1228 and 103 Transactions",driver, "SGB_Test", "Dece@2023", "SGB Producer", "SGB_Test", "SGB","QA", testContext.getMapTestData().get("inboundXmlFileName"));
+        clickElement(driver, onCreateApplicationPage.getBtnNext());
+    }
+
 
 }
 

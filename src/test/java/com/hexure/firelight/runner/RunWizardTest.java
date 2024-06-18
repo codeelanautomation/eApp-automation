@@ -28,7 +28,7 @@ import java.util.Comparator;
         monochrome = true,
         publish = true
 )
-public class RunFireLightTest {
+public class RunWizardTest {
 
     public static void main(String[] args) {
         // Add the UniqueTestCounter listener to your test run
@@ -36,7 +36,7 @@ public class RunFireLightTest {
         core.addListener(new UniqueTestCounter());
 
         // Run your tests
-        core.run(RunFireLightTest.class);
+        core.run(RunWizardTest.class);
     }
 
     @AfterClass

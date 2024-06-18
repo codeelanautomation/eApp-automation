@@ -4,6 +4,7 @@ import com.hexure.firelight.libraies.FLUtilities;
 import com.jayway.jsonpath.JsonPath;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -24,7 +25,7 @@ public class CommonMethodsPage extends FLUtilities {
     public String labelField = "//div[@data-dataitemid='%s']";
     public String inputField = "//input[@data-dataitemid='%s']";
     public String radioField = "//div[@data-dataitemid='%s']//div[@title='%s']";
-    public String chkBoxField = "//div[@data-dataitemid='%s']//div[@role]";
+    public String chkBoxField = "//div[@data-dataitemid='%s']//div[@role='checkbox']";
     public String txtField = "//div[@title='%s']//ancestor::div[@class='dataGrid__row']//input";
     public String radioFieldCheckbox = "//div[@data-dataitemid='%s']//div[@role='checkbox']";
     public String sectionSelect = "//div[text()='%s']//ancestor::body//select[@data-dataitemid='%s']";
@@ -41,12 +42,25 @@ public class CommonMethodsPage extends FLUtilities {
     public String textareaErrorField = "//textarea[@data-dataitemid='%s']//ancestor::div[@class='ITComponent']//span[@class='validationText']";
     public String fieldWithTitleAttribute = "//*[@title=\"%s\"]|//*[@aria-label=\"%s\"]";
     public String mandatoryFormElement = "//*[@class='navDrawer__bundleName' and text()=\"%s\"]//..//a";
+    private By errorMessageElement = By.xpath("//span[@class='validationText']");
+    private By formPages = By.className("fa-exclamation-triangle");
+    private By inputElement = By.xpath("(//span[@class='validationText'])[1]//ancestor::div[@class='ITComponent']//input");
+    private By selectElement = By.xpath("(//span[@class='validationText'])[1]//ancestor::div[@class='ITComponent']//select");
+    private By checkboxElement = By.xpath("(//span[@class='validationText'])[1]//ancestor::div[@class='ITComponent']//div[@class='ITCheckBoxCheck']");
+    private By componentClass = By.xpath("(//span[@class='validationText'])[1]//ancestor::div[contains(@class,'ITCheckBoxWrapper')]");
+    private By btnLogOff = By.xpath("//a[text()='Log Off']");
 
     int count = 1;
     List<List<String>> listInputFields = new ArrayList<>();
 
+    @FindBy(xpath = "//button[@id='popup_ok']")
+    private WebElement popup_Yes;
+
     @FindBy(xpath = "//*[@id='ToggleMessagesLink']")
     private WebElement redColorErrorValidationBubble;
+
+    @FindBy(xpath = "//*[@id='ToggleMessagesLink']")
+    private List<WebElement> lstRedColorErrorValidationBubble;
 
     @FindBy(xpath = "//span[@class='validationText']")
     private List<WebElement> listErrors;
@@ -71,6 +85,21 @@ public class CommonMethodsPage extends FLUtilities {
 
     @FindBy(xpath = "//div[@class='react-datepicker']")
     private List<WebElement> gridDatePicker;
+
+    @FindBy(xpath = "//a[@title='Close']")
+    private WebElement btnClose;
+
+    @FindBy(xpath = "//a[@title='Close']")
+    private List<WebElement> lstBtnClose;
+
+    @FindBy(xpath = "//div[@id='lblPercent']")
+    private WebElement lblPercent;
+
+    @FindBy(id = "imgNext")
+    private WebElement btnContinue;
+
+    @FindBy(xpath = "//div[@class='listRecent__name']")
+    private WebElement listRecentApplication;
 
     public CommonMethodsPage(WebDriver driver) {
         initElements(driver);

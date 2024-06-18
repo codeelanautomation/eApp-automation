@@ -50,8 +50,22 @@ public class Common_StepDefinitions extends FLUtilities {
         System.out.println("ModuleName = " + testContext.getModuleName());
         System.out.println("CaptureScreenshot = " + testContext.getCaptureScreenshot());
         System.out.println("ScreenshotFolder = " + testContext.getScreenshotFolderName());
-        openLoginPage(driver, testContext);
+        openLoginPage(driver, testContext, "app");
         testContext.getScenario().log("<div style='width: 5%; position: absolute; top: 5px; font-size: 2vw; border: none; color: green; text-align: center; font-weight: bold; background-color: #C5D88A; left: 50%; transform: translateX(-50%);'>" + testContext.getTestCaseID() + "</div>");
+        Log.info("TEST CASE {} STARTED", testCaseID);
+    }
+
+    @Given("User is on {string} Test page for TestCase {string}")
+    public void userIsOnLoginPage(String app, String testCaseID) {
+        testContext.setTestCaseID(testCaseID.split("_")[2]);
+        testContext.setModuleName(testCaseID.split("_")[0]);
+        testContext.setScreenshotFolderName(testCaseID.split("_")[1]);
+        System.out.println("Environment = " + testContext.getEnvironment());
+        System.out.println("ApplicationType = " + testContext.getAppType());
+        System.out.println("TestCaseID = " + testContext.getTestCaseID());
+        System.out.println("ModuleName = " + testContext.getModuleName());
+        System.out.println("CaptureScreenshot = " + testContext.getCaptureScreenshot());
+        openLoginPage(driver, testContext, app);
         Log.info("TEST CASE {} STARTED", testCaseID);
     }
 

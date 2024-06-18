@@ -41,7 +41,7 @@ public class E2EFlowDataPage extends FLUtilities {
 
     public static String getCellValue(Cell cell) {
         // Initialize a string to store the cell value
-        String excelValue ="";
+        String excelValue = "";
 
         // Check if the cell is not null and its type is STRING
         if (cell != null && cell.getCellType() == CellType.STRING) {
@@ -49,9 +49,8 @@ public class E2EFlowDataPage extends FLUtilities {
             excelValue = cell.getStringCellValue().trim();
 
             // If the string contains double slashes ("//"), replace them with a single slash ("/")
-            if (excelValue.contains("//")) {
+            if (excelValue.contains("//"))
                 excelValue = excelValue.replaceAll("//", "/");
-            }
             // Check if the cell is not null and its type is NUMERIC
         } else if (cell != null && cell.getCellType() == CellType.NUMERIC) {
             // Convert the numeric value of the cell to a string and trim any leading or trailing whitespace
@@ -92,7 +91,7 @@ public class E2EFlowDataPage extends FLUtilities {
         return tempJson;
     }
 
-    public void createForesightTestDataInterface(String jsonFile, String excelFile) {
+    public void createForesightTestDataInterface(String jsonFile, String excelFile, XmlUtilityPage onXMLUtilityPage) {
         // Define the file path using a common absolute path and the provided Excel file name
         String filePath = EnumsCommon.ABSOLUTE_FILES_PATH.getText() + excelFile;
 
@@ -111,12 +110,21 @@ public class E2EFlowDataPage extends FLUtilities {
             int clientNameIndex = findColumnIndex(headerRow, "Client Name");
             int productIndex = findColumnIndex(headerRow, "Product");
             int modulesIndex = findColumnIndex(headerRow, "Modules");
-            int filenameIndex = findColumnIndex(headerRow, "FileName");
+            int inboundFilenameIndex = findColumnIndex(headerRow, "InboundFileName");
             int executeIndex = findColumnIndex(headerRow, "Execute");
             int jurisdictionWiseReportIndex = findColumnIndex(headerRow, "JurisdictionWiseReport");
             int inboundTypeIndex = findColumnIndex(headerRow, "Inbound Type");
             int inboundIndex = findColumnIndex(headerRow, "Inbound");
             int outboundIndex = findColumnIndex(headerRow, "Outbound");
+            int inboundXmlFileNameIndex = findColumnIndex(headerRow, "Inbound XML File Name");
+            int outboundFilenameIndex = findColumnIndex(headerRow, "OutboundFileName");
+            int outboundXmlFileNameIndex = findColumnIndex(headerRow, "Outbound XML File Name");
+            int usernameIndex = findColumnIndex(headerRow, "Username");
+            int passwordIndex = findColumnIndex(headerRow, "Password");
+            int producerNameIndex = findColumnIndex(headerRow, "ProducerName");
+            int producerIDIndex = findColumnIndex(headerRow, "ProducerID");
+            int orgIndex = findColumnIndex(headerRow, "Org");
+            int hostIndex = findColumnIndex(headerRow, "Host");
 
             // Delete existing runner and feature files
             deleteRunnerFeature(EnumsCommon.RUNNERFILESPATH.getText() + "ForeSightTest");
@@ -125,40 +133,67 @@ public class E2EFlowDataPage extends FLUtilities {
             // Iterate through the rows of the sheet, starting from the second row
             while (iterator.hasNext()) {
                 Row currentRow = iterator.next();
-
+                JSONObject tempClientData = new JSONObject();
+                JSONObject jsonTemp = new JSONObject();
                 // Retrieve cell values from the current row based on the header indexes
                 String clientName = getCellValue(currentRow.getCell(clientNameIndex));
                 String product = getCellValue(currentRow.getCell(productIndex));
                 String modules = getCellValue(currentRow.getCell(modulesIndex));
-                String filename = getCellValue(currentRow.getCell(filenameIndex));
+                String inboundFilename = getCellValue(currentRow.getCell(inboundFilenameIndex));
                 String execute = getCellValue(currentRow.getCell(executeIndex));
                 String jurisdictionWiseReport = getCellValue(currentRow.getCell(jurisdictionWiseReportIndex));
                 String inboundType = getCellValue(currentRow.getCell(inboundTypeIndex));
-                String inbound = getCellValue(currentRow.getCell(inboundIndex));
-                String outbound = getCellValue(currentRow.getCell(outboundIndex));
+                String inbound = getCellValue(currentRow.getCell(inboundIndex)).equalsIgnoreCase("yes") ? clientName + "Inbound" : "";
+                String outbound = getCellValue(currentRow.getCell(outboundIndex)).equalsIgnoreCase("yes") ? clientName + "Outbound" : "";
+                String inboundXmlFileName = getCellValue(currentRow.getCell(inboundXmlFileNameIndex));
+                String outboundFilename = getCellValue(currentRow.getCell(outboundFilenameIndex));
+                String outboundXmlFileName = getCellValue(currentRow.getCell(outboundXmlFileNameIndex));
+                String username = getCellValue(currentRow.getCell(usernameIndex));
+                String producerName = getCellValue(currentRow.getCell(producerNameIndex));
+                String password = getCellValue(currentRow.getCell(passwordIndex));
+                String producerID = getCellValue(currentRow.getCell(producerIDIndex));
+                String org = getCellValue(currentRow.getCell(orgIndex));
+                String host = getCellValue(currentRow.getCell(hostIndex));
 
                 // Check if the 'Execute' column value is 'yes'
                 if (execute.equalsIgnoreCase("yes")) {
                     // If the filename is not already a key in masterJson, create foresight test data
-                    if (!masterJson.containsKey(filename.replaceAll(".xlsx", ""))) {
-                        createForesightTestData(filename, product);
+                    if (!masterJson.containsKey(clientName))
+                        createForesightTestData(clientName, inboundFilename, product, inboundXmlFileName, onXMLUtilityPage);
+                    tempClientData = (JSONObject) masterJson.get(clientName);
+                    if (inbound.equalsIgnoreCase(clientName + "Inbound")) {
+                        tempClientData.put("username", username);
+                        tempClientData.put("password", password);
+                        tempClientData.put("producerName", producerName);
+                        tempClientData.put("producerID", producerID);
+                        tempClientData.put("org", org);
+                        tempClientData.put("host", host);
+                        tempClientData.put("inboundXmlFileName", inboundXmlFileName);
                     }
-
+                    masterJson.put(clientName, tempClientData);
                     // Read the JSON data for the current client
-                    JSONObject jsonTemp = JsonPath.read(masterJson, "$." + clientName);
+
+                        jsonTemp = JsonPath.read(masterJson, "$." + clientName);
 
                     // If the module exists in JSON test data for a client and JurisdictionWiseReport is 'Yes'
                     if (jsonTemp.containsKey(modules) && jurisdictionWiseReport.equalsIgnoreCase("Yes")) {
                         // Iterate through the states and create feature and runner files for each state
                         for (String state : jsonTemp.get(modules).toString().trim().split(", ")) {
-                            createFeatureFile(clientName, modules, product, filename, state);
-                            createRunnerFile(clientName, modules, state);
+                            createFeatureFile(clientName, modules, product, inboundFilename, state, "E2EWizardTestFlow", "", "", "", "", "", inboundType);
+                            createRunnerFile(clientName, modules, state, inboundType, "", "");
                         }
                     } else {
-                        if(inboundType.equalsIgnoreCase("Direct Login"))
                         // Create feature and runner files for all jurisdictions
-                        createFeatureFile(clientName, modules, product, filename, "All");
-                        createRunnerFile(clientName, modules, "All");
+                        switch (inboundType) {
+                            case "Direct Login":
+                                createFeatureFile(clientName, modules, product, inboundFilename, "All", "E2EWizardTestFlow", "", "", "", "", "", inboundType);
+                                createRunnerFile(clientName, modules, "All", inboundType, "", "");
+                                break;
+                            case "Tx103":
+                                createFeatureFile(clientName, modules, product, inboundFilename, "All", "IntegrationTest", inbound, inboundXmlFileName, outbound, outboundFilename, outboundXmlFileName, inboundType);
+                                createRunnerFile(clientName, modules, "All", inboundType, inbound, outbound);
+                                break;
+                        }
                     }
                 }
             }
@@ -187,7 +222,7 @@ public class E2EFlowDataPage extends FLUtilities {
      * @param excelFile - Spec file
      * @param product   - Product to be used to create FL application
      */
-    public void createForesightTestData(String excelFile, String product) {
+    public void createForesightTestData(String clientName, String excelFile, String product, String xmlFileName, XmlUtilityPage onXMLUtilityPage) {
         String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + excelFile;
         JSONObject jsonRows = new JSONObject();
         String fieldList = "";
@@ -204,10 +239,11 @@ public class E2EFlowDataPage extends FLUtilities {
             if (verifySheetExists(workbook, "ModulesJurisdictionMapping"))
                 processJurisdictionMappingSheet(workbook.getSheet("ModulesJurisdictionMapping"), jsonRows);
             if (verifySheetExists(workbook, "E-App Wizard Spec"))
-                processEAppWizardSpecSheet(workbook.getSheet("E-App Wizard Spec"), jsonRows, fieldList, product);
+                processEAppWizardSpecSheet(workbook.getSheet("E-App Wizard Spec"), jsonRows, fieldList, product, xmlFileName, onXMLUtilityPage);
 
             // JSON entry for a client with all processed sheets
-            masterJson.put(excelFile.replaceAll(".xlsx", ""), jsonRows);
+//            entryMasterJson(clientName, inbound, outbound, jsonRows);
+            masterJson.put(clientName, jsonRows);
             masterJson.put("commonTestData", getJsonObject());
             jsonObject.put("testData", masterJson);
 
@@ -218,9 +254,19 @@ public class E2EFlowDataPage extends FLUtilities {
         }
     }
 
+    public void entryMasterJson(String clientName, String inbound, String outbound, JSONObject jsonRows) {
+        if(!inbound.equalsIgnoreCase(""))
+            masterJson.put(inbound, jsonRows);
+        if(!outbound.equalsIgnoreCase(""))
+            masterJson.put(outbound, jsonRows);
+        if(outbound.equalsIgnoreCase("") && inbound.equalsIgnoreCase(""))
+            masterJson.put(clientName, jsonRows);
+    }
+
     /**
      * Verify if sheet exists in a workbook
-     * @param workbook - Excel file name
+     *
+     * @param workbook  - Excel file name
      * @param sheetName - Sheet name
      * @return true if sheet exists
      */
@@ -311,7 +357,7 @@ public class E2EFlowDataPage extends FLUtilities {
      * @param fieldList - list of all the validated fields
      * @param product   - Product to create FL application
      */
-    private void processEAppWizardSpecSheet(Sheet sheet, JSONObject jsonRows, String fieldList, String product) {
+    private void processEAppWizardSpecSheet(Sheet sheet, JSONObject jsonRows, String fieldList, String product, String xmlFileName, XmlUtilityPage onXMLUtilityPage) {
         Row headerRow;
         Iterator<Row> iterator = sheet.iterator();
 
@@ -332,6 +378,16 @@ public class E2EFlowDataPage extends FLUtilities {
                     }
                 }
             }
+            String wizardControlType = tempJson.containsKey("WizardControlTypes") ? tempJson.get("WizardControlTypes").toString().trim() : "";
+            if (wizardControlType.equalsIgnoreCase("Complex Rule") && !tempJson.containsKey("103Mapping")) {
+                tempJson.put("103Mapping", getAllXMLPaths(tempJson.get("RulesWizard").toString().trim()));
+            }
+            String accordMapping = tempJson.containsKey("AcordMapping") ? tempJson.get("AcordMapping").toString().trim() : "";
+            String xmlMapping = tempJson.containsKey("103Mapping") ? tempJson.get("103Mapping").toString().trim() : "";
+
+            if (!xmlFileName.equalsIgnoreCase("") && tempJson.containsKey("103Mapping"))
+                tempJson.putAll(onXMLUtilityPage.processXmlDataWithFileName(xmlFileName, accordMapping, xmlMapping, wizardControlType));
+
             tempJsonReplacement = new JSONObject(tempJson);
             if (!tempJson.containsKey("ModuleSectionName"))
                 tempJson.put("ModuleSectionName", "");
@@ -358,6 +414,19 @@ public class E2EFlowDataPage extends FLUtilities {
         fieldList = fieldListBuilder.toString();
         jsonRows.put("product", product);
         jsonRows.put("fieldList", fieldList.replaceFirst(", ", ""));
+    }
+
+    public String getAllXMLPaths(String rules) {
+        String regex = "\\//(.*?)\\s*(=|;)";
+        Pattern p = Pattern.compile(regex);
+        Matcher m = p.matcher(rules);
+        Set<String> matchingXMLPaths = new HashSet<>();
+        // Get the subsequence
+        // using find() method
+        while (m.find()) {
+            matchingXMLPaths.add("//" + m.group(1));
+        }
+        return String.join(",", matchingXMLPaths);
     }
 
     /**
@@ -493,40 +562,58 @@ public class E2EFlowDataPage extends FLUtilities {
 
     /**
      * Handle OR conditions
-     *
+     * <p>
      * Split rules in multiple rules if OR exists in the rules
+     *
      * @param excelValue
      * @return
      */
     public String handleOrConditions(String excelValue) {
         String[] listRules = excelValue.split(";");
         StringBuilder newValue = new StringBuilder();
+        StringBuilder tempValue = new StringBuilder();
         Pattern pattern = Pattern.compile("");
 
         for (String rule : listRules) {
+            int conditionsCount = 0;
             if (rule.contains(" OR ") & !(rule.toLowerCase().contains("skip for automation"))) {
                 rule = rule.replaceAll("\\[", "").replaceAll("]", "");
+                String tempRule = rule.replaceFirst("(\\d+\\.\\s*)?", "");
                 if (rule.toLowerCase().contains("("))
-                    pattern = Pattern.compile("(.*?)\\((.*?)\\)(.*)");
-                else if (Pattern.compile("(\\d+\\.\\s*)?If (.*?)(?:,)? then (.*)\\.?").matcher(rule).find())
-                    pattern = Pattern.compile("(\\d+\\.\\s*)?If (.*?)(?:,)? then (.*)\\.?");
-                else if (Pattern.compile("(\\d+\\.\\s*)?(.*?)").matcher(rule).find())
-                    pattern = Pattern.compile("(\\d+\\.\\s*)?(.*?)");
+                    pattern = Pattern.compile("\\((.*?)\\)");
+                else if (Pattern.compile("If (.*?)(?:,)? then (.*)\\.?").matcher(tempRule).find())
+                    pattern = Pattern.compile("If (.*?)(?:,)? then (.*)\\.?");
+                else if (Pattern.compile("(.*?)").matcher(tempRule).find())
+                    pattern = Pattern.compile("(.*?)");
 
                 if (!pattern.toString().isEmpty()) {
                     Matcher matcher = pattern.matcher(rule);
 
                     while (matcher.find()) {
-                        List<String> orConditions = Arrays.asList(matcher.group(2).split(" OR "));
-                        if (orConditions.size() > 1) {
-                            for (String condition : orConditions)
-                                newValue.append(rule.replaceAll(matcher.group(2), condition).replaceAll("\\(", "").replaceAll("\\)", "")).append(";");
+                        List<String> orConditions = Arrays.asList(matcher.group(1).split(" OR "));
+                        conditionsCount++;
+                        if (conditionsCount == 1) {
+                            if (orConditions.size() > 1) {
+                                for (String condition : orConditions)
+                                    newValue.append(rule.replaceAll(matcher.group(1), condition)).append(";");
+                            } else {
+                                for (String condition : rule.split(" OR "))
+                                    newValue.append(condition).append(";");
+                                break;
+                            }
                         } else {
-                            for (String condition : rule.split(" OR "))
-                                newValue.append(condition).append(";");
-                            break;
+                            if (orConditions.size() > 1) {
+                                for (String condition : orConditions)
+                                    tempValue.append(newValue.toString().replaceAll(matcher.group(1), condition)).append(";");
+                                newValue = tempValue;
+                            } else {
+                                for (String condition : rule.split(" OR "))
+                                    newValue.append(condition).append(";");
+                                break;
+                            }
                         }
                     }
+                    newValue = new StringBuilder(newValue.toString().replaceAll("\\(", "").replaceAll("\\)", "").replaceAll(";;", ";"));
                 } else
                     newValue.append(rule).append(";");
             } else
@@ -593,18 +680,24 @@ public class E2EFlowDataPage extends FLUtilities {
      * @param fileName - Spec from client
      * @param state    - Jurisdiction to create FL application
      */
-    public void createFeatureFile(String client, String module, String product, String fileName, String state) {
+    public void createFeatureFile(String client, String module, String product, String fileName, String state, String flow, String inbound, String inboundXmlFileName, String outbound, String outboundFilename, String outboundXmlFileName, String inboundType) {
         ArrayList<String> lines = new ArrayList<>();
+        File tempFile = null;
         String line;
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(EnumsCommon.FEATUREFILESPATH.getText() + "End2End/E2EWizardTestFlow.feature"));
+            BufferedReader reader = new BufferedReader(new FileReader(EnumsCommon.FEATUREFILESPATH.getText() + "End2End/" + flow + ".feature"));
             while ((line = reader.readLine()) != null) {
                 line = line.replaceAll("ModuleName", module).replaceAll("ModuleTag", module.replaceAll(" ", "")).replaceAll("Client", client);
                 line = line.replaceAll("productName", product).replaceAll("fileName", fileName).replaceAll("state", state);
+                line = line.replaceAll("InboundFlow", inbound).replaceAll("OutboundFlow", outbound).replaceAll("InboundXML", inboundXmlFileName).replaceAll("OutboundExcel", outboundFilename).replaceAll("OutboundXML", outboundXmlFileName);
                 lines.add(line);
             }
             reader.close();
-            File tempFile = new File(EnumsCommon.FEATUREFILESPATH.getText() + "ForesightTest/" + client + "_" + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + ".feature");
+            if (inboundType.equalsIgnoreCase("Direct Login"))
+                tempFile = new File(EnumsCommon.FEATUREFILESPATH.getText() + "ForesightTest/" + client + "_" + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + ".feature");
+            else if (inboundType.equalsIgnoreCase("Tx103"))
+                tempFile = new File(EnumsCommon.FEATUREFILESPATH.getText() + "ForesightTest/" + client + "_" + "Integration.feature");
+
             tempFile.getParentFile().mkdirs();
             FileWriter featureFile = new FileWriter(tempFile);
             BufferedWriter writer = new BufferedWriter(featureFile);
@@ -623,18 +716,29 @@ public class E2EFlowDataPage extends FLUtilities {
      * @param module - module name
      * @param state  - Jurisdiction to create FL application
      */
-    public void createRunnerFile(String client, String module, String state) {
+    public void createRunnerFile(String client, String module, String state, String inboundType, String inbound, String outbound) {
         ArrayList<String> lines = new ArrayList<>();
+        List<String> flowTypes = new ArrayList<>();
+        flowTypes.add("@" + inbound);
+        flowTypes.add("@" + outbound);
+        flowTypes.removeAll(Collections.singletonList("@"));
+        String flowType = String.join(",", flowTypes);
         String line;
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(EnumsCommon.RUNNERFILESPATH.getText() + "RunFireLightTest.java"));
+            BufferedReader reader = new BufferedReader(new FileReader(EnumsCommon.RUNNERFILESPATH.getText() + "RunWizardTest.java"));
             while ((line = reader.readLine()) != null) {
                 line = line.replaceAll("com.hexure.firelight.runner", "com.hexure.firelight.runner.ForeSightTest");
                 line = line.replaceAll("ModuleName", module).replaceAll("ModuleTag", module.replaceAll(" ", "")).replaceAll("Client", client).replaceAll("State", state.replaceAll(" ", ""));
-                line = replaceLine(line, "features = {", "\t\tfeatures = {\"src/test/resources/features/ForesightTest/" + client + "_" + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + ".feature\"},");
-                line = replaceLine(line, "tags = ", "\t\ttags = \"@" + module.replaceAll(" ", "") + "\",");
-                line = replaceLine(line, "public class RunFireLightTest {", "public class RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test" + " {");
-                line = replaceLine(line, "core.run(RunFireLightTest.class);", "\t\tcore.run(RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test" + ".class);");
+                if (inboundType.equalsIgnoreCase("Direct Login")) {
+                    line = replaceLine(line, "features = {", "\t\tfeatures = {\"src/test/resources/features/ForesightTest/" + client + "_" + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + ".feature\"},");
+                    line = replaceLine(line, "tags = ", "\t\ttags = \"@" + module.replaceAll(" ", "") + "\",");
+                } else if (inboundType.equalsIgnoreCase("Tx103")) {
+                    line = replaceLine(line, "features = {", "\t\tfeatures = {\"src/test/resources/features/ForesightTest/" + client + "_" + "Integration.feature\"},");
+                    line = replaceLine(line, "tags = ", "\t\ttags = \"" + flowType + "\",");
+                }
+                line = line.replaceAll("RunWizardTest", "RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test");
+//                line = replaceLine(line, "RunWizardTest {", "public class RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test" + " {");
+//                line = replaceLine(line, "core.run(RunWizardTest.class);", "\t\tcore.run(RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test" + ".class);");
                 lines.add(line);
             }
             reader.close();

@@ -213,20 +213,10 @@ public class BaseClass {
      * @param driver      The WebDriver instance
      * @param testContext The TestContext class reference
      */
-    protected void openLoginPage(WebDriver driver, TestContext testContext) {
+    protected void openLoginPage(WebDriver driver, TestContext testContext, String app) {
         testContext.setMapTestData(getTestData(testContext.getTestCaseID(), testContext));
 
-        String url;
-        if (testContext.getAppType().equalsIgnoreCase("app")) {
-            url = testContext.getEnvironment().equalsIgnoreCase("qa") ?
-                    configProperties.getProperty("QA.app.url") :
-                    configProperties.getProperty("QANext.app.url");
-        } else {
-            url = testContext.getEnvironment().equalsIgnoreCase("qa") ?
-                    configProperties.getProperty("QA.admin.url") :
-                    configProperties.getProperty("QANext.admin.url");
-        }
-
+        String url = configProperties.getProperty("QA." + app.toLowerCase() + ".url");
         System.out.println("URL = " + url);
 
         if (configProperties.getProperty("browser").equalsIgnoreCase("Edge")) {
@@ -448,21 +438,22 @@ public class BaseClass {
         }
     }
 
-
     /**
      * This method is waits till the webpage is completely loaded
      *
      * @param driver The WebDriver reference
      */
     public void waitForPageToLoad(WebDriver driver) {
+        String loaderClassName = "ITSpinner";
         FluentWait<WebDriver> wait = new FluentWait<>(driver)
                 .withTimeout(Duration.ofSeconds(60)) // Maximum wait time
-                .pollingEvery(Duration.ofMillis(100)); // Polling interval
+                .pollingEvery(Duration.ofMillis(100)) // Polling interval
+                .ignoring(Exception.class);
 
-        // Wait until document ready state is 'complete'
-        wait.until(webDriver -> {
-            JavascriptExecutor jsExecutor = (JavascriptExecutor) webDriver;
-            return jsExecutor.executeScript("return document.readyState").equals("complete");
+        wait.until(webdriver -> {
+            Long loaderCount = (Long) ((JavascriptExecutor) driver).executeScript(
+                    "return document.getElementsByClassName('" + loaderClassName + "').length;");
+            return loaderCount == 0;
         });
     }
 

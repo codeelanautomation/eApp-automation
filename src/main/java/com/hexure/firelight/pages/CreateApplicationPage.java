@@ -5,6 +5,7 @@ import com.hexure.firelight.libraies.FLUtilities;
 import com.hexure.firelight.libraies.TestContext;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
@@ -20,6 +21,18 @@ public class CreateApplicationPage extends FLUtilities {
     public String WizardPageNameExpandmvc = "//*[@class='ITWizardPageName']";
     public String optionalFormList = "//*[@class=\"navDrawer__bundleName\" and text()=\"%s\"]/..//*[@class=\"far fa-file navDrawer__pageGraphic \" or @class=\"fas fa-file-alt navDrawer__pageGraphic \"]/../..";
     public String listOfProducts = "//div[@id='divProducts']/a//div[contains(text(),'%s')]";
+    private By btnRequestReview = By.id("requestReview");
+    private String canvasCurrent = "//canvas[contains(@class,'status_current')]";
+    private By signNow = By.id("signNow");
+    private By identificationNumber = By.id("txtID");
+    private By btnSubmit = By.id("buttonSubmit");
+    private By chkAgreeAll = By.id("chkAgreeAll");
+    private By chkAgree = By.id("chkAgree");
+    private By popOK = By.id("popup_ok");
+    private String tblDocuments = "//table[@id='tableNav']//tr";
+    private String btnConsent = "//button[@id='buttonConsent' or @id='btnConsent']";
+    private By btnDecline = By.id("aDecline");
+    private String btnOK = "//img[@alt='OK']";
 
     @FindBy(xpath = "//td[@class='top']//span[text()='Application']")
     private WebElement btnApplication;
@@ -53,6 +66,22 @@ public class CreateApplicationPage extends FLUtilities {
 
     @FindBy(id = "ProductType")
     private WebElement ddProductType;
+
+    @FindBy(xpath = "//button[@class='ITButtonInput  ']//span[text()='Next']")
+    private WebElement btnNext;
+
+    @FindBy(xpath = "//div[@id='divOutstandingRequests']//div[@class='largeText']")
+    private List<WebElement> lstConfirmationDialog;
+
+    @FindBy(xpath = "//a[@aria-label='[Close]']")
+    private WebElement btnCloseApp;
+
+    @FindBy(id = "lnkUse")
+    private WebElement lnkUseSignature;
+
+    @FindBy(xpath = "//div[@id='signerListDiv']//a")
+    private List<WebElement> lnkUserSignatures;
+
 
     public CreateApplicationPage(WebDriver driver) {
         initElements(driver);

@@ -348,8 +348,8 @@
                 <version>2.21.0</version>
                 <configuration>
                     <excludes>
-                        <exclude>**/RunIntegrationTest.java</exclude>
-                        <exclude>**/RunFireLightTest.java</exclude>
+                        <exclude>**/RunInterfaceTest.java</exclude>
+                        <exclude>**/RunWizardTest.java</exclude>
                     </excludes>
                     <systemProperties>
                         <property>

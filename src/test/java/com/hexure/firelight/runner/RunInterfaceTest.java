@@ -13,7 +13,7 @@ import org.junit.runner.RunWith;
         monochrome = true,
         publish = true
 )
-public class RunIntegrationTest {
+public class RunInterfaceTest {
 
     public static void main(String[] args) {
         // Add the UniqueTestCounter listener to your test run
@@ -21,6 +21,6 @@ public class RunIntegrationTest {
         core.addListener(new UniqueTestCounter());
 
         // Run your tests
-        core.run(RunIntegrationTest.class);
+        core.run(RunInterfaceTest.class);
     }
 }

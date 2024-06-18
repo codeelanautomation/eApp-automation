@@ -16,6 +16,9 @@ public class PageObjectManager extends BaseClass {
     private E2EFlowDataPage onE2EFlowDataPage;
     private WizardFlowDataPage onWizardFlowDataPage;
     private SoftAssertionHandlerPage onSoftAssertionHandlerPage;
+    private XmlUtilityPage onXmlUtilityPage;
+    private ImportXMLDataPage onImportXMLDataPage;
+    private ReviewPage onReviewPage;
 
     public PageObjectManager(WebDriver driver) {
         this.driver = driver;
@@ -90,6 +93,33 @@ public class PageObjectManager extends BaseClass {
         } catch (Exception e) {
             Log.error("Instance creations of SoftAssertionHandlerPage Failed ", e);
             throw new FLException("Instance creations of SoftAssertionHandlerPage Failed " + e.getMessage());
+        }
+    }
+
+    public XmlUtilityPage getXmlUtilityPage() {
+        try {
+            return (onXmlUtilityPage == null) ? onXmlUtilityPage = new XmlUtilityPage(driver) : onXmlUtilityPage;
+        } catch (Exception e) {
+            Log.error("Instance creations of XmlUtilityPage Failed ", e);
+            throw new FLException("Instance creations of XmlUtilityPage Failed " + e.getMessage());
+        }
+    }
+
+    public ImportXMLDataPage getImportXMLDataPage() {
+        try {
+            return (onImportXMLDataPage == null) ? onImportXMLDataPage = new ImportXMLDataPage(driver) : onImportXMLDataPage;
+        } catch (Exception e) {
+            Log.error("Instance creations of ImportXMLDataPage Failed ", e);
+            throw new FLException("Instance creations of ImportXMLDataPage Failed " + e.getMessage());
+        }
+    }
+
+    public ReviewPage getReviewPage() {
+        try {
+            return (onReviewPage == null) ? onReviewPage = new ReviewPage(driver) : onReviewPage;
+        } catch (Exception e) {
+            Log.error("Instance creations of ReviewPage Failed ", e);
+            throw new FLException("Instance creations of ReviewPage Failed " + e.getMessage());
         }
     }
 }

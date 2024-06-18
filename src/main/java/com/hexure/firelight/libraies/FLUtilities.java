@@ -44,6 +44,7 @@ public class FLUtilities extends BaseClass {
 
     protected void clickElement(WebDriver driver, WebElement element) {
         int retryCount = 4;
+        syncElement(driver, element, EnumsCommon.TOVISIBLE.getText());
         for (int attempt = 0; attempt < retryCount; attempt++) {
             syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
             try {
@@ -160,8 +161,22 @@ public class FLUtilities extends BaseClass {
         }
     }
 
+    public WebElement findElementByID(WebDriver driver, By id) {
+        try {
+            syncElement(driver, driver.findElement(id), EnumsCommon.TOVISIBLE.getText());
+            return driver.findElement(id);
+        } catch (NoSuchElementException e) {
+            System.out.println("No Such Element Exception is showing on searching element having id " + id);
+            return null;
+        }
+    }
+
     public List<WebElement> findElements(WebDriver driver, String stringXpath) {
         return driver.findElements(By.xpath(stringXpath));
+    }
+
+    public List<WebElement> findElementsByID(WebDriver driver, By id) {
+        return driver.findElements(id);
     }
 
     protected void checkBoxSelectYesNO(String userAction, WebElement element) {
@@ -212,5 +227,62 @@ public class FLUtilities extends BaseClass {
 
     public String getCellColumnValue(Cell cell) {
         return cell == null ? "" : cell.toString().trim();
+    }
+
+    protected List<WebElement> getElements(WebDriver driver, By locator) {
+        try
+        {
+            waitForPageToLoad(driver);
+            return driver.findElements(locator);
+        }
+        catch(Exception e)
+        {
+            Log.error("Could not find elements with locator " + locator, e);
+            throw new FLException("Could not find elements with locator >>>> " + e.getMessage());
+        }
+    }
+
+    /**
+     * By using Action class and its methods along with X/Y co-ordinates this method will draw/add digital signature on
+     * specified WebElement (passed as parameter).
+     *
+     * @param driver The WebDriver instance
+     * @param element The WebElement on which digital signature needs to be added
+     */
+    protected void addDigitalSignature(WebDriver driver, WebElement element) {
+        try {
+            Actions builder = new Actions(driver);
+            scrollToWebElement(driver, element);
+            builder.moveToElement(element).perform();
+            builder.clickAndHold(element).perform();
+            builder.moveByOffset(0, -90).perform();
+            builder.moveToElement(element).perform();
+            builder.clickAndHold(element).perform();
+            builder.moveByOffset(0, 75).perform();
+            builder.moveToElement(element).perform();
+            builder.clickAndHold(element).perform();
+            builder.moveByOffset(150, 0).perform();
+            builder.moveToElement(element).perform();
+            builder.clickAndHold(element).perform();
+            builder.moveByOffset(-150, 0).perform();
+            builder.moveToElement(element).perform();
+
+            builder.moveToElement(element).perform();
+            builder.clickAndHold(element).perform();
+            builder.moveByOffset(0, -90).perform();
+            builder.moveToElement(element).perform();
+            builder.clickAndHold(element).perform();
+            builder.moveByOffset(0, 75).perform();
+            builder.moveToElement(element).perform();
+            builder.clickAndHold(element).perform();
+            builder.moveByOffset(150, 0).perform();
+            builder.moveToElement(element).perform();
+            builder.clickAndHold(element).perform();
+            builder.moveByOffset(-150, 0).perform();
+            builder.moveToElement(element).perform();
+        } catch (Exception e) {
+            Log.error("Adding Digital Signature Failed", e);
+            throw new FLException("Adding Digital Signature Failed " + e.getMessage());
+        }
     }
 }
