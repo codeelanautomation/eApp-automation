@@ -43,6 +43,7 @@ public class RunIntegrationTest {
             e.printStackTrace();
         }
     }
+
     private static void deleteDirectoryContents(Path dir) throws IOException {
         Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
             @Override
@@ -50,6 +51,7 @@ public class RunIntegrationTest {
                 attemptToDeleteFile(file);
                 return FileVisitResult.CONTINUE;
             }
+
             @Override
             public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
                 attemptToDeleteFile(dir); // Delete directory after its contents are deleted
@@ -57,6 +59,7 @@ public class RunIntegrationTest {
             }
         });
     }
+
     private static void attemptToDeleteFile(Path filePath) throws IOException {
         int maxRetries = 1;
         for (int retry = 0; retry < maxRetries; retry++) {

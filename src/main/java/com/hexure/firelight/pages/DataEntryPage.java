@@ -15,7 +15,7 @@ public class DataEntryPage extends FLUtilities {
     @FindBy(id = "root__wizardName")
     private WebElement dataEntryPageHeader;
 
-    @FindBy(xpath = "//*[@class='ITWizardPageName']")
+    @FindBy(className = "ITWizardPageName")
     private WebElement formName;
 
     public DataEntryPage(WebDriver driver) {

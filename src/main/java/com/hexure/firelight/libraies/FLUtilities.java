@@ -159,11 +159,16 @@ public class FLUtilities extends BaseClass {
         return driver.findElements(By.xpath(stringXpath));
     }
 
+    // Method to select or deselect a checkbox based on the user's action
     protected void checkBoxSelectYesNO(String userAction, WebElement element) {
+        // Check if the user action requires the checkbox to be selected
         if (getCheckBoxAction(userAction)) {
+            // If the checkbox is not already selected, click it to select
             if (element.getAttribute("aria-checked").equals("false"))
                 element.click();
         } else {
+            // If the user action requires the checkbox to be deselected
+            // If the checkbox is already selected, click it to deselect
             if (element.getAttribute("aria-checked").equals("true"))
                 element.click();
         }
@@ -185,6 +190,7 @@ public class FLUtilities extends BaseClass {
 
 
     private boolean getCheckBoxAction(String action) {
+        // Check if the action string matches any of the strings indicating a selection action (case-insensitive)
         return action.equalsIgnoreCase("yes") ||
                 action.equalsIgnoreCase("check") ||
                 action.equalsIgnoreCase("checked") ||
@@ -201,9 +207,15 @@ public class FLUtilities extends BaseClass {
      */
     public int findColumnIndex(Row headerRow, String columnName) {
         Iterator<Cell> cellIterator = headerRow.cellIterator();
+
+        // Iterate through each cell in the header row
         while (cellIterator.hasNext()) {
+            // Get the current cell
             Cell cell = cellIterator.next();
+
+            // Check if the current cell's value matches the column name (case-insensitive)
             if (columnName.equalsIgnoreCase(getCellColumnValue(cell))) {
+                // Return the index of the cell if the column name matches
                 return cell.getColumnIndex();
             }
         }
@@ -211,6 +223,7 @@ public class FLUtilities extends BaseClass {
     }
 
     public String getCellColumnValue(Cell cell) {
+        // If the cell is null, return an empty string; otherwise, return the trimmed string value of the cell
         return cell == null ? "" : cell.toString().trim();
     }
 }

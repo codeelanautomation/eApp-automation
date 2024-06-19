@@ -33,6 +33,7 @@ import java.util.Comparator;
 )
 public class RunFireLightTest {
     private static final Logger Log = LogManager.getLogger(RunFireLightTest.class);
+
     public static void main(String[] args) {
         // Add the UniqueTestCounter listener to your test run
         JUnitCore core = new JUnitCore();
@@ -50,7 +51,7 @@ public class RunFireLightTest {
         try {
             moveDirectory(sourceDir, targetDir);
         } catch (Exception e) {
-            Log.error("Failed to rename report: "+e.getMessage());
+            Log.error("Failed to rename report: " + e.getMessage());
         }
     }
 
@@ -78,7 +79,7 @@ public class RunFireLightTest {
 
     public static void expandAutomatically() throws IOException {
         ArrayList<String> lines = new ArrayList<>();
-        BufferedReader reader = new BufferedReader(new FileReader(System.getProperty("user.dir")+"/target/cucumber-report/Client/cucumberModuleTagState/cucumberClientModuleTagState.html"));
+        BufferedReader reader = new BufferedReader(new FileReader(System.getProperty("user.dir") + "/target/cucumber-report/Client/cucumberModuleTagState/cucumberClientModuleTagState.html"));
         String line = "";
         while ((line = reader.readLine()) != null) {
             line = line.replace("Attached Text (\"+e.mediaType+\")", "");
@@ -86,7 +87,7 @@ public class RunFireLightTest {
             lines.add(line);
         }
         reader.close();
-        File tempFile = new File(System.getProperty("user.dir")+"/target/cucumber-report/Client/cucumberModuleTagState/cucumberClientModuleTagState.html");
+        File tempFile = new File(System.getProperty("user.dir") + "/target/cucumber-report/Client/cucumberModuleTagState/cucumberClientModuleTagState.html");
         FileWriter runnerFile = new FileWriter(tempFile);
         BufferedWriter writer = new BufferedWriter(runnerFile);
         for (String line1 : lines)

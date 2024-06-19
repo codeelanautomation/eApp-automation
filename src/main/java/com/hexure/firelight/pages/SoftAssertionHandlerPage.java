@@ -140,7 +140,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
                     + "</table>";
 
             scenario.attach(executionSummary, "text/html", "Execution Summary");
-            scenario.attach("<div>" + resultSet.toString()+ "</div>", "text/html", "Details Result");
+            scenario.attach("<div>" + resultSet+ "</div>", "text/html", "Details Result");
         }
     }
 
@@ -170,7 +170,7 @@ public class SoftAssertionHandlerPage extends FLUtilities {
      */
     private void printSkippedElements(TestContext testContext) {
         Scenario scenario = testContext.getScenario();
-        scenario.attach("<div width='50%' style='font-size:1.3vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>List Of Fields Not Validated : </div>" + resultSetSkippedElements.toString(),"text/html","List Of Fields Not Validate");
+        scenario.attach("<div width='50%' style='font-size:1.3vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>List Of Fields Not Validated : </div>" + resultSetSkippedElements,"text/html","List Of Fields Not Validate");
     }
 
     /**

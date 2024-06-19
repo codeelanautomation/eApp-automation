@@ -45,7 +45,7 @@ public class CommonMethodsPage extends FLUtilities {
     int count = 1;
     List<List<String>> listInputFields = new ArrayList<>();
 
-    @FindBy(xpath = "//*[@id='ToggleMessagesLink']")
+    @FindBy(id = "ToggleMessagesLink")
     private WebElement redColorErrorValidationBubble;
 
     @FindBy(xpath = "//span[@class='validationText']")
@@ -54,7 +54,7 @@ public class CommonMethodsPage extends FLUtilities {
     @FindBy(id = "root__wizardName")
     private WebElement formHeader;
 
-    @FindBy(xpath = "//*[@class='ITWizardPageName']")
+    @FindBy(className = "ITWizardPageName")
     private WebElement pageHeader;
 
     @FindBy(id = "imgOpenWiz")
@@ -86,21 +86,27 @@ public class CommonMethodsPage extends FLUtilities {
      * @param pageHeader - Page name
      * @param formHeader - Form name
      */
+    // Method to navigate to a specific page and form in a web application using WebDriver
     public void moveToPage(WebDriver driver, String pageHeader, String formHeader) {
-        waitForPageToLoad(driver);
-        boolean flag = false;
-        if (!(getPageHeader().getText().equalsIgnoreCase(pageHeader) & getFormHeader().getText().equalsIgnoreCase(formHeader))) {
-            clickElementByJSE(driver, getWizardPageNameExpand());
-            List<WebElement> mandetoryFormList = findElements(driver, String.format(getMandatoryFormElement(), formHeader));
+        waitForPageToLoad(driver);      // Wait for the current page to fully load before proceeding
+        boolean flag = false;       // Initialize a flag to track if the target page/form is found
+
+        // Check if the current page and form headers do not match the target headers
+        if (!(getPageHeader().getText().equalsIgnoreCase(pageHeader) &
+                getFormHeader().getText().equalsIgnoreCase(formHeader))) {
+            clickElementByJSE(driver, getWizardPageNameExpand());       // Expand the wizard page menu using JavaScript Executor
+            List<WebElement> mandetoryFormList = findElements(driver, String.format(getMandatoryFormElement(), formHeader));        // Find all mandatory form elements matching the specified form header
+            // Iterate through each form element to find the one matching the page header
             for (WebElement element : mandetoryFormList) {
-                String form = element.getAttribute("innerText");
-                if (form.equals(pageHeader)) {
-//                    clickElement(driver, getFormHeader());
-                    clickElement(driver, element);
+                String form = element.getAttribute("innerText");        // Get the inner text of the form element
+                if (form.equals(pageHeader)) {                      // If the form matches the page header, click the element and set the flag to true
+                    clickElement(driver, element);      // Click the form element to navigate to the target page/form
                     flag = true;
-                    break;
+                    break; // Exit the loop once the target form is found and clicked
                 }
             }
+
+            // If the target form was not found, collapse the wizard page menu using JavaScript Executor
             if (!flag) clickElementByJSE(driver, getWizardPageNameCollapse());
         }
         waitForPageToLoad(driver);
