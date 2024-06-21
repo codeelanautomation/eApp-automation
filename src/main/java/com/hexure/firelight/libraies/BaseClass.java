@@ -463,7 +463,6 @@ public class BaseClass {
         wait.until(webdriver -> {
             Long loaderCount = (Long) ((JavascriptExecutor) driver).executeScript(
                     "return document.getElementsByClassName('" + loaderClassName + "').length;");
-            System.out.println("The loader Count is " + loaderCount);
             return loaderCount == 0;
         });
     }
