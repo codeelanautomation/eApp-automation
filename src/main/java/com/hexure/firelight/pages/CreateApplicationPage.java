@@ -49,7 +49,7 @@ public class CreateApplicationPage extends FLUtilities {
     @FindBy(xpath = "//a[@title='Close']")
     private List<WebElement> lstBtnClose;
 
-    @FindBy(xpath = "//*[@class='ITWizardPageName']")
+    @FindBy(className = "ITWizardPageName")
     private WebElement wizardPageNameExpand;
 
     @FindBy(xpath = "//button[@id='cmdSave' or @id='cmdCreate']")

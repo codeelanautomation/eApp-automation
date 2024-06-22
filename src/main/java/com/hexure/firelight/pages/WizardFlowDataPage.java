@@ -2032,16 +2032,6 @@ public class WizardFlowDataPage extends FLUtilities {
      * calculate execution time for cucumber report
      */
     public void printFinalResults() {
-        long endTime = System.currentTimeMillis();
-        LocalTime endLocalTime = LocalTime.now();
-        long durationMillis = endTime - onLoginPage.getStartTime();
-        long hours = durationMillis / (1000 * 60 * 60);
-        long minutes = (durationMillis % (1000 * 60 * 60)) / (1000 * 60);
-        long seconds = ((durationMillis % (1000 * 60 * 60)) % (1000 * 60)) / 1000;
-
-        difference = String.format("%dh %dm %ds", hours, minutes, seconds);
-        testContext.getScenario().log("<div width='100%' style='font-size:1.6vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>Cucumber Report : " + LocalDate.now() + "</div>");
-        testContext.getScenario().log("<div width='100%' style='font-size:1.2vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>" + timeFormat.format(onLoginPage.getStartLocalTime()) + " - " + timeFormat.format(endLocalTime) + "(" + difference + ")</div>");
         onSoftAssertionHandlerPage.afterScenario(testContext, fieldsEvaluated);
     }
 

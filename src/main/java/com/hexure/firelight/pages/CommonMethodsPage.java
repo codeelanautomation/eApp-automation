@@ -56,10 +56,10 @@ public class CommonMethodsPage extends FLUtilities {
     @FindBy(xpath = "//button[@id='popup_ok']")
     private WebElement popup_Yes;
 
-    @FindBy(xpath = "//*[@id='ToggleMessagesLink']")
+    @FindBy(id = "ToggleMessagesLink")
     private WebElement redColorErrorValidationBubble;
 
-    @FindBy(xpath = "//*[@id='ToggleMessagesLink']")
+    @FindBy(id = "ToggleMessagesLink")
     private List<WebElement> lstRedColorErrorValidationBubble;
 
     @FindBy(xpath = "//span[@class='validationText']")
@@ -68,7 +68,7 @@ public class CommonMethodsPage extends FLUtilities {
     @FindBy(id = "root__wizardName")
     private WebElement formHeader;
 
-    @FindBy(xpath = "//*[@class='ITWizardPageName']")
+    @FindBy(className = "ITWizardPageName")
     private WebElement pageHeader;
 
     @FindBy(id = "imgOpenWiz")

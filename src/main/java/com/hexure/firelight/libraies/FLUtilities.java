@@ -19,7 +19,7 @@ public class FLUtilities extends BaseClass {
         try {
             FluentWait<WebDriver> wait = new FluentWait<>(driver)
                     .pollingEvery(Duration.ofMillis(200))
-                    .withTimeout(Duration.ofSeconds(15))
+                    .withTimeout(Duration.ofSeconds(Integer.parseInt(configProperties.getProperty("explicit_wait"))))
                     .ignoring(NoSuchElementException.class);
             switch (conditionForWait) {
                 case "ToVisible":
@@ -43,30 +43,24 @@ public class FLUtilities extends BaseClass {
     }
 
     protected void clickElement(WebDriver driver, WebElement element) {
-        int retryCount = 4;
-        syncElement(driver, element, EnumsCommon.TOVISIBLE.getText());
-        for (int attempt = 0; attempt < retryCount; attempt++) {
-            syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
+        syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
+        try {
+            scrollToWebElement(driver, element);
+            element.click();
+        } catch (Exception e) {
             try {
-                if (!element.isDisplayed()) {
-                    scrollToWebElement(driver, element);
-                }
-                element.click();
-                return; // Exit the method if click is successful
-            } catch (StaleElementReferenceException | ElementClickInterceptedException e) {
-                // Retry after a brief delay
+                Log.info("Retrying click using Actions class");
+                new Actions(driver).moveToElement(element).click().perform();
+            } catch (Exception ex) {
+                Log.warn("Retrying click using moveByOffset due to failure", ex);
                 try {
-                    Thread.sleep(500); // Add a delay of 500 milliseconds between retries
-                } catch (InterruptedException ignored) {
-                    Thread.currentThread().interrupt();
+                    new Actions(driver).moveToElement(element).moveByOffset(10, 10).click().perform();
+                } catch (Exception finalEx) {
+                    Log.error("Could not click WebElement using Actions and moveByOffset", finalEx);
+                    throw new FLException("Could not click WebElement using Actions and moveByOffset: " + finalEx.getMessage());
                 }
-            } catch (Exception e) {
-                Log.error("Could not click WebElement ", e);
-                throw new FLException("Could not click WebElement: " + e.getMessage());
             }
         }
-        // If all retry attempts fail, throw an exception
-        throw new FLException("Failed to click WebElement after " + retryCount + " attempts");
     }
 
     protected void scrollToWebElement(WebDriver driver, WebElement element) {
@@ -74,38 +68,44 @@ public class FLUtilities extends BaseClass {
             ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
         } catch (Exception e) {
             Log.error("Could Not Scroll WebElement ", e);
-            throw new FLException("Could Not Scroll WebElement " + e.getMessage());
+            throw new FLException("Could Not Scroll WebElement " + e.getMessage() + element);
         }
     }
 
     protected void clickElementByJSE(WebDriver driver, WebElement element) {
+        waitForPageToLoad(driver);
         syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
         try {
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
         } catch (Exception e) {
             Log.error("Clicking WebElement By JavaScriptExecutor Failed ", e);
-            throw new FLException("Clicking WebElement By JavaScriptExecutor Failed " + e.getMessage());
+            throw new FLException("Clicking WebElement By JavaScriptExecutor Failed " + e.getMessage() + element);
         }
     }
 
+
     protected void sendKeys(WebDriver driver, WebElement element, String stringToInput) {
+        waitForPageToLoad(driver);
         syncElement(driver, element, EnumsCommon.TOVISIBLE.getText());
         try {
             element.clear();
             clickElement(driver, element);
             element.sendKeys(stringToInput);
             element.sendKeys(Keys.TAB);
-        } catch (StaleElementReferenceException | ElementClickInterceptedException e) {
-            syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
-            // Scroll the element into view
-            ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
-            element.clear();
-            // Move to the element using Actions class
-            new Actions(driver).moveToElement(element).sendKeys(stringToInput).perform();
-            element.sendKeys(Keys.TAB);
         } catch (Exception e) {
-            Log.error("SendKeys Failed ", e);
-            throw new FLException(stringToInput + " could not be entered in element" + e.getMessage());
+            try {
+                waitForPageToLoad(driver);
+                syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
+                // Scroll the element into view
+                ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
+                element.clear();
+                // Move to the element using Actions class
+                new Actions(driver).moveToElement(element).sendKeys(stringToInput).perform();
+                element.sendKeys(Keys.TAB);
+            } catch (Exception e1) {
+                Log.error("SendKeys Failed ", e1);
+                throw new FLException(stringToInput + " could not be entered in element" + e1.getMessage());
+            }
         }
         waitForPageToLoad(driver);
         sleepInMilliSeconds(1000);
@@ -139,12 +139,7 @@ public class FLUtilities extends BaseClass {
         WebElement element = driver.findElement(By.xpath(stringXpath));
         syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
         try {
-            if (!element.isDisplayed()) {
-                scrollToWebElement(driver, element);
-                element.click();
-            } else {
-                element.click();
-            }
+            new Actions(driver).moveToElement(element).click().perform();
         } catch (Exception e) {
             Log.error("Could Not Click WebElement ", e);
             throw new FLException("Could Not Click WebElement " + e.getMessage());
@@ -179,30 +174,37 @@ public class FLUtilities extends BaseClass {
         return driver.findElements(id);
     }
 
+    // Method to select or deselect a checkbox based on the user's action
     protected void checkBoxSelectYesNO(String userAction, WebElement element) {
+        // Check if the user action requires the checkbox to be selected
         if (getCheckBoxAction(userAction)) {
+            // If the checkbox is not already selected, click it to select
             if (element.getAttribute("aria-checked").equals("false"))
                 element.click();
         } else {
+            // If the user action requires the checkbox to be deselected
+            // If the checkbox is already selected, click it to deselect
             if (element.getAttribute("aria-checked").equals("true"))
                 element.click();
         }
     }
 
     protected boolean verifyCheckBoxSelectYesNO(String userAction, WebElement element) {
-        boolean flag = true;
+        // Perform the action of selecting/deselecting the checkbox
         checkBoxSelectYesNO(userAction, element);
-        if (getCheckBoxAction(userAction)) {
-            if (element.getAttribute("aria-checked").equals("false"))
-                flag = false;
-        } else {
-            if (element.getAttribute("aria-checked").equals("true"))
-                flag = false;
-        }
-        return flag;
+
+        // Determine the expected state based on user action
+        boolean expectedState = getCheckBoxAction(userAction);
+
+        // Get the actual state from the element's attribute
+        boolean actualState = element.getAttribute("aria-checked").equals("true");
+
+        // Compare the expected state with the actual state
+        return expectedState == actualState;
     }
 
     private boolean getCheckBoxAction(String action) {
+        // Check if the action string matches any of the strings indicating a selection action (case-insensitive)
         return action.equalsIgnoreCase("yes") || action.equalsIgnoreCase("check") || action.equalsIgnoreCase("checked") || action.equalsIgnoreCase("selected");
     }
 
@@ -216,9 +218,15 @@ public class FLUtilities extends BaseClass {
      */
     public int findColumnIndex(Row headerRow, String columnName) {
         Iterator<Cell> cellIterator = headerRow.cellIterator();
+
+        // Iterate through each cell in the header row
         while (cellIterator.hasNext()) {
+            // Get the current cell
             Cell cell = cellIterator.next();
+
+            // Check if the current cell's value matches the column name (case-insensitive)
             if (columnName.equalsIgnoreCase(getCellColumnValue(cell))) {
+                // Return the index of the cell if the column name matches
                 return cell.getColumnIndex();
             }
         }
@@ -226,6 +234,7 @@ public class FLUtilities extends BaseClass {
     }
 
     public String getCellColumnValue(Cell cell) {
+        // If the cell is null, return an empty string; otherwise, return the trimmed string value of the cell
         return cell == null ? "" : cell.toString().trim();
     }
 

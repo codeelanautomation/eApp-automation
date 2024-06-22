@@ -13,6 +13,7 @@ public enum EnumsCommon {
     E2EWIZARDNAME("Wizard Name"),
     TOVISIBLE("ToVisible"),
     TOCLICKABLE("ToClickable"),
+    TOINVISIBLE("ToInvisible"),
     ABSOLUTE_FILES_PATH(System.getProperty("user.dir") + "\\src\\test\\resources\\testdata\\"),
     FIREFOXBROWSER("Firefox"),
     FEATUREFILESPATH(System.getProperty("user.dir") + "/src/test/resources/features/"),
