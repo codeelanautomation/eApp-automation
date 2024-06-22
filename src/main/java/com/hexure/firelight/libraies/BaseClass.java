@@ -312,6 +312,47 @@ public class BaseClass {
         return testData;
     }
 
+
+    /**
+     * This method adds new property in test data/JSON object during execution.
+     *
+     * @param testCaseID  Current Test-Case ID
+     * @param testContext The TestContext class reference
+     * @param property    New property in test data/JSON object
+     * @param value       Value for newly added property
+     * @return Update test Data after adding new property for current Test-Case ID in key-value format of HashMap.
+     */
+    protected HashMap<String, String> addPropertyValueInJSON(String testCaseID, TestContext testContext, String property, JSONObject value) {
+        HashMap<String, String> testData = new HashMap<>();
+        try {
+            String JSONFileToUpdate = configProperties.getProperty(testContext.getModuleName() + ".testdata.filePath");
+            Object object = new JSONParser().parse(new FileReader(JSONFileToUpdate));
+            JSONObject entireJsonObject = (JSONObject) object; //converting into JSON Object
+            JSONObject parentJsonObject = (JSONObject) entireJsonObject.get("testData");
+
+            JSONObject currentJSONObjectToWrite = (JSONObject) parentJsonObject.get(testCaseID);
+            currentJSONObjectToWrite.put(property, value);
+
+            FileWriter file = new FileWriter(JSONFileToUpdate);
+            file.write(entireJsonObject.toJSONString());
+            file.close();
+
+            testContext.setMapTestData(getTestData(testContext.getTestCaseID(), testContext));
+            Log.info("New Property Value added Successfully");
+        } catch (IOException e) {
+            Log.error("Could Not Read JSON File ", e);
+            throw new FLException("Could Not Read JSON File" + e.getMessage());
+        } catch (ParseException e) {
+            Log.error("Could Not Parse JSON File ", e);
+            throw new FLException("Could Not Parse JSON File " + e.getMessage());
+        } catch (Exception e) {
+            Log.error("Adding Property Value in JSON File Failed ", e);
+            throw new FLException("Mapping Test Data Failed " + e.getMessage());
+        }
+
+        return testData;
+    }
+
     /**
      * captureScreenshot.switch with value either true or false has been added. The value can be updated either from config.properties file or
      * ADO pipeline. If set as true, then ONLY screenshots shall be captured.

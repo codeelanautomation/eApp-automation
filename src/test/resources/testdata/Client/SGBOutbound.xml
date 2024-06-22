@@ -183,6 +183,7 @@
           <LastName>2024_UPDATED</LastName>
           <Prefix>MR</Prefix>
           <MarStat tc="2">OLI_MARITAL_SINGLE</MarStat>
+		  <Email tc="2">OLI_MARITAL_SINGLE</Email>
           <Gender tc="1" />
           <BirthDate>1981-04-28</BirthDate>
           <Citizenship tc="355">OLI_NATION_ALBANIA</Citizenship>

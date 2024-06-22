@@ -19,6 +19,7 @@ public class PageObjectManager extends BaseClass {
     private XmlUtilityPage onXmlUtilityPage;
     private ImportXMLDataPage onImportXMLDataPage;
     private ReviewPage onReviewPage;
+    private XmlDataPage onXmlDataPage;
 
     public PageObjectManager(WebDriver driver) {
         this.driver = driver;
@@ -120,6 +121,15 @@ public class PageObjectManager extends BaseClass {
         } catch (Exception e) {
             Log.error("Instance creations of ReviewPage Failed ", e);
             throw new FLException("Instance creations of ReviewPage Failed " + e.getMessage());
+        }
+    }
+
+    public XmlDataPage getXmlDataPage() {
+        try {
+            return (onXmlDataPage == null) ? onXmlDataPage = new XmlDataPage(driver) : onXmlDataPage;
+        } catch (Exception e) {
+            Log.error("Instance creations of XmlDataPage Failed ", e);
+            throw new FLException("Instance creations of XmlDataPage Failed " + e.getMessage());
         }
     }
 }

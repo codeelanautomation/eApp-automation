@@ -74,7 +74,7 @@ public class Rules_StepDefinitions extends FLUtilities {
     public void createApplication(String jurisdiction, String product, String productType, String module) {
         executedJurisdiction = jurisdiction;
         onCreateApplicationPage.createApplication(testContext, driver, product, productType, jurisdiction);
-        validateWizard(module);
+        validateWizard(module, "");
         waitForPageToLoad(driver);
         clickElement(driver, onCreateApplicationPage.getBtnHome());
         clickElement(driver, onCreateApplicationPage.getBtnPopupOK());
@@ -82,19 +82,27 @@ public class Rules_StepDefinitions extends FLUtilities {
     }
 
     @Then("Verify data on UI is populated as given in inbound XML and validate rules for {string} modules")
-    public void validateWizard(String module) {
-        if (!onCreateApplicationPage.getLstBtnClose().isEmpty())
-            clickElement(driver, onCreateApplicationPage.getBtnClose());
-        onWizardFlowDataPage.setPageObjects(testContext, driver, executedJurisdiction);
-        onWizardFlowDataPage.verifyFormDataWithInboundXml(module);
-        onWizardFlowDataPage.printFinalResults();
+    public void inboundVerify(String module) {
+        validateWizard(module, "");
     }
 
     @Then("Import client XML file in app")
     public void importXML() {
         onImportXMLDataPage.setCredentialsAndXmlData(driver, testContext);
-//                "QE Test Page for 1228 and 103 Transactions",driver, "SGB_Test", "Dece@2023", "SGB Producer", "SGB_Test", "SGB","QA", testContext.getMapTestData().get("inboundXmlFileName"));
         clickElement(driver, onCreateApplicationPage.getBtnNext());
+    }
+
+    @Then("Verify data on outbound XML is in sync with data on UI for {string} modules")
+    public void outboundVerify(String module) {
+        validateWizard(module, "outbound");
+    }
+
+    public void validateWizard(String module, String flow) {
+        if (!onCreateApplicationPage.getLstBtnClose().isEmpty())
+            clickElement(driver, onCreateApplicationPage.getBtnClose());
+        onWizardFlowDataPage.setPageObjects(testContext, driver, executedJurisdiction);
+        onWizardFlowDataPage.verifyFormDataWithInboundXml(module, flow);
+        onWizardFlowDataPage.printFinalResults();
     }
 
 

@@ -37,6 +37,7 @@ public class WizardFlowDataPage extends FLUtilities {
     public CommonMethodsPage onCommonMethodsPage;
     public LoginPage onLoginPage;
     public SoftAssertionHandlerPage onSoftAssertionHandlerPage;
+    public XmlDataPage onXmlDataPage;
     public TestContext testContext;
     public WebDriver driver;
     int countValidation = 1;
@@ -74,13 +75,18 @@ public class WizardFlowDataPage extends FLUtilities {
      *
      * @param module - module name of field under test
      */
-    public void verifyFormDataWithInboundXml(String module) {
+    public void verifyFormDataWithInboundXml(String module, String flow) {
         String moduleNameValue;
-        Set<String> fieldList = new LinkedHashSet<>(Arrays.asList(testContext.getMapTestData().get("fieldList").split(", ")));
+        Set<String> fieldList = new LinkedHashSet<>();
+        if (flow.isEmpty())
+            fieldList = new LinkedHashSet<>(Arrays.asList(testContext.getMapTestData().get("fieldList").split(", ")));
+        else
+            fieldList = new LinkedHashSet<>(Arrays.asList(testContext.getMapTestData().get("outboundFieldList").split(", ")));
         for (String fieldName : fieldList) {
+            System.out.println(fieldName);
             moduleNameValue = JsonPath.read(testContext.getMapTestData().get(fieldName).trim(), "$.ModuleSectionName").toString().trim();
             if (module.equalsIgnoreCase(moduleNameValue) | module.equalsIgnoreCase("All")) {
-                wizardTesting(fieldName);
+                wizardTesting(fieldName, flow);
                 fieldsEvaluated++;
             }
         }
@@ -90,6 +96,7 @@ public class WizardFlowDataPage extends FLUtilities {
         onCommonMethodsPage = testContext.getPageObjectManager().getCommonMethodPage();
         onSoftAssertionHandlerPage = testContext.getPageObjectManager().getSoftAssertionHandlerPage();
         onLoginPage = testContext.getPageObjectManager().getLoginPage();
+        onXmlDataPage = testContext.getPageObjectManager().getXmlDataPage();
         this.testContext = testContext;
         this.driver = driver;
         this.executedJurisdiction = executedJurisdiction;
@@ -110,7 +117,7 @@ public class WizardFlowDataPage extends FLUtilities {
      *              G) If the field under test is radio button/dropdown, whether it contains given value to be set
      *              H) All these checks C - F are checked for dependent conditions too
      */
-    public void wizardTesting(String field) {
+    public void wizardTesting(String field, String flow) {
         String section = "";
         String wizardControlType;
         String reason;
@@ -137,7 +144,9 @@ public class WizardFlowDataPage extends FLUtilities {
                         section = JsonPath.read(valueJson, "$.Section").toString().trim();
                     wizardControlType = JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim();
 
-                    if (wizardControlType.equalsIgnoreCase("Complex Rule")) {
+                    if (flow.equalsIgnoreCase("outbound"))
+                        verifyOutboundAssertions(valueJson, order, field);
+                    else if (wizardControlType.equalsIgnoreCase("Complex Rule")) {
                         String key = "";
                         String values = "";
                         String displayedText = "";
@@ -232,12 +241,12 @@ public class WizardFlowDataPage extends FLUtilities {
                         onCommonMethodsPage.moveToPage(driver, JsonPath.read(valueJson, "$.Page").toString().trim(), JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim());
                         if (verifyElementExists(valueJson, order, field, true, "")) {
                             if (valueJson.contains("AcordMapping") | valueJson.contains("103Mapping")) {
-                                xmlResult = validateXMLData(valueJson, order, field, wizardControlType);
+                                xmlResult = validateXMLData(valueJson, order, field);
                                 WebElement element = getElement(valueJson, wizardControlType, xmlResult);
                                 xmlFlag = !(element.getAttribute("class").contains("disabled") | element.getAttribute("class").contains("readOnlyInput") | isAttributePresent(element, "readonly") | isAttributePresent(element, "disabled"));
                             }
                             if (xmlFlag) {
-                                if(!xmlResult.isEmpty())
+                                if (!xmlResult.isEmpty())
                                     resetValue(valueJson, xmlResult);
                                 for (String rule : rulesList) {
                                     combinationConditions.clear();
@@ -298,11 +307,14 @@ public class WizardFlowDataPage extends FLUtilities {
                                             default:
                                                 throw new IllegalStateException("Unexpected value: " + rule);
                                         }
-                                        if(!xmlResult.isEmpty())
-                                            setValue(valueJson, xmlResult);
                                     } catch (PathNotFoundException e) {
                                         System.out.println("Field " + field + " does not have rule \"" + rule + "\"");
                                     }
+                                }
+                                setValue(valueJson, xmlResult);
+                                if (xmlResult.isEmpty()) {
+                                    onXmlDataPage.setPageObjects(testContext, driver);
+                                    onXmlDataPage.interactWithElement(getElement(valueJson, wizardControlType, ""));
                                 }
                             } else
                                 onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, "All Rules", "Rules were not validated as field is disabled");
@@ -323,7 +335,6 @@ public class WizardFlowDataPage extends FLUtilities {
             System.out.println("error");
         }
     }
-
 
     public void handleLengthFormatRules(String valueJson, String order, String field, String rule, String wizardControlType, String executedJurisdiction, String moduleName) {
         List<Object> invalidFlag = setInvalidTags(valueJson, "", "(\\S+)\\s*(=|<>|<|>)\\s*(.*)");
@@ -1117,25 +1128,15 @@ public class WizardFlowDataPage extends FLUtilities {
         sleepInMilliSeconds(1000);
     }
 
-    public String validateXMLData(String valueJson, String order, String field, String wizardControlType) {
-        if (wizardControlType.equalsIgnoreCase("Complex Rule")) {
-            for (String distinctRule : JsonPath.read(valueJson, "$.RulesWizard").toString().trim().split(";")) {
-                System.out.println(order + ". " + field + " -> " + distinctRule);
-                if (Pattern.compile("(\\d+\\.\\s*)?(?i)If (.*?)(?:,)? (?i)then (.*)\\.?").matcher(distinctRule).find()) {
-                    /* Validate error message based on dependent conditions **/
-                    List<String> listExpectedConditions = getDisplayRuleConditions(valueJson, "(\\d+\\.\\s*)?(?i)If (.*?)(?:,)? (?i)then (.*)\\.?", "", distinctRule);
-                    String condition = listExpectedConditions.get(2);
-                    List<String> expectedResults = Arrays.asList(listExpectedConditions.get(3).split(" (?i)AND "));
-
-                    List<Object> tempMap = createMapConditions(condition, valueJson, howManyOperator, order, field, distinctRule, true, "");
-                    LinkedHashMap<String, List<String>> mapConditions = (LinkedHashMap<String, List<String>>) tempMap.get(1);
-
-
-                }
-            }
-        } else
-            verifyData(valueJson, field, JsonPath.read(valueJson, "$.RelativeValue").toString().trim(), "", "Value From XML", "XML Mapping with UI", order);
+    public String validateXMLData(String valueJson, String order, String field) {
+        verifyData(valueJson, field, JsonPath.read(valueJson, "$.RelativeValue").toString().trim(), "", "Value From XML", "XML Mapping with UI", order);
         return JsonPath.read(valueJson, "$.RelativeValue").toString().trim();
+    }
+
+    public void verifyOutboundAssertions(String valueJson, String order, String field) {
+        String actualValue = JsonPath.read(valueJson, "$.RelativeValue").toString().trim();
+        String expectedValue = JsonPath.read(testContext.getMapTestData().get(field.replace("Outbound", "")), "$.RelativeValue").toString().trim();
+        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, "Outbound Validations", "", expectedValue, actualValue, expectedValue.equalsIgnoreCase(actualValue), testContext);
     }
 
     /**

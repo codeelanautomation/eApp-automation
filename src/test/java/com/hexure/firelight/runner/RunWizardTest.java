@@ -2,6 +2,8 @@ package com.hexure.firelight.runner;
 
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.AfterClass;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.RunWith;
@@ -11,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Comparator;
 
 @RunWith(Cucumber.class)
@@ -29,7 +32,7 @@ import java.util.Comparator;
         publish = true
 )
 public class RunWizardTest {
-
+    private static final Logger Log = LogManager.getLogger(RunWizardTest.class);
     public static void main(String[] args) {
         // Add the UniqueTestCounter listener to your test run
         JUnitCore core = new JUnitCore();
@@ -47,7 +50,7 @@ public class RunWizardTest {
         try {
             moveDirectory(sourceDir, targetDir);
         } catch (Exception e) {
-            System.err.println("Failed to rename report: " + e.getMessage());
+            Log.error("Failed to rename report: " + e.getMessage());
         }
     }
 
@@ -62,6 +65,7 @@ public class RunWizardTest {
 
         // Move the source directory to the target location
         Files.move(sourceDir, targetDir, StandardCopyOption.REPLACE_EXISTING);
+        expandAutomatically();
     }
 
     public static void deleteDirectory(Path dir) throws IOException {
@@ -69,5 +73,24 @@ public class RunWizardTest {
                 .sorted(Comparator.reverseOrder())
                 .map(Path::toFile)
                 .forEach(File::delete);
+    }
+
+
+    public static void expandAutomatically() throws IOException {
+        ArrayList<String> lines = new ArrayList<>();
+        BufferedReader reader = new BufferedReader(new FileReader(System.getProperty("user.dir") + "/target/cucumber-report/Client/cucumberModuleTagState/cucumberClientModuleTagState.html"));
+        String line = "";
+        while ((line = reader.readLine()) != null) {
+            line = line.replace("Attached Text (\"+e.mediaType+\")", "");
+            line = line.replace("\"details\",null,c.createElement", "\"detailss\",null,c.createElement");
+            lines.add(line);
+        }
+        reader.close();
+        File tempFile = new File(System.getProperty("user.dir") + "/target/cucumber-report/Client/cucumberModuleTagState/cucumberClientModuleTagState.html");
+        FileWriter runnerFile = new FileWriter(tempFile);
+        BufferedWriter writer = new BufferedWriter(runnerFile);
+        for (String line1 : lines)
+            writer.write(line1 + "\n");
+        writer.close();
     }
 }

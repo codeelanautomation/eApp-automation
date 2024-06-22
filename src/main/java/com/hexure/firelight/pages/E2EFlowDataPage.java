@@ -96,6 +96,20 @@ public class E2EFlowDataPage extends FLUtilities {
         // Define the file path using a common absolute path and the provided Excel file name
         String filePath = EnumsCommon.ABSOLUTE_FILES_PATH.getText() + excelFile;
         JSONParser parser = new JSONParser();
+        boolean flag = true;
+        Object obj;
+        JSONObject jsonTestData = new JSONObject();
+        String inbound = "";
+        String outbound = "";
+        String inboundXmlFileName = "";
+        String outboundFilename = "";
+        String outboundXmlFileName = "";
+        String username = "";
+        String producerName = "";
+        String password = "";
+        String producerID = "";
+        String org = "";
+        String host = "";
 
         // Use try-with-resources to ensure the FileInputStream and XSSFWorkbook are closed properly
         try (FileInputStream file = new FileInputStream(filePath);
@@ -145,31 +159,38 @@ public class E2EFlowDataPage extends FLUtilities {
                 String execute = getCellValue(currentRow.getCell(executeIndex));
                 String jurisdictionWiseReport = getCellValue(currentRow.getCell(jurisdictionWiseReportIndex));
                 String inboundType = getCellValue(currentRow.getCell(inboundTypeIndex));
-                String inbound = getCellValue(currentRow.getCell(inboundIndex)).equalsIgnoreCase("yes") ? clientName + "Inbound" : "";
-                String outbound = getCellValue(currentRow.getCell(outboundIndex)).equalsIgnoreCase("yes") ? clientName + "Outbound" : "";
-                String inboundXmlFileName = getCellValue(currentRow.getCell(inboundXmlFileNameIndex));
-                String outboundFilename = getCellValue(currentRow.getCell(outboundFilenameIndex));
-                String outboundXmlFileName = getCellValue(currentRow.getCell(outboundXmlFileNameIndex));
-                String username = getCellValue(currentRow.getCell(usernameIndex));
-                String producerName = getCellValue(currentRow.getCell(producerNameIndex));
-                String password = getCellValue(currentRow.getCell(passwordIndex));
-                String producerID = getCellValue(currentRow.getCell(producerIDIndex));
-                String org = getCellValue(currentRow.getCell(orgIndex));
-                String host = getCellValue(currentRow.getCell(hostIndex));
+                if (!inboundType.equalsIgnoreCase("Direct Login")) {
+                    inbound = getCellValue(currentRow.getCell(inboundIndex)).equalsIgnoreCase("yes") ? clientName + "Inbound" : "";
+                    outbound = getCellValue(currentRow.getCell(outboundIndex)).equalsIgnoreCase("yes") ? clientName + "Outbound" : "";
+                    inboundXmlFileName = getCellValue(currentRow.getCell(inboundXmlFileNameIndex));
+                    outboundFilename = getCellValue(currentRow.getCell(outboundFilenameIndex));
+                    outboundXmlFileName = getCellValue(currentRow.getCell(outboundXmlFileNameIndex));
+                    username = getCellValue(currentRow.getCell(usernameIndex));
+                    producerName = getCellValue(currentRow.getCell(producerNameIndex));
+                    password = getCellValue(currentRow.getCell(passwordIndex));
+                    producerID = getCellValue(currentRow.getCell(producerIDIndex));
+                    org = getCellValue(currentRow.getCell(orgIndex));
+                    host = getCellValue(currentRow.getCell(hostIndex));
+                }
 
-                Object obj = parser.parse(new FileReader(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile));
+                File jsonFilePath = new File(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
+                if (jsonFilePath.length() == 0)
+                    flag = false;
 
-                JSONObject jsonTestData =  (JSONObject) obj;
-                JSONObject jsonData =  (JSONObject) jsonTestData.get("testData");
+                if (flag) {
+                    obj = parser.parse(new FileReader(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile));
+                    jsonTestData = (JSONObject) obj;
+                    jsonTestData = (JSONObject) jsonTestData.get("testData");
+                }
 
                 // Check if the 'Execute' column value is 'yes'
                 if (execute.equalsIgnoreCase("yes")) {
                     // If the filename is not already a key in masterJson, create foresight test data
-                    if (!masterJson.containsKey(clientName)) {
-                        createForesightTestData(clientName, inboundFilename, product, inboundXmlFileName, onXMLUtilityPage, "", jsonData);
-                        if(!outbound.equalsIgnoreCase(""))
-                            createForesightTestData(clientName, outboundFilename, product, outboundXmlFileName, onXMLUtilityPage, "Outbound", jsonData);
-                    }
+//                    if (!masterJson.containsKey(clientName)) {
+                    createForesightTestData(clientName, inboundFilename, product, inboundXmlFileName, onXMLUtilityPage, "", jsonTestData, inbound);
+                    if (!outbound.equalsIgnoreCase(""))
+                        createForesightTestData(clientName, outboundFilename, product, outboundXmlFileName, onXMLUtilityPage, "Outbound", jsonTestData, inbound);
+//                    }
                     tempClientData = (JSONObject) masterJson.get(clientName);
                     if (inbound.equalsIgnoreCase(clientName + "Inbound")) {
                         tempClientData.put("username", username);
@@ -183,7 +204,7 @@ public class E2EFlowDataPage extends FLUtilities {
                     masterJson.put(clientName, tempClientData);
                     // Read the JSON data for the current client
 
-                        jsonTemp = JsonPath.read(masterJson, "$." + clientName);
+                    jsonTemp = JsonPath.read(masterJson, "$." + clientName);
 
                     // If the module exists in JSON test data for a client and JurisdictionWiseReport is 'Yes'
                     if (jsonTemp.containsKey(modules) && jurisdictionWiseReport.equalsIgnoreCase("Yes")) {
@@ -209,8 +230,8 @@ public class E2EFlowDataPage extends FLUtilities {
             }
 
             // Write the JSON test data to the specified JSON file
-            FileWriter jsonTestData = new FileWriter(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
-            BufferedWriter writer = new BufferedWriter(jsonTestData);
+            FileWriter jsonTestData1 = new FileWriter(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
+            BufferedWriter writer = new BufferedWriter(jsonTestData1);
             writer.write(gson.toJson(jsonObject));
             writer.close();
 
@@ -232,11 +253,13 @@ public class E2EFlowDataPage extends FLUtilities {
      * @param excelFile - Spec file
      * @param product   - Product to be used to create FL application
      */
-    public void createForesightTestData(String clientName, String excelFile, String product, String xmlFileName, XmlUtilityPage onXMLUtilityPage, String suffixOutbound, JSONObject jsonData) {
+    public void createForesightTestData(String clientName, String excelFile, String product, String xmlFileName, XmlUtilityPage onXMLUtilityPage, String suffixOutbound, JSONObject jsonTestData, String inbound) {
         String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + excelFile;
         JSONObject jsonRows = new JSONObject();
         String fieldList = "";
-        JSONObject tempClientData = new JSONObject();
+        JSONObject tempClientData;
+        JSONObject tempClientJsonData;
+        JSONObject tempClientNewJsonData;
 
         // Read excel file to create test data
         try (FileInputStream file = new FileInputStream(filePath);
@@ -252,16 +275,41 @@ public class E2EFlowDataPage extends FLUtilities {
             if (verifySheetExists(workbook, "E-App Wizard Spec"))
                 processEAppWizardSpecSheet(workbook.getSheet("E-App Wizard Spec"), jsonRows, fieldList, product, xmlFileName, onXMLUtilityPage, suffixOutbound);
 
+            if (inbound.equalsIgnoreCase(""))
+                jsonTestData.remove(clientName);
+
             // JSON entry for a client with all processed sheets
-//            entryMasterJson(clientName, inbound, outbound, jsonRows);
-            if(masterJson.containsKey(clientName)) {
-                tempClientData = (JSONObject) masterJson.get(clientName);
-                for (Object temp : jsonRows.keySet()) {
-                    tempClientData.putIfAbsent(temp.toString(), jsonRows.get(temp.toString()));
+            if (jsonTestData.containsKey(clientName)) {
+                tempClientData = (JSONObject) jsonTestData.get(clientName);
+                if (!inbound.equalsIgnoreCase("")) {
+                    tempClientData.put("appGuid", "");
+                    tempClientData.put("uniqueTags", "");
                 }
+                for (Object temp : jsonRows.keySet()) {
+                    if (tempClientData.containsKey(temp.toString()) && !(tempClientData.get(temp.toString()).toString().isEmpty())) {
+                        try {
+                            tempClientJsonData = (JSONObject) tempClientData.get(temp.toString());
+                            tempClientNewJsonData = (JSONObject) jsonRows.get(temp.toString());
+                            for (Object tempJson : tempClientJsonData.keySet()) {
+                                if (tempClientJsonData.containsKey(tempJson.toString())) {
+                                    if (!tempClientJsonData.get(tempJson.toString()).toString().equalsIgnoreCase(tempClientNewJsonData.get(tempJson.toString()).toString()))
+                                        tempClientJsonData.put(tempJson.toString(), tempClientNewJsonData.get(tempJson.toString()).toString());
+                                }
+                            }
+                            tempClientData.put(temp.toString(), tempClientJsonData);
+                        } catch (Exception e) {
+                            if (!tempClientData.get(temp.toString()).toString().equalsIgnoreCase(jsonRows.get(temp.toString()).toString()))
+                                tempClientData.put(temp.toString(), jsonRows.get(temp.toString()).toString());
+                        }
+                    } else
+                        tempClientData.put(temp.toString(), jsonRows.get(temp.toString()));
+                }
+                if (!inbound.equalsIgnoreCase(""))
+                    uniqueOutboundInboundTags(tempClientData);
                 masterJson.put(clientName, tempClientData);
-            } else
+            } else {
                 masterJson.put(clientName, jsonRows);
+            }
             masterJson.put("commonTestData", getJsonObject());
             jsonObject.put("testData", masterJson);
 
@@ -272,13 +320,15 @@ public class E2EFlowDataPage extends FLUtilities {
         }
     }
 
-    public void entryMasterJson(String clientName, String inbound, String outbound, JSONObject jsonRows) {
-        if(!inbound.equalsIgnoreCase(""))
-            masterJson.put(inbound, jsonRows);
-        if(!outbound.equalsIgnoreCase(""))
-            masterJson.put(outbound, jsonRows);
-        if(outbound.equalsIgnoreCase("") && inbound.equalsIgnoreCase(""))
-            masterJson.put(clientName, jsonRows);
+    public JSONObject uniqueOutboundInboundTags(JSONObject tempClientData) {
+        List<String> outboundTags = new ArrayList<>(Arrays.asList(tempClientData.get("outboundFieldList").toString().split(", ")));
+        outboundTags.replaceAll(n -> n.replaceAll("Outbound", ""));
+        List<String> inboundtags = new ArrayList<>(Arrays.asList(tempClientData.get("fieldList").toString().split(", ")));
+        outboundTags.removeIf(inboundtags::contains);
+        tempClientData.put("uniqueTags", String.join(",", outboundTags));
+        for (String tags : outboundTags)
+            tempClientData.remove(tags);
+        return tempClientData;
     }
 
     /**
@@ -434,12 +484,13 @@ public class E2EFlowDataPage extends FLUtilities {
                     fieldListBuilder.append(", ").append(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim());
             }
         }
-        fieldList = fieldListBuilder.toString();
         jsonRows.put("product", product);
-        jsonRows.put("fieldList", fieldList.replaceFirst(", ", ""));
         if (!suffixOutbound.equalsIgnoreCase("")) {
             outboundFieldList = outboundFieldListBuilder.toString();
             jsonRows.put("outboundFieldList", outboundFieldList.replaceFirst(", ", ""));
+        } else {
+            fieldList = fieldListBuilder.toString();
+            jsonRows.put("fieldList", fieldList.replaceFirst(", ", ""));
         }
     }
 
@@ -499,6 +550,7 @@ public class E2EFlowDataPage extends FLUtilities {
             excelValue = excelValue.replaceAll("=", " = ");
             excelValue = excelValue.replaceAll("<>", " <> ");
             excelValue = excelValue.replaceAll("“", "");
+            excelValue = excelValue.replaceAll("\"", "");
             excelValue = excelValue.replaceAll("\"", "");
             excelValue = excelValue.replaceAll("\\s+[.]+", ".");
             excelValue = excelValue.replaceAll("\\s+", " ");
@@ -749,7 +801,7 @@ public class E2EFlowDataPage extends FLUtilities {
         flowTypes.add("@" + inbound);
         flowTypes.add("@" + outbound);
         flowTypes.removeAll(Collections.singletonList("@"));
-        String flowType = String.join(",", flowTypes);
+        String flowType = String.join(" or ", flowTypes);
         String line;
         try {
             BufferedReader reader = new BufferedReader(new FileReader(EnumsCommon.RUNNERFILESPATH.getText() + "RunWizardTest.java"));
