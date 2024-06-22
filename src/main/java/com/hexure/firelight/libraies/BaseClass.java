@@ -94,7 +94,7 @@ public class BaseClass {
                         throw new FLException("Invalid Value Provided For Browser");
                 }
             } else {
-                driver = new RemoteWebDriver(new URL(testContext.getVM_Name()), getRemoteOptions(testContext.getBrowser()));
+                driver = new RemoteWebDriver(new URL(testContext.getVM_Name()), getBrowserOptions(testContext.getBrowser()));
             }
         } catch (Exception e) {
             Log.error("Loading WebDriver failed ", e);
@@ -109,7 +109,7 @@ public class BaseClass {
         return driver;
     }
 
-    private Capabilities getRemoteOptions(String browser) {
+    private Capabilities getBrowserOptions(String browser) {
         switch (browser) {
             case "Chrome":
                 return getChromeOptions();
@@ -118,7 +118,7 @@ public class BaseClass {
             case "Edge":
                 return getEdgeOptions();
             default:
-                throw new FLException("Invalid Value Provided For Browser");
+                throw new FLException("Invalid Value Provided For Browser " + browser);
         }
     }
 
@@ -223,8 +223,7 @@ public class BaseClass {
             driver.get("edge://settings/content/pdfDocuments");
 
             // Execute JavaScript to enable the option
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            js.executeScript("document.querySelector('input[type=\"checkbox\"]').click();");
+            ((JavascriptExecutor) driver).executeScript("document.querySelector('input[type=\"checkbox\"]').click();");
         }
         driver.get(url);
     }

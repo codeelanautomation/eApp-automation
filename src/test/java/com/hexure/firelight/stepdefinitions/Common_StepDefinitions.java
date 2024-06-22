@@ -51,7 +51,6 @@ public class Common_StepDefinitions extends FLUtilities {
         System.out.println("CaptureScreenshot = " + testContext.getCaptureScreenshot());
         System.out.println("ScreenshotFolder = " + testContext.getScreenshotFolderName());
         openLoginPage(driver, testContext, "app");
-        testContext.getScenario().log("<div style='width: 5%; position: absolute; top: 5px; font-size: 2vw; border: none; color: green; text-align: center; font-weight: bold; background-color: #C5D88A; left: 50%; transform: translateX(-50%);'>" + testContext.getTestCaseID() + "</div>");
         Log.info("TEST CASE {} STARTED", testCaseID);
     }
 
