@@ -38,7 +38,6 @@ public class CreateApplication_StepDefinitions extends FLUtilities {
     public void userSelectsProductTypeDropdown(String productType) {
         waitForPageToLoad(driver);
         sleepInMilliSeconds(2000);
-        waitUntilDropDownListPopulated(driver, new Select(onCreateApplicationPage.getDdProductType()));
         captureScreenshot(driver, testContext, false);
         new Select(onCreateApplicationPage.getDdProductType()).selectByVisibleText(productType);
     }

@@ -21,8 +21,8 @@ public class ForeSightExcelToJSON_StepDefinitions {
      * @param jsonFile  - JSON File to be created
      * @param excelFile - Spec file provided
      */
-    @Given("Create {string} file for eApp flow with interface file {string}")
-    public void createForesightTestDataInterface(String jsonFile, String excelFile) {
-        onE2EFlowDataPage.createForesightTestDataInterface(jsonFile, excelFile, onXMLUtilityPage);
+    @Given("Create {string} file for eApp flow with interface file {string} and sheet {string}")
+    public void createForesightTestDataInterface(String jsonFile, String excelFile, String sheetName) {
+        onE2EFlowDataPage.createForesightTestDataInterface(jsonFile, excelFile, onXMLUtilityPage, sheetName);
     }
 }

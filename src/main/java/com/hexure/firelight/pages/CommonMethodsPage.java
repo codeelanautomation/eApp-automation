@@ -162,15 +162,15 @@ public class CommonMethodsPage extends FLUtilities {
 
     /**
      * Set the value for E2E flow
+     *
      * @param driver
      * @param formName
      * @param wizardName
      * @param valueJson
      * @param dataItemID
      * @param testData
-     * @param titleName
      */
-    public void setE2EValue(WebDriver driver, String formName, String wizardName, String valueJson, String dataItemID, String testData, String titleName) {
+    public void setE2EValue(WebDriver driver, String formName, String wizardName, String valueJson, String dataItemID, String testData) {
         moveToPage(driver, formName, wizardName);
         String controlType = JsonPath.read(valueJson, "$.ControlType").toString().trim().toLowerCase();
         switch (controlType) {
@@ -184,16 +184,11 @@ public class CommonMethodsPage extends FLUtilities {
                 listInputFields.add(Arrays.asList(String.valueOf(count++), formName, wizardName, dataItemID, controlType, testData));
                 break;
             case "textbox":
-                if (valueJson.contains("DataItemID")) {
-                    sendKeys(driver, findElement(driver, String.format(getInputField(), dataItemID)), testData);
-                    if (dataItemID.toLowerCase().contains("date")) {
-                        new Actions(driver).moveToElement(getFormHeader()).click().perform();
-                    }
-                    listInputFields.add(Arrays.asList(String.valueOf(count++), formName, wizardName, dataItemID, controlType, testData));
-                } else {
-                    sendKeys(driver, findElement(driver, String.format(getTxtField(), titleName)), testData);
-                    listInputFields.add(Arrays.asList(String.valueOf(count++), formName, wizardName, titleName, controlType, testData));
+                sendKeys(driver, findElement(driver, String.format(getInputField(), dataItemID)), testData);
+                if (dataItemID.toLowerCase().contains("date")) {
+                    new Actions(driver).moveToElement(getFormHeader()).click().perform();
                 }
+                listInputFields.add(Arrays.asList(String.valueOf(count++), formName, wizardName, dataItemID, controlType, testData));
                 break;
             case "checkbox":
                 checkBoxSelectYesNO(testData, findElement(driver, String.format(getChkBoxField(), dataItemID)));
@@ -205,6 +200,4 @@ public class CommonMethodsPage extends FLUtilities {
                 break;
         }
     }
-
 }
-

@@ -45,7 +45,9 @@ public class Rules_StepDefinitions extends FLUtilities {
     @Given("User clicks application for Product {string} and Product Type {string} and validate wizard fields for module {string} and jurisdiction {string}")
     public void createAppAndValidateWizard(String product, String productType, String module, String jurisdiction1) {
         captureScreenshot(driver, testContext, false);
-        String[] States = testContext.getMapTestData().get("JurisdictionRules").split(",");
+        String[] States = new String[0];
+        if(!module.equalsIgnoreCase("E2E"))
+            States = testContext.getMapTestData().get("JurisdictionRules").split(",");
 
         String moduleJurisdictionMapping;
         if (module.equalsIgnoreCase("All") || jurisdiction1.equalsIgnoreCase("All")) {
@@ -60,8 +62,10 @@ public class Rules_StepDefinitions extends FLUtilities {
                 }
             }
         } else {
-            moduleJurisdictionMapping = testContext.getMapTestData().get(jurisdiction1).trim();
-            jurisdictionStatesCode = JsonPath.read(moduleJurisdictionMapping, "$.State").toString().trim();
+            if(!module.equalsIgnoreCase("E2E")) {
+                moduleJurisdictionMapping = testContext.getMapTestData().get(jurisdiction1).trim();
+                jurisdictionStatesCode = JsonPath.read(moduleJurisdictionMapping, "$.State").toString().trim();
+            }
             createApplication(jurisdiction1, product, productType, module);
         }
     }
@@ -102,7 +106,7 @@ public class Rules_StepDefinitions extends FLUtilities {
             clickElement(driver, onCreateApplicationPage.getBtnClose());
         onWizardFlowDataPage.setPageObjects(testContext, driver, executedJurisdiction);
         onWizardFlowDataPage.verifyFormDataWithInboundXml(module, flow);
-        onWizardFlowDataPage.printFinalResults();
+        onWizardFlowDataPage.printFinalResults(flow, module);
     }
 
 

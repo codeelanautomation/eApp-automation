@@ -9,10 +9,7 @@ import com.hexure.firelight.libraies.FLUtilities;
 import com.jayway.jsonpath.JsonPath;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.simple.JSONObject;
@@ -35,6 +32,7 @@ public class E2EFlowDataPage extends FLUtilities {
     List<String> requiredColumns = Arrays.asList(EnumsExcelColumns.ENUMSEXCELCOLUMNS.getText().split(", "));
     JSONObject jsonObject = new JSONObject();
     JSONObject masterJson = new JSONObject();
+    JSONObject masterJsonE2E = new JSONObject();
 
     public E2EFlowDataPage(WebDriver driver) {
         initElements(driver);
@@ -92,7 +90,7 @@ public class E2EFlowDataPage extends FLUtilities {
         return tempJson;
     }
 
-    public void createForesightTestDataInterface(String jsonFile, String excelFile, XmlUtilityPage onXMLUtilityPage) {
+    public void createForesightTestDataInterface(String jsonFile, String excelFile, XmlUtilityPage onXMLUtilityPage, String sheetName) {
         // Define the file path using a common absolute path and the provided Excel file name
         String filePath = EnumsCommon.ABSOLUTE_FILES_PATH.getText() + excelFile;
         JSONParser parser = new JSONParser();
@@ -115,8 +113,145 @@ public class E2EFlowDataPage extends FLUtilities {
         try (FileInputStream file = new FileInputStream(filePath);
              XSSFWorkbook workbook = new XSSFWorkbook(file)) {
 
+            if (sheetName.equalsIgnoreCase("E2E"))
+                generateE2EData(workbook, sheetName, jsonFile);
+            else {
+                // Get the sheet named "Interface" from the workbook
+                Sheet sheet = workbook.getSheet(sheetName);
+                Iterator<Row> iterator = sheet.iterator();
+
+                // Retrieve the header row
+                Row headerRow = iterator.next().getSheet().getRow(0);
+
+                // Find the column indexes for specific headers in the header row
+                int clientNameIndex = findColumnIndex(headerRow, "Client Name");
+                int productIndex = findColumnIndex(headerRow, "Product");
+                int modulesIndex = findColumnIndex(headerRow, "Modules");
+                int inboundFilenameIndex = findColumnIndex(headerRow, "InboundFileName");
+                int executeIndex = findColumnIndex(headerRow, "Execute");
+                int jurisdictionWiseReportIndex = findColumnIndex(headerRow, "JurisdictionWiseReport");
+                int inboundTypeIndex = findColumnIndex(headerRow, "Inbound Type");
+                int inboundIndex = findColumnIndex(headerRow, "Inbound");
+                int outboundIndex = findColumnIndex(headerRow, "Outbound");
+                int inboundXmlFileNameIndex = findColumnIndex(headerRow, "Inbound XML File Name");
+                int outboundFilenameIndex = findColumnIndex(headerRow, "OutboundFileName");
+                int outboundXmlFileNameIndex = findColumnIndex(headerRow, "Outbound XML File Name");
+                int usernameIndex = findColumnIndex(headerRow, "Username");
+                int passwordIndex = findColumnIndex(headerRow, "Password");
+                int producerNameIndex = findColumnIndex(headerRow, "ProducerName");
+                int producerIDIndex = findColumnIndex(headerRow, "ProducerID");
+                int orgIndex = findColumnIndex(headerRow, "Org");
+                int hostIndex = findColumnIndex(headerRow, "Host");
+
+                // Delete existing runner and feature files
+                deleteRunnerFeature(EnumsCommon.RUNNERFILESPATH.getText() + "ForeSightTest");
+                deleteRunnerFeature(EnumsCommon.FEATUREFILESPATH.getText() + "ForeSightTest");
+
+                // Iterate through the rows of the sheet, starting from the second row
+                while (iterator.hasNext()) {
+                    Row currentRow = iterator.next();
+                    JSONObject tempClientData = new JSONObject();
+                    JSONObject jsonTemp = new JSONObject();
+                    // Retrieve cell values from the current row based on the header indexes
+                    String clientName = getCellValue(currentRow.getCell(clientNameIndex));
+                    String product = getCellValue(currentRow.getCell(productIndex));
+                    String modules = getCellValue(currentRow.getCell(modulesIndex));
+                    String inboundFilename = getCellValue(currentRow.getCell(inboundFilenameIndex));
+                    String execute = getCellValue(currentRow.getCell(executeIndex));
+                    String jurisdictionWiseReport = getCellValue(currentRow.getCell(jurisdictionWiseReportIndex));
+                    String inboundType = getCellValue(currentRow.getCell(inboundTypeIndex));
+                    if (!inboundType.equalsIgnoreCase("Direct Login")) {
+                        inbound = getCellValue(currentRow.getCell(inboundIndex)).equalsIgnoreCase("yes") ? clientName + "Inbound" : "";
+                        outbound = getCellValue(currentRow.getCell(outboundIndex)).equalsIgnoreCase("yes") ? clientName + "Outbound" : "";
+                        inboundXmlFileName = getCellValue(currentRow.getCell(inboundXmlFileNameIndex));
+                        outboundFilename = getCellValue(currentRow.getCell(outboundFilenameIndex));
+                        outboundXmlFileName = getCellValue(currentRow.getCell(outboundXmlFileNameIndex));
+                        username = getCellValue(currentRow.getCell(usernameIndex));
+                        producerName = getCellValue(currentRow.getCell(producerNameIndex));
+                        password = getCellValue(currentRow.getCell(passwordIndex));
+                        producerID = getCellValue(currentRow.getCell(producerIDIndex));
+                        org = getCellValue(currentRow.getCell(orgIndex));
+                        host = getCellValue(currentRow.getCell(hostIndex));
+                    }
+
+                    File jsonFilePath = new File(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
+                    if (jsonFilePath.length() == 0)
+                        flag = false;
+
+                    if (flag) {
+                        obj = parser.parse(new FileReader(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile));
+                        jsonTestData = (JSONObject) obj;
+                        jsonTestData = (JSONObject) jsonTestData.get("testData");
+                    }
+
+                    // Check if the 'Execute' column value is 'yes'
+                    if (execute.equalsIgnoreCase("yes")) {
+                        // If the filename is not already a key in masterJson, create foresight test data
+//                    if (!masterJson.containsKey(clientName)) {
+                        createForesightTestData(clientName, inboundFilename, product, inboundXmlFileName, onXMLUtilityPage, "", jsonTestData, inbound);
+                        if (!outbound.equalsIgnoreCase(""))
+                            createForesightTestData(clientName, outboundFilename, product, outboundXmlFileName, onXMLUtilityPage, "Outbound", jsonTestData, inbound);
+//                    }
+                        tempClientData = (JSONObject) masterJson.get(clientName);
+                        if (inbound.equalsIgnoreCase(clientName + "Inbound")) {
+                            tempClientData.put("username", username);
+                            tempClientData.put("password", password);
+                            tempClientData.put("producerName", producerName);
+                            tempClientData.put("producerID", producerID);
+                            tempClientData.put("org", org);
+                            tempClientData.put("host", host);
+                            tempClientData.put("inboundXmlFileName", inboundXmlFileName);
+                        }
+                        masterJson.put(clientName, tempClientData);
+                        // Read the JSON data for the current client
+
+                        jsonTemp = JsonPath.read(masterJson, "$." + clientName);
+
+                        // If the module exists in JSON test data for a client and JurisdictionWiseReport is 'Yes'
+                        if (jsonTemp.containsKey(modules) && jurisdictionWiseReport.equalsIgnoreCase("Yes")) {
+                            // Iterate through the states and create feature and runner files for each state
+                            for (String state : jsonTemp.get(modules).toString().trim().split(", ")) {
+                                createFeatureFile(clientName, modules, product, inboundFilename, state, "E2EWizardTestFlow", "", "", "", "", "", inboundType, "ForeSightTest");
+                                createRunnerFile(clientName, modules, state, inboundType, "", "", "ForeSightTest");
+                            }
+                        } else {
+                            // Create feature and runner files for all jurisdictions
+                            switch (inboundType) {
+                                case "Direct Login":
+                                    createFeatureFile(clientName, modules, product, inboundFilename, "All", "E2EWizardTestFlow", "", "", "", "", "", inboundType, "ForeSightTest");
+                                    createRunnerFile(clientName, modules, "All", inboundType, "", "", "ForeSightTest");
+                                    break;
+                                case "Tx103":
+                                    createFeatureFile(clientName, modules, product, inboundFilename, "All", "IntegrationTest", inbound, inboundXmlFileName, outbound, outboundFilename, outboundXmlFileName, inboundType, "ForeSightTest");
+                                    createRunnerFile(clientName, modules, "All", inboundType, inbound, outbound, "ForeSightTest");
+                                    break;
+                            }
+                        }
+                    }
+                }
+
+                // Write the JSON test data to the specified JSON file
+                FileWriter jsonTestData1 = new FileWriter(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
+                BufferedWriter writer = new BufferedWriter(jsonTestData1);
+                writer.write(gson.toJson(jsonObject));
+                writer.close();
+
+                // Create a unique counter which will keep track of rerun count
+                createUniqueCounter("ForeSightTest");
+            }
+        } catch (IOException e) {
+            // Handle exceptions related to file access
+            throw new FLException("File is inaccessible: " + e.getMessage());
+        } catch (Exception e) {
+            // Handle any other exceptions that may occur
+            throw new FLException("Reading Properties File Failed: " + e.getMessage());
+        }
+    }
+
+    public void generateE2EData(Workbook workbook, String sheetName, String jsonFile) {
+        try {
             // Get the sheet named "Interface" from the workbook
-            Sheet sheet = workbook.getSheet("Interface");
+            Sheet sheet = workbook.getSheet(sheetName);
             Iterator<Row> iterator = sheet.iterator();
 
             // Retrieve the header row
@@ -125,119 +260,54 @@ public class E2EFlowDataPage extends FLUtilities {
             // Find the column indexes for specific headers in the header row
             int clientNameIndex = findColumnIndex(headerRow, "Client Name");
             int productIndex = findColumnIndex(headerRow, "Product");
-            int modulesIndex = findColumnIndex(headerRow, "Modules");
-            int inboundFilenameIndex = findColumnIndex(headerRow, "InboundFileName");
+            int scenarioIndex = findColumnIndex(headerRow, "Scenario");
+            int filenameIndex = findColumnIndex(headerRow, "FileName");
             int executeIndex = findColumnIndex(headerRow, "Execute");
-            int jurisdictionWiseReportIndex = findColumnIndex(headerRow, "JurisdictionWiseReport");
-            int inboundTypeIndex = findColumnIndex(headerRow, "Inbound Type");
-            int inboundIndex = findColumnIndex(headerRow, "Inbound");
-            int outboundIndex = findColumnIndex(headerRow, "Outbound");
-            int inboundXmlFileNameIndex = findColumnIndex(headerRow, "Inbound XML File Name");
-            int outboundFilenameIndex = findColumnIndex(headerRow, "OutboundFileName");
-            int outboundXmlFileNameIndex = findColumnIndex(headerRow, "Outbound XML File Name");
-            int usernameIndex = findColumnIndex(headerRow, "Username");
-            int passwordIndex = findColumnIndex(headerRow, "Password");
-            int producerNameIndex = findColumnIndex(headerRow, "ProducerName");
-            int producerIDIndex = findColumnIndex(headerRow, "ProducerID");
-            int orgIndex = findColumnIndex(headerRow, "Org");
-            int hostIndex = findColumnIndex(headerRow, "Host");
 
             // Delete existing runner and feature files
-            deleteRunnerFeature(EnumsCommon.RUNNERFILESPATH.getText() + "ForeSightTest");
-            deleteRunnerFeature(EnumsCommon.FEATUREFILESPATH.getText() + "ForesightTest");
+            deleteRunnerFeature(EnumsCommon.RUNNERFILESPATH.getText() + "E2E");
+            deleteRunnerFeature(EnumsCommon.FEATUREFILESPATH.getText() + "E2E");
 
             // Iterate through the rows of the sheet, starting from the second row
             while (iterator.hasNext()) {
                 Row currentRow = iterator.next();
-                JSONObject tempClientData = new JSONObject();
-                JSONObject jsonTemp = new JSONObject();
+
                 // Retrieve cell values from the current row based on the header indexes
                 String clientName = getCellValue(currentRow.getCell(clientNameIndex));
                 String product = getCellValue(currentRow.getCell(productIndex));
-                String modules = getCellValue(currentRow.getCell(modulesIndex));
-                String inboundFilename = getCellValue(currentRow.getCell(inboundFilenameIndex));
+                String scenario = getCellValue(currentRow.getCell(scenarioIndex));
+                String filename = getCellValue(currentRow.getCell(filenameIndex));
                 String execute = getCellValue(currentRow.getCell(executeIndex));
-                String jurisdictionWiseReport = getCellValue(currentRow.getCell(jurisdictionWiseReportIndex));
-                String inboundType = getCellValue(currentRow.getCell(inboundTypeIndex));
-                if (!inboundType.equalsIgnoreCase("Direct Login")) {
-                    inbound = getCellValue(currentRow.getCell(inboundIndex)).equalsIgnoreCase("yes") ? clientName + "Inbound" : "";
-                    outbound = getCellValue(currentRow.getCell(outboundIndex)).equalsIgnoreCase("yes") ? clientName + "Outbound" : "";
-                    inboundXmlFileName = getCellValue(currentRow.getCell(inboundXmlFileNameIndex));
-                    outboundFilename = getCellValue(currentRow.getCell(outboundFilenameIndex));
-                    outboundXmlFileName = getCellValue(currentRow.getCell(outboundXmlFileNameIndex));
-                    username = getCellValue(currentRow.getCell(usernameIndex));
-                    producerName = getCellValue(currentRow.getCell(producerNameIndex));
-                    password = getCellValue(currentRow.getCell(passwordIndex));
-                    producerID = getCellValue(currentRow.getCell(producerIDIndex));
-                    org = getCellValue(currentRow.getCell(orgIndex));
-                    host = getCellValue(currentRow.getCell(hostIndex));
-                }
-
-                File jsonFilePath = new File(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
-                if (jsonFilePath.length() == 0)
-                    flag = false;
-
-                if (flag) {
-                    obj = parser.parse(new FileReader(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile));
-                    jsonTestData = (JSONObject) obj;
-                    jsonTestData = (JSONObject) jsonTestData.get("testData");
-                }
 
                 // Check if the 'Execute' column value is 'yes'
                 if (execute.equalsIgnoreCase("yes")) {
                     // If the filename is not already a key in masterJson, create foresight test data
-//                    if (!masterJson.containsKey(clientName)) {
-                    createForesightTestData(clientName, inboundFilename, product, inboundXmlFileName, onXMLUtilityPage, "", jsonTestData, inbound);
-                    if (!outbound.equalsIgnoreCase(""))
-                        createForesightTestData(clientName, outboundFilename, product, outboundXmlFileName, onXMLUtilityPage, "Outbound", jsonTestData, inbound);
-//                    }
-                    tempClientData = (JSONObject) masterJson.get(clientName);
-                    if (inbound.equalsIgnoreCase(clientName + "Inbound")) {
-                        tempClientData.put("username", username);
-                        tempClientData.put("password", password);
-                        tempClientData.put("producerName", producerName);
-                        tempClientData.put("producerID", producerID);
-                        tempClientData.put("org", org);
-                        tempClientData.put("host", host);
-                        tempClientData.put("inboundXmlFileName", inboundXmlFileName);
+                    if (!masterJsonE2E.containsKey(filename.replaceAll(".xlsx", ""))) {
+                        createForesightE2ETestData(clientName, jsonFile, scenario, filename);
                     }
-                    masterJson.put(clientName, tempClientData);
-                    // Read the JSON data for the current client
 
-                    jsonTemp = JsonPath.read(masterJson, "$." + clientName);
+                    // Read the JSON data for the current clientmasterJson
+                    JSONObject jsonTemp = JsonPath.read(masterJsonE2E, "$." + clientName);
 
                     // If the module exists in JSON test data for a client and JurisdictionWiseReport is 'Yes'
-                    if (jsonTemp.containsKey(modules) && jurisdictionWiseReport.equalsIgnoreCase("Yes")) {
-                        // Iterate through the states and create feature and runner files for each state
-                        for (String state : jsonTemp.get(modules).toString().trim().split(", ")) {
-                            createFeatureFile(clientName, modules, product, inboundFilename, state, "E2EWizardTestFlow", "", "", "", "", "", inboundType);
-                            createRunnerFile(clientName, modules, state, inboundType, "", "");
-                        }
-                    } else {
-                        // Create feature and runner files for all jurisdictions
-                        switch (inboundType) {
-                            case "Direct Login":
-                                createFeatureFile(clientName, modules, product, inboundFilename, "All", "E2EWizardTestFlow", "", "", "", "", "", inboundType);
-                                createRunnerFile(clientName, modules, "All", inboundType, "", "");
-                                break;
-                            case "Tx103":
-                                createFeatureFile(clientName, modules, product, inboundFilename, "All", "IntegrationTest", inbound, inboundXmlFileName, outbound, outboundFilename, outboundXmlFileName, inboundType);
-                                createRunnerFile(clientName, modules, "All", inboundType, inbound, outbound);
-                                break;
-                        }
-                    }
+                    // Create feature and runner files for all jurisdictions
+                    createFeatureFile(clientName, "E2E", product, filename, jsonTemp.get("Jurisdiction").toString().trim(), "E2EFlow", "", "", "", "", "", "", "E2E");
+                    createRunnerFile(clientName, "E2E", jsonTemp.get("Jurisdiction").toString().trim(), "E2E", "", "", "E2E");
+
+//                    createFeatureFile(clientName, "E2E", product, filename, jsonTemp.get("Jurisdiction").toString().trim(), "", "E2E");
+//                    createRunnerFile(clientName, "E2E", jsonTemp.get("Jurisdiction").toString().trim(), "E2E");
                 }
             }
 
+
             // Write the JSON test data to the specified JSON file
-            FileWriter jsonTestData1 = new FileWriter(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
-            BufferedWriter writer = new BufferedWriter(jsonTestData1);
+            FileWriter jsonTestData = new FileWriter(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
+            BufferedWriter writer = new BufferedWriter(jsonTestData);
             writer.write(gson.toJson(jsonObject));
             writer.close();
 
             // Create a unique counter which will keep track of rerun count
-            createUniqueCounter();
-
+            createUniqueCounter("E2E");
         } catch (IOException e) {
             // Handle exceptions related to file access
             throw new FLException("File is inaccessible: " + e.getMessage());
@@ -305,7 +375,7 @@ public class E2EFlowDataPage extends FLUtilities {
                         tempClientData.put(temp.toString(), jsonRows.get(temp.toString()));
                 }
                 if (!inbound.equalsIgnoreCase(""))
-                    uniqueOutboundInboundTags(tempClientData);
+                    uniqueOutboundInboundTags(tempClientData, clientName);
                 masterJson.put(clientName, tempClientData);
             } else {
                 masterJson.put(clientName, jsonRows);
@@ -320,14 +390,27 @@ public class E2EFlowDataPage extends FLUtilities {
         }
     }
 
-    public JSONObject uniqueOutboundInboundTags(JSONObject tempClientData) {
+    public JSONObject uniqueOutboundInboundTags(JSONObject tempClientData, String clientName) throws IOException {
         List<String> outboundTags = new ArrayList<>(Arrays.asList(tempClientData.get("outboundFieldList").toString().split(", ")));
         outboundTags.replaceAll(n -> n.replaceAll("Outbound", ""));
-        List<String> inboundtags = new ArrayList<>(Arrays.asList(tempClientData.get("fieldList").toString().split(", ")));
-        outboundTags.removeIf(inboundtags::contains);
-        tempClientData.put("uniqueTags", String.join(",", outboundTags));
-        for (String tags : outboundTags)
+        List<String> inboundTags = new ArrayList<>(Arrays.asList(tempClientData.get("fieldList").toString().split(", ")));
+        outboundTags.removeIf(inboundTags::contains);
+        List<String> potentialValues = Arrays.asList("Test", "12242018", "1234567890", "12.11", "Test1234", "6.7", "100");
+        Map<String, String> temp = new HashMap<>();
+        XSSFWorkbook workbook = new XSSFWorkbook();
+
+        // spreadsheet object
+        String excelFilePath = EnumsCommon.ABSOLUTE_FILES_PATH.getText() + clientName + "_ExternalPath";
+        workbook = new XSSFWorkbook(excelFilePath);
+        Sheet sheet = workbook.createSheet("ExternalData");
+
+        for (String tags : outboundTags) {
+            temp.put(tags, String.join(", ", potentialValues));
             tempClientData.remove(tags);
+        }
+        tempClientData.put("uniqueTags", temp);
+//        for (String tags : outboundTags)
+//            tempClientData.remove(tags);
         return tempClientData;
     }
 
@@ -759,7 +842,7 @@ public class E2EFlowDataPage extends FLUtilities {
      * @param fileName - Spec from client
      * @param state    - Jurisdiction to create FL application
      */
-    public void createFeatureFile(String client, String module, String product, String fileName, String state, String flow, String inbound, String inboundXmlFileName, String outbound, String outboundFilename, String outboundXmlFileName, String inboundType) {
+    public void createFeatureFile(String client, String module, String product, String fileName, String state, String flow, String inbound, String inboundXmlFileName, String outbound, String outboundFilename, String outboundXmlFileName, String inboundType, String directory) {
         ArrayList<String> lines = new ArrayList<>();
         File tempFile = null;
         String line;
@@ -772,10 +855,11 @@ public class E2EFlowDataPage extends FLUtilities {
                 lines.add(line);
             }
             reader.close();
-            if (inboundType.equalsIgnoreCase("Direct Login"))
-                tempFile = new File(EnumsCommon.FEATUREFILESPATH.getText() + "ForesightTest/" + client + "_" + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + ".feature");
-            else if (inboundType.equalsIgnoreCase("Tx103"))
-                tempFile = new File(EnumsCommon.FEATUREFILESPATH.getText() + "ForesightTest/" + client + "_" + "Integration.feature");
+            if (inboundType.equalsIgnoreCase("Tx103"))
+                tempFile = new File(EnumsCommon.FEATUREFILESPATH.getText() + directory + "/" + client + "_" + "Integration.feature");
+            else
+                tempFile = new File(EnumsCommon.FEATUREFILESPATH.getText() + directory + "/" + client + "_" + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + ".feature");
+
 
             tempFile.getParentFile().mkdirs();
             FileWriter featureFile = new FileWriter(tempFile);
@@ -795,7 +879,7 @@ public class E2EFlowDataPage extends FLUtilities {
      * @param module - module name
      * @param state  - Jurisdiction to create FL application
      */
-    public void createRunnerFile(String client, String module, String state, String inboundType, String inbound, String outbound) {
+    public void createRunnerFile(String client, String module, String state, String inboundType, String inbound, String outbound, String directory) {
         ArrayList<String> lines = new ArrayList<>();
         List<String> flowTypes = new ArrayList<>();
         flowTypes.add("@" + inbound);
@@ -806,14 +890,14 @@ public class E2EFlowDataPage extends FLUtilities {
         try {
             BufferedReader reader = new BufferedReader(new FileReader(EnumsCommon.RUNNERFILESPATH.getText() + "RunWizardTest.java"));
             while ((line = reader.readLine()) != null) {
-                line = line.replaceAll("com.hexure.firelight.runner", "com.hexure.firelight.runner.ForeSightTest");
+                line = line.replaceAll("com.hexure.firelight.runner", "com.hexure.firelight.runner." + directory);
                 line = line.replaceAll("ModuleName", module).replaceAll("ModuleTag", module.replaceAll(" ", "")).replaceAll("Client", client).replaceAll("State", state.replaceAll(" ", ""));
-                if (inboundType.equalsIgnoreCase("Direct Login")) {
-                    line = replaceLine(line, "features = {", "\t\tfeatures = {\"src/test/resources/features/ForesightTest/" + client + "_" + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + ".feature\"},");
-                    line = replaceLine(line, "tags = ", "\t\ttags = \"@" + module.replaceAll(" ", "") + "\",");
-                } else if (inboundType.equalsIgnoreCase("Tx103")) {
-                    line = replaceLine(line, "features = {", "\t\tfeatures = {\"src/test/resources/features/ForesightTest/" + client + "_" + "Integration.feature\"},");
+                if (inboundType.equalsIgnoreCase("Tx103")) {
+                    line = replaceLine(line, "features = {", "\t\tfeatures = {\"src/test/resources/features/" + directory + "/" + client + "_" + "Integration.feature\"},");
                     line = replaceLine(line, "tags = ", "\t\ttags = \"" + flowType + "\",");
+                } else {
+                    line = replaceLine(line, "features = {", "\t\tfeatures = {\"src/test/resources/features/" + directory + "/" + client + "_" + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + ".feature\"},");
+                    line = replaceLine(line, "tags = ", "\t\ttags = \"@" + module.replaceAll(" ", "") + "\",");
                 }
                 line = line.replaceAll("RunWizardTest", "RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test");
 //                line = replaceLine(line, "RunWizardTest {", "public class RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test" + " {");
@@ -821,7 +905,7 @@ public class E2EFlowDataPage extends FLUtilities {
                 lines.add(line);
             }
             reader.close();
-            File tempFile = new File(EnumsCommon.RUNNERFILESPATH.getText() + "ForeSightTest/RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test" + ".java");
+            File tempFile = new File(EnumsCommon.RUNNERFILESPATH.getText() + directory + "/RunForesight" + client + module.replaceAll(" ", "") + "_" + state.replaceAll(" ", "") + "Test" + ".java");
             tempFile.getParentFile().mkdirs();
             FileWriter runnerFile = new FileWriter(tempFile);
             BufferedWriter writer = new BufferedWriter(runnerFile);
@@ -836,17 +920,17 @@ public class E2EFlowDataPage extends FLUtilities {
     /**
      * Create runner file for each re-run
      */
-    public void createUniqueCounter() {
+    public void createUniqueCounter(String directory) {
         ArrayList<String> lines = new ArrayList<>();
         String line;
         try {
             BufferedReader reader = new BufferedReader(new FileReader(EnumsCommon.RUNNERFILESPATH.getText() + "UniqueTestCounter.java"));
             while ((line = reader.readLine()) != null) {
-                line = replaceLine(line, "package com.hexure.firelight.runner;", "package com.hexure.firelight.runner.ForeSightTest;");
+                line = replaceLine(line, "package com.hexure.firelight.runner;", "package com.hexure.firelight.runner." + directory + ";");
                 lines.add(line);
             }
             reader.close();
-            File tempFile = new File(EnumsCommon.RUNNERFILESPATH.getText() + "ForeSightTest/UniqueTestCounter.java");
+            File tempFile = new File(EnumsCommon.RUNNERFILESPATH.getText() + directory + "/UniqueTestCounter.java");
             tempFile.getParentFile().mkdirs();
             FileWriter runnerFile = new FileWriter(tempFile);
             BufferedWriter writer = new BufferedWriter(runnerFile);
@@ -870,11 +954,12 @@ public class E2EFlowDataPage extends FLUtilities {
         return line.contains(toBeReplaced) ? replacement : line;
     }
 
-    public void createForesightE2ETestData(String jsonFile, String clientName) {
-        String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + "E2EFlow.xlsx";
+    public void createForesightE2ETestData(String clientName, String jsonFile, String sheetName, String fileName) {
+        String filePath = EnumsCommon.ABSOLUTE_CLIENTFILES_PATH.getText() + fileName;
+        StringBuilder fieldListBuilder = new StringBuilder();
         try (FileInputStream file = new FileInputStream(filePath);
              XSSFWorkbook workbook = new XSSFWorkbook(file)) {
-            Sheet sheet = workbook.getSheet(clientName);
+            Sheet sheet = workbook.getSheet(sheetName);
 
             Iterator<Row> iterator = sheet.iterator();
             Row headerRow = iterator.next().getSheet().getRow(0);
@@ -882,24 +967,28 @@ public class E2EFlowDataPage extends FLUtilities {
             while (iterator.hasNext()) {
                 Row currentRow = iterator.next();
                 JSONObject tempJson = new JSONObject();
-                String secondData;
+                String secondData = "";
 
-                List<String> rowValue = Arrays.asList("jurisdiction", "ProductType");
-                if (rowValue.stream().noneMatch(currentRow.getCell(2).getStringCellValue()::equalsIgnoreCase)) {
+                List<String> rowValue = Arrays.asList("Jurisdiction", "product");
+                if (rowValue.stream().noneMatch(currentRow.getCell(findColumnIndex(headerRow, "Common Tag")).getStringCellValue()::equalsIgnoreCase)) {
                     tempJson.putAll(addCellValueToJson(headerRow, currentRow, tempJson));
-                    secondData = currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2EDATAITEMID.getText())).getStringCellValue().trim();
+                    secondData = currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim();
                     if (secondData.isEmpty())
                         secondData = currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2ETITLE.getText())).getStringCellValue().trim();
-                    jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2EWIZARDNAME.getText())).getStringCellValue().trim() + "|" + secondData, tempJson);
+                    jsonRows.put(secondData, tempJson);
+                    fieldListBuilder.append(", ").append(secondData);
                 } else
-                    jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2EDATAITEMID.getText())).getStringCellValue().trim(), currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2ETESTDATA.getText())).getStringCellValue().trim());
+                    jsonRows.put(currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.FIELD.getText())).getStringCellValue().trim(), currentRow.getCell(findColumnIndex(headerRow, EnumsCommon.E2ETESTDATA.getText())).getStringCellValue().trim());
             }
-            JSONObject masterJson = new JSONObject();
-            masterJson.put(clientName, jsonRows);
+//            JSONObject masterJson = new JSONObject();
+            masterJsonE2E.put(clientName, jsonRows);
 
             JSONObject defaultEntry = getJsonObject();
-            masterJson.put("commonTestData", defaultEntry);
-            jsonObject.put("testData", masterJson);
+            String fieldList = fieldListBuilder.toString();
+            jsonRows.put("fieldList", fieldList.replaceFirst(", ", ""));
+
+            masterJsonE2E.put("commonTestData", defaultEntry);
+            jsonObject.put("testData", masterJsonE2E);
             FileWriter jsonTestData = new FileWriter(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
             BufferedWriter writer = new BufferedWriter(jsonTestData);
             writer.write(String.valueOf(jsonObject));

@@ -43,7 +43,7 @@ public class FLUtilities extends BaseClass {
     }
 
     protected void clickElement(WebDriver driver, WebElement element) {
-        syncElement(driver, element, EnumsCommon.TOCLICKABLE.getText());
+        syncElement(driver, element, EnumsCommon.TOVISIBLE.getText());
         try {
             scrollToWebElement(driver, element);
             element.click();
@@ -57,7 +57,7 @@ public class FLUtilities extends BaseClass {
                     new Actions(driver).moveToElement(element).moveByOffset(10, 10).click().perform();
                 } catch (Exception finalEx) {
                     Log.error("Could not click WebElement using Actions and moveByOffset", finalEx);
-                    throw new FLException("Could not click WebElement using Actions and moveByOffset: " + finalEx.getMessage());
+                    throw new FLException("Could not click WebElement using Actions and moveByOffset: " + finalEx.getMessage() + "Element -> " + element);
                 }
             }
         }

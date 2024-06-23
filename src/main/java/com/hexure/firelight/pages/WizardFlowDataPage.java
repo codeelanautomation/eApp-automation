@@ -10,20 +10,14 @@ import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.openqa.selenium.By;
+import org.json.simple.parser.ParseException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.Select;
 
 import javax.swing.text.MaskFormatter;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.ParseException;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -60,6 +54,7 @@ public class WizardFlowDataPage extends FLUtilities {
     List<String> skippedInvalidElements = new ArrayList<>();
     String executedJurisdiction = "";
     int fieldsEvaluated = 0;
+    List<List<String>> listInputFields;
 
     public WizardFlowDataPage(WebDriver driver) {
         initElements(driver);
@@ -83,10 +78,12 @@ public class WizardFlowDataPage extends FLUtilities {
         else
             fieldList = new LinkedHashSet<>(Arrays.asList(testContext.getMapTestData().get("outboundFieldList").split(", ")));
         for (String fieldName : fieldList) {
-            System.out.println(fieldName);
             moduleNameValue = JsonPath.read(testContext.getMapTestData().get(fieldName).trim(), "$.ModuleSectionName").toString().trim();
             if (module.equalsIgnoreCase(moduleNameValue) | module.equalsIgnoreCase("All")) {
                 wizardTesting(fieldName, flow);
+                fieldsEvaluated++;
+            } else if (module.equalsIgnoreCase("E2E")) {
+                enterE2ETestData(fieldName);
                 fieldsEvaluated++;
             }
         }
@@ -312,10 +309,10 @@ public class WizardFlowDataPage extends FLUtilities {
                                     }
                                 }
                                 setValue(valueJson, xmlResult);
-                                if (xmlResult.isEmpty()) {
-                                    onXmlDataPage.setPageObjects(testContext, driver);
-                                    onXmlDataPage.interactWithElement(getElement(valueJson, wizardControlType, ""));
-                                }
+//                                if (xmlResult.isEmpty()) {
+//                                    onXmlDataPage.setPageObjects(testContext, driver);
+//                                    onXmlDataPage.interactWithElement(getElement(valueJson, wizardControlType, ""));
+//                                }
                             } else
                                 onSoftAssertionHandlerPage.assertSkippedRules(order, executedJurisdiction, moduleName, field, "All Rules", "Rules were not validated as field is disabled");
                         } else {
@@ -1134,9 +1131,19 @@ public class WizardFlowDataPage extends FLUtilities {
     }
 
     public void verifyOutboundAssertions(String valueJson, String order, String field) {
-        String actualValue = JsonPath.read(valueJson, "$.RelativeValue").toString().trim();
-        String expectedValue = JsonPath.read(testContext.getMapTestData().get(field.replace("Outbound", "")), "$.RelativeValue").toString().trim();
-        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, "Outbound Validations", "", expectedValue, actualValue, expectedValue.equalsIgnoreCase(actualValue), testContext);
+        String expectedValue = "";
+        String actualValue = "";
+        try {
+            field = field.replace("Outbound", "");
+            actualValue = JsonPath.read(valueJson, "$.RelativeValue").toString().trim();
+            JSONParser parser = new JSONParser();
+            JSONObject json = (JSONObject) parser.parse(testContext.getMapTestData().get(field));
+            expectedValue = JsonPath.read(testContext.getMapTestData().get(field), "$.RelativeValue").toString().trim();
+        } catch (org.json.simple.parser.ParseException e) {
+            expectedValue = testContext.getMapTestData().get(field);
+        } finally {
+            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, "All", moduleName, field, "Outbound Validations", "", expectedValue, actualValue, expectedValue.equalsIgnoreCase(actualValue), testContext);
+        }
     }
 
     /**
@@ -1469,16 +1476,19 @@ public class WizardFlowDataPage extends FLUtilities {
             case "false_unchecked":
             case "false_unselected":
             case "true_checked":
+            case "true_check":
             case "true_selected":
                 expectedText = requiredAttributeValue;
                 break;
             case "false_checked":
+            case "false_check":
                 expectedText = "Unchecked";
                 break;
             case "false_selected":
                 expectedText = "Unselected";
                 break;
             case "true_unchecked":
+            case "true_uncheck":
                 expectedText = "Checked";
                 break;
             case "true_unselected":
@@ -1682,7 +1692,7 @@ public class WizardFlowDataPage extends FLUtilities {
                     onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), JsonPath.read(valueJson, "$.Order"), executedJurisdiction, moduleName, field, rule, rule + " validations " + displayedText + " and length is " + attributeValue, expectedText, expectedFormat, expectedText.equalsIgnoreCase(expectedFormat), testContext);
             }
             setValue(valueJson, "");
-        } catch (ParseException e) {
+        } catch (java.text.ParseException e) {
             throw new RuntimeException(e);
         }
     }
@@ -2031,8 +2041,8 @@ public class WizardFlowDataPage extends FLUtilities {
     /**
      * calculate execution time for cucumber report
      */
-    public void printFinalResults() {
-        onSoftAssertionHandlerPage.afterScenario(testContext, fieldsEvaluated);
+    public void printFinalResults(String flow, String module) {
+        onSoftAssertionHandlerPage.afterScenario(testContext, fieldsEvaluated, flow, module);
     }
 
     private void generateCombinations
@@ -2173,6 +2183,40 @@ public class WizardFlowDataPage extends FLUtilities {
             }
         }
         return Arrays.asList(values, conditionalOperator);
+    }
+
+    public void enterE2ETestData(String fieldName) {
+        String testData;
+        String valueJson = testContext.getMapTestData().get(fieldName).trim();
+        testData = JsonPath.read(valueJson, "$.TestData").toString().trim();
+        moduleName = JsonPath.read(valueJson, "$.ModuleSectionName").toString().trim();
+        String wizardControlType = "";
+        if (valueJson.contains("WizardControlTypes"))
+            wizardControlType = JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim();
+        boolean flag = false;
+
+        if (!onCommonMethodsPage.getGridDatePicker().isEmpty())
+            clickElement(driver, onCommonMethodsPage.getFormHeader());
+
+        if (!wizardControlType.equals("")) {
+            if (verifyAndMoveToPage(valueJson)) {
+                if (!getElements(valueJson, wizardControlType).isEmpty()) {
+                    if (wizardControlType.equalsIgnoreCase("dropdown") | wizardControlType.equalsIgnoreCase("radio button"))
+                        flag = verifyValueExists(valueJson, wizardControlType, testData);
+                    if (!flag) {
+                        if (verifyElementDisabled(valueJson, testData)) {
+                            setValue(valueJson, testData);
+                            verifyData(valueJson, fieldName, testData, "", "Value " + testData + " set successfully", "", "");
+                        } else
+                            onSoftAssertionHandlerPage.assertSkippedElement("", executedJurisdiction, moduleName, fieldName, "Field -> " + fieldName + " is disabled ");
+                    } else
+                        onSoftAssertionHandlerPage.assertSkippedElement("", executedJurisdiction, moduleName, fieldName, "Value " + testData + " does not exist for " + fieldName);
+                } else
+                    onSoftAssertionHandlerPage.assertSkippedElement("", executedJurisdiction, moduleName, fieldName, "Field does not exists");
+            } else
+                onSoftAssertionHandlerPage.assertSkippedElement("", executedJurisdiction, moduleName, fieldName, "Page " + JsonPath.read(valueJson, "$.Page").toString().trim() + " does not exists");
+        } else
+            onSoftAssertionHandlerPage.assertSkippedElement("", executedJurisdiction, moduleName, fieldName, "Wizard Control Type does not exist for " + fieldName);
     }
 }
 
