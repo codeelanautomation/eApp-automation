@@ -315,7 +315,7 @@ public class XmlUtilityPage extends FLUtilities {
                     }
                 }
             }
-            System.out.println("RelatedObjectID: " + relatedObjectID);
+            //System.out.println("RelatedObjectID: " + relatedObjectID);
             int firstSlashIndex = xmlMapping.indexOf('/');
             int secondSlashIndex = xmlMapping.indexOf('/', firstSlashIndex + 3);
             String tagName = xmlMapping.substring(0, secondSlashIndex);
