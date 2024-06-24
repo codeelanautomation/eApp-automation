@@ -108,6 +108,7 @@ public class E2EFlowDataPage extends FLUtilities {
         String producerID = "";
         String org = "";
         String host = "";
+        String outboundChanges = "";
 
         // Use try-with-resources to ensure the FileInputStream and XSSFWorkbook are closed properly
         try (FileInputStream file = new FileInputStream(filePath);
@@ -142,6 +143,7 @@ public class E2EFlowDataPage extends FLUtilities {
                 int producerIDIndex = findColumnIndex(headerRow, "ProducerID");
                 int orgIndex = findColumnIndex(headerRow, "Org");
                 int hostIndex = findColumnIndex(headerRow, "Host");
+                int outboundChangesIndex = findColumnIndex(headerRow, "ChangesInOutbound");
 
                 // Delete existing runner and feature files
                 deleteRunnerFeature(EnumsCommon.RUNNERFILESPATH.getText() + "ForeSightTest");
@@ -172,6 +174,7 @@ public class E2EFlowDataPage extends FLUtilities {
                         producerID = getCellValue(currentRow.getCell(producerIDIndex));
                         org = getCellValue(currentRow.getCell(orgIndex));
                         host = getCellValue(currentRow.getCell(hostIndex));
+                        outboundChanges = getCellValue(currentRow.getCell(outboundChangesIndex));
                     }
 
                     File jsonFilePath = new File(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
@@ -393,24 +396,11 @@ public class E2EFlowDataPage extends FLUtilities {
     public JSONObject uniqueOutboundInboundTags(JSONObject tempClientData, String clientName) throws IOException {
         List<String> outboundTags = new ArrayList<>(Arrays.asList(tempClientData.get("outboundFieldList").toString().split(", ")));
         outboundTags.replaceAll(n -> n.replaceAll("Outbound", ""));
-        List<String> inboundTags = new ArrayList<>(Arrays.asList(tempClientData.get("fieldList").toString().split(", ")));
-        outboundTags.removeIf(inboundTags::contains);
-        List<String> potentialValues = Arrays.asList("Test", "12242018", "1234567890", "12.11", "Test1234", "6.7", "100");
-        Map<String, String> temp = new HashMap<>();
-        XSSFWorkbook workbook = new XSSFWorkbook();
-
-        // spreadsheet object
-        String excelFilePath = EnumsCommon.ABSOLUTE_FILES_PATH.getText() + clientName + "_ExternalPath";
-        workbook = new XSSFWorkbook(excelFilePath);
-        Sheet sheet = workbook.createSheet("ExternalData");
-
-        for (String tags : outboundTags) {
-            temp.put(tags, String.join(", ", potentialValues));
+        List<String> inboundtags = new ArrayList<>(Arrays.asList(tempClientData.get("fieldList").toString().split(", ")));
+        outboundTags.removeIf(inboundtags::contains);
+        tempClientData.put("uniqueTags", String.join(",", outboundTags));
+        for (String tags : outboundTags)
             tempClientData.remove(tags);
-        }
-        tempClientData.put("uniqueTags", temp);
-//        for (String tags : outboundTags)
-//            tempClientData.remove(tags);
         return tempClientData;
     }
 
