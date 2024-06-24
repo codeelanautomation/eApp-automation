@@ -174,7 +174,7 @@ public class E2EFlowDataPage extends FLUtilities {
                         producerID = getCellValue(currentRow.getCell(producerIDIndex));
                         org = getCellValue(currentRow.getCell(orgIndex));
                         host = getCellValue(currentRow.getCell(hostIndex));
-                        outboundChanges = getCellValue(currentRow.getCell(outboundChangesIndex));
+//                        outboundChanges = getCellValue(currentRow.getCell(outboundChangesIndex));
                     }
 
                     File jsonFilePath = new File(EnumsCommon.ABSOLUTE_FILES_PATH.getText() + jsonFile);
