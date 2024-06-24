@@ -87,7 +87,7 @@ public class Rules_StepDefinitions extends FLUtilities {
 
     @Then("Verify data on UI is populated as given in inbound XML and validate rules for {string} modules")
     public void inboundVerify(String module) {
-        validateWizard(module, "");
+        validateWizard(module, "Inbound");
     }
 
     @Then("Import client XML file in app")
