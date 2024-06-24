@@ -319,7 +319,7 @@ public class WizardFlowDataPage extends FLUtilities {
                             if (!field.isEmpty())
                                 skippedInvalidElements.add(field);
 
-                            System.out.println("The skipped invalid elements" + skippedInvalidElements);
+                            //System.out.println("The skipped invalid elements" + skippedInvalidElements);
                         }
                     }
                 } else {
