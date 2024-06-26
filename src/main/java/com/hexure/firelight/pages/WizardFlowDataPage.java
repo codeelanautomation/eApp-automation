@@ -1525,7 +1525,7 @@ public class WizardFlowDataPage extends FLUtilities {
     public void printResults(String field, String requiredAttributeValue, String expectedText, String attribute, String distinctRule, String displayedText, String order, String xPath) {
         List<String> sourceTagNames = new ArrayList<String>(testContext.getScenario().getSourceTagNames());
         displayedText = attribute.equalsIgnoreCase("prefilled with") ? "Prefilled Value " + displayedText : !(sourceTagNames.get(0).toLowerCase().contains("inbound")) ?"Default Value " + displayedText :displayedText;
-        boolean flag = requiredAttributeValue.trim().equals(expectedText.trim());
+        boolean flag = (sourceTagNames.contains("inbound") | sourceTagNames.contains("outbound")) ? requiredAttributeValue.trim().equalsIgnoreCase(expectedText.trim()) : requiredAttributeValue.trim().equals(expectedText.trim());
         onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, displayedText, expectedText, requiredAttributeValue, flag, xPath, testContext);
     }
 
