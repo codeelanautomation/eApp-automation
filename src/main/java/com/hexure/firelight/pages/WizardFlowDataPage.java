@@ -189,7 +189,7 @@ public class WizardFlowDataPage extends FLUtilities {
                                         case "verify Attribute":
                                             if (!(json.containsKey(tempValues)))
                                                 xmlFlag = false;
-                                            resultValue = xmlFlag ? "true" : "false";
+                                            resultValue = xmlFlag ? "true" : "Not Applicable";
                                             displayedText += " and attribute " + tempValues + " should be present";
                                             break;
                                         case "Set":
@@ -208,6 +208,7 @@ public class WizardFlowDataPage extends FLUtilities {
                                                         resultValue = JsonPath.read(valueJson, "$." + key).toString().trim();
                                                         if (!(JsonPath.read(valueJson, "$." + key).toString().trim().equalsIgnoreCase(values))) {
                                                             xmlFlag = false;
+                                                            resultValue = "Not Applicable";
                                                             break;
                                                         }
                                                     } else if (tempKey.equalsIgnoreCase("verify format")) {
@@ -216,7 +217,7 @@ public class WizardFlowDataPage extends FLUtilities {
                                                         key = JsonPath.read(valueJson, "$." + key).toString().trim().replaceAll("[a-zA-Z0-9]", "#");
                                                         resultValue = "true";
                                                         if (!(key.equalsIgnoreCase(values))) {
-                                                            resultValue = "false";
+                                                            resultValue = "Not Applicable";
                                                             xmlFlag = false;
                                                             break;
                                                         }
@@ -227,7 +228,7 @@ public class WizardFlowDataPage extends FLUtilities {
                                     }
 
                                 }
-                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "XML Validation -> " + displayedText, "Not Applicable", resultValue, xmlFlag, JsonPath.read(valueJson, "$.103Mapping").toString().trim(), testContext);
+                                onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "XML Validation -> " + displayedText, resultValue, resultValue, xmlFlag, JsonPath.read(valueJson, "$.103Mapping").toString().trim(), testContext);
                                 combinationConditions.clear();
                                 howManyOperator.clear();
 
@@ -1122,7 +1123,6 @@ public class WizardFlowDataPage extends FLUtilities {
                 break;
         }
         waitForPageToLoad(driver);
-        sleepInMilliSeconds(1000);
     }
 
     public String validateXMLData(String valueJson, String order, String field, String xPath) {
@@ -1522,13 +1522,11 @@ public class WizardFlowDataPage extends FLUtilities {
      * @param displayedText          - text to be displayed in cucumber report
      * @param order                  - order of a field under test
      */
-    public void printResults(String field, String requiredAttributeValue, String expectedText, String
-            attribute, String distinctRule, String displayedText, String order, String xPath) {
+    public void printResults(String field, String requiredAttributeValue, String expectedText, String attribute, String distinctRule, String displayedText, String order, String xPath) {
+        List<String> sourceTagNames = new ArrayList<String>(testContext.getScenario().getSourceTagNames());
+        displayedText = attribute.equalsIgnoreCase("prefilled with") ? "Prefilled Value " + displayedText : !(sourceTagNames.get(0).toLowerCase().contains("inbound")) ?"Default Value " + displayedText :displayedText;
         boolean flag = requiredAttributeValue.trim().equals(expectedText.trim());
-        if (attribute.equalsIgnoreCase("prefilled with"))
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Prefilled Value " + displayedText, expectedText, requiredAttributeValue, flag, xPath, testContext);
-        else
-            onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, "Default Value " + displayedText, expectedText, requiredAttributeValue, flag, xPath, testContext);
+        onSoftAssertionHandlerPage.assertTrue(driver, String.valueOf(countValidation++), order, executedJurisdiction, moduleName, field, distinctRule, displayedText, expectedText, requiredAttributeValue, flag, xPath, testContext);
     }
 
     /**

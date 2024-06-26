@@ -13,8 +13,10 @@ public class SoftAssertionHandlerPage extends FLUtilities {
     private final List<List<String>> assertions = new ArrayList<>();
     private final List<List<String>> skippedRules = new ArrayList<>();
     private final List<List<String>> skippedElements = new ArrayList<>();
+    private final List<List<String>> uniqueInboundOutboundElements = new ArrayList<>();
     private final StringBuilder resultSetSkippedRules = new StringBuilder();
     private final StringBuilder resultSetSkippedElements = new StringBuilder();
+    private final StringBuilder resultSetUniqueInboundOutboundElements = new StringBuilder();
 
     public SoftAssertionHandlerPage(WebDriver driver) {
         initElements(driver);
@@ -96,6 +98,11 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         printResults(assertions, testContext, fieldsEvaluated, flow, module);
         printSkippedElements(testContext);
         printSkippedRules(testContext, module, flow);
+        printUniqueInboundOutboundElements(testContext, uniqueInboundOutboundElements, flow);
+    }
+
+    public void assertUniqueTags(String executedJurisdiction, String tagName, String value, TestContext testContext) {
+        uniqueInboundOutboundElements.add(Arrays.asList(executedJurisdiction, tagName, value));
     }
 
     /**
@@ -207,6 +214,27 @@ public class SoftAssertionHandlerPage extends FLUtilities {
         Scenario scenario = testContext.getScenario();
         if (!(module.equalsIgnoreCase("E2E") || flow.equalsIgnoreCase("Outbound")))
             scenario.attach("<div width='100%' style='font-size:1.3vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>List Of Rules Skipped : </div>" + resultSetSkippedRules, "text/html", "List Of Rules Skipped");
+    }
+
+    /**
+     * Print skipped rules in cucumber report
+     *
+     * @param testContext - test context of a test case
+     */
+    private void printUniqueInboundOutboundElements(TestContext testContext, List<List<String>> assertions, String flow) {
+        Scenario scenario = testContext.getScenario();
+        int count = 1;
+        if (flow.equalsIgnoreCase("Inbound")) {
+            resultSetSkippedElements.append("<div width='100%' style='font-size:1.3vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>List Of Outbound Fields not validated in Inbound</div>");
+            if (!assertions.isEmpty()) {
+//                resultSetSkippedElements.append("<div style='background-color: #C5D88A;'></div> <table border=\"1\" width=\"100%\"> <tr style='font-weight: bold; background-color: #C5D88A;'> <th style='white-space: pre-wrap; width: 2%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>S.No.</th> <th style='" + displayPropertyOutbound + " white-space: pre-wrap; width: 5%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Order</th> <th style='white-space: pre-wrap; width: 5%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Jurisdiction</th> <th style='white-space: pre-wrap; width: 5%; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Module Name</th> <th style='white-space: pre-wrap; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Fields Not Validated</th> <th style='white-space: pre-wrap; vertical-align:top; padding-top: 5px; padding-bottom: 5px;'>Reason</th> </tr>");
+//                for (List<String> assertion : assertions) {
+//                    resultSetSkippedElements.append("<tr style='background-color: #C5D88A;'> <td style='white-space: pre-wrap;'>").append(count++).append("</td> <td style='").append(displayPropertyOutbound).append("'>").append(assertion.get(0)).append("</td> <td>").append(assertion.get(1)).append("</td> <td>").append(assertion.get(2)).append("</td> <td>").append(assertion.get(3)).append("</td> <td>").append(assertion.get(4)).append("</td> </tr>");
+//                }
+//                resultSetSkippedElements.append("</table>");
+            }
+        }
+            scenario.attach("<div width='100%' style='font-size:1.3vw; border: none; color: green; font-weight: bold; background-color: #C5D88A;'>List Of Outbound Fields not validated in Inbound : </div>" + resultSetSkippedRules, "text/html", "List Of Rules Skipped");
     }
 
     public void printTabularReport(List<List<String>> entries, TestContext testContext) {

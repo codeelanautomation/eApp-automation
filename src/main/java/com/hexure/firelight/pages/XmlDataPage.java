@@ -213,6 +213,7 @@ public class XmlDataPage extends FLUtilities {
                                 addPropertyValueInJSON(testContext.getTestCaseID(), testContext, dataItemId, json);
                             } else
                                 addPropertyValueInJSON(testContext.getTestCaseID(), testContext, dataItemId, value);
+                            onSoftAssertionHandlerPage.assertUniqueTags(onWizardFlowDataPage.executedJurisdiction, tagName, value, testContext);
                             System.out.println("Successfully entered value: " + value);
                             return;
                         }
