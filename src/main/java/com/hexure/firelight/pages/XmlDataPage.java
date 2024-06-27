@@ -27,10 +27,7 @@ import javax.xml.xpath.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class XmlDataPage extends FLUtilities {
     private TestContext testContext;
@@ -68,7 +65,7 @@ public class XmlDataPage extends FLUtilities {
             String valueJson = testContext.getMapTestData().get(tags + "Outbound").trim();
             String wizardControlType = JsonPath.read(valueJson, "$.WizardControlTypes").toString().trim();
             if (onWizardFlowDataPage.verifyAndMoveToPage(valueJson))
-                interactWithElement(onWizardFlowDataPage.getElement(valueJson, wizardControlType, ""));
+                interactWithElement(onWizardFlowDataPage.getElement(valueJson, wizardControlType, ""), true);
         }
         while (!(onCommonMethodsPage.getLblPercent().getText().contains("100%") || getElements(driver, onCommonMethodsPage.getFormPages()).isEmpty())) {
             clickElement(driver, getElements(driver, onCommonMethodsPage.getFormPages()).get(0));
@@ -76,7 +73,7 @@ public class XmlDataPage extends FLUtilities {
                 clickElement(driver, onCommonMethodsPage.getRedColorErrorValidationBubble());
             while (!getElements(driver, onCommonMethodsPage.getErrorMessageElement()).isEmpty()) {
                 WebElement elem = getRequiredElement();
-                interactWithElement(elem);
+                interactWithElement(elem, false);
             }
             clickElementByJSE(driver, onCommonMethodsPage.getWizardPageNameExpand());
         }
@@ -194,42 +191,35 @@ public class XmlDataPage extends FLUtilities {
         return elem.getAttribute("data-dataitemid");
     }
 
-    public void interactWithElement(WebElement elem) {
+    public void interactWithElement(WebElement elem, boolean flag) {
         String tagName = elem.getTagName();
         String dataItemId = getDataItemID(elem, tagName);
-        List<String> potentialValues = Arrays.asList("Test", "12242018", "1234567890", "12.11", "Test1234", "6.7", "100");
-        JSONParser parser = new JSONParser();
+        List<String> potentialValues = new ArrayList<>();
+        potentialValues = flag ? Arrays.asList(testContext.getMapTestData().get(dataItemId)) : Arrays.asList("Test", "12242018", "1234567890", "12.11", "Test1234", "6.7", "100");
+        String updatedValue = "";
 
-        try {
-            if (tagName.equalsIgnoreCase("input")) {
-                for (String value : potentialValues) {
-                    boolean temp = tryEnteringValue(elem, tagName, value);
-                    if (temp) {
-                        temp = isErrorMessageDisplayed(elem, dataItemId);
-                        if (!temp) {
-                            if (testContext.getMapTestData().containsKey(dataItemId)) {
-                                JSONObject json = (JSONObject) parser.parse(testContext.getMapTestData().get(dataItemId));
-                                json.put("RelativeValue", value);
-                                addPropertyValueInJSON(testContext.getTestCaseID(), testContext, dataItemId, json);
-                            } else
-                                addPropertyValueInJSON(testContext.getTestCaseID(), testContext, dataItemId, value);
-                            onSoftAssertionHandlerPage.assertUniqueTags(onWizardFlowDataPage.executedJurisdiction, tagName, value, testContext);
-                            System.out.println("Successfully entered value: " + value);
-                            return;
-                        }
+        if (tagName.equalsIgnoreCase("input")) {
+            for (String value : potentialValues) {
+                boolean temp = tryEnteringValue(elem, tagName, value);
+                if (temp) {
+                    temp = isErrorMessageDisplayed(elem, dataItemId);
+                    if (!temp) {
+                        updatedValue = value;
+                        addPropertyValueInJSON(testContext.getTestCaseID(), testContext, dataItemId, value);
+                        System.out.println("Successfully entered value: " + value);
+                        return;
                     }
                 }
-            } else {
-                boolean temp = tryEnteringValue(elem, tagName, "");
-                if (temp) {
-                    System.out.println("Successfully selected first option from dropdown or checked the checkbox");
-                    return;
-                } else
-                    System.out.println("Could not selected first option from dropdown or checked the checkbox");
             }
-        } catch (ParseException e) {
-            System.out.println("No key available with dataitemid " + dataItemId);
+        } else {
+            boolean temp = tryEnteringValue(elem, tagName, "");
+            if (temp) {
+                System.out.println("Successfully selected first option from dropdown or checked the checkbox");
+                return;
+            } else
+                System.out.println("Could not selected first option from dropdown or checked the checkbox");
         }
+        onSoftAssertionHandlerPage.assertUniqueTags(onWizardFlowDataPage.executedJurisdiction, dataItemId, updatedValue, testContext);
     }
 
     private boolean tryEnteringValue(WebElement element, String tagName, String value) {

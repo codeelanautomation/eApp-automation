@@ -3,6 +3,7 @@ Feature: This feature will verify Form data with inbound XML
   @InboundFlow
   Scenario:Verify Form data with inbound and outbound Xml of Client-1
     Given User is on "Dev" Test page for TestCase "End2End_InboundFlow_Client"
+    Then Update json with updated values from "Client_ExternalPath.xlsx"
     Then Import client XML file in app
     Then Verify data on UI is populated as given in inbound XML and validate rules for "All" modules
     Then User Extracts the URL Link for "Client" and Stores it
